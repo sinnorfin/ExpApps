@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -31,15 +31,30 @@ using System.Collections.Generic;
 using System;
 using System.IO;
 using System.Linq;
+using Autodesk.Revit.DB.Structure;
 //using Autodesk.Revit.DB.Mechanical;
 
 namespace MultiDWG
 {
+    public static class Store
+        //For storing values that are updated from the Ribbon
+    {
+        public static Double mod_stepy = 1;
+        public static TextBox stepy_ib = null;
+        public static Double mod_left = 1;
+        public static TextBox left_ib = null;
+        public static Double mod_right = 1;
+        public static TextBox right_ib = null;
+        public static Double mod_firsty = 1;
+        public static TextBox firsty_ib = null;
+    }
+
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class DuctId : IExternalCommand
     {
         private string Correct(string system)
+            //Searches String for varies typos, corrects to preset standard
         {
             string abr = null;
             if (system.Contains("EXH")) { abr = "EA"; }
@@ -52,6 +67,7 @@ namespace MultiDWG
         }
         private List<List<Element>> SortParam_String(List<List<Element>> toSort, string param)
         {
+            //Sorts by String
             List<List<Element>> Sorted = new List<List<Element>>();
             foreach (List<Element> sortable in toSort)
             {
@@ -63,6 +79,9 @@ namespace MultiDWG
         }
         private List<List<Element>> SortParam_VString(List<List<Element>> toSort, string param)
         {
+            //Sorts by ValueString
+            //Should be merged to the above
+            //Should be standardized sortation mechanism
             List<List<Element>> Sorted = new List<List<Element>>();
             foreach (List<Element> sortable in toSort)
             {
@@ -85,6 +104,7 @@ namespace MultiDWG
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<Element> Ducts = new List<Element>();
             List<List<Element>> Systems = new List<List<Element>>();
+            // Could be standardised, replace variables with settings from inside the program
             foreach (ElementId eid in ids)
             {
                 Element elem = doc.GetElement(eid);
@@ -134,8 +154,138 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class ToggleLink : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            View acview = doc.ActiveView;
+            foreach (Category cat in acview.Document.Settings.Categories)
+            {
+                if (cat.Name == "RVT Links")
+                {
+                    using (Transaction trans = new Transaction(doc))
+                    {
+                        trans.Start("Toggle All Links");
+                        if (cat.get_Visible(acview))
+                        { cat.set_Visible(acview, false); }
+                        else { cat.set_Visible(acview, true); }
+                        trans.Commit();
+                    }
+                }
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class TogglePC : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            View acview = doc.ActiveView;
+            foreach (Category cat in acview.Document.Settings.Categories)
+            {
+                if (cat.Name == "Point Clouds")
+                {
+                    using (Transaction trans = new Transaction(doc))
+                    {
+                        trans.Start("Toggle All Point Cloud");
+                        if (cat.get_Visible(acview))
+                        { cat.set_Visible(acview, false); }
+                        else { cat.set_Visible(acview, true); }
+                        trans.Commit();
+                    }
+                }
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class PlaceAccessory : IExternalCommand
+    {
+        // Not working, Accessory needs to be aligned
+        // pipe has to manually recreated and connected back on both ends
+        // Pipe has to connect to previous connector + new connector on fitting
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            FilteredElementCollector collector = new FilteredElementCollector(doc);
+            ICollection<Element> collection = collector.OfClass(typeof(FamilySymbol))
+                                                       .OfCategory(BuiltInCategory.OST_PipeAccessory)
+                                                       .ToElements();
+            IEnumerator<Element> symbolItor = collection.GetEnumerator();
+            symbolItor.MoveNext();
+            using (Transaction tx = new Transaction(doc))
+            {
+                FamilyInstance instance = null;
+                LocationCurve pipeloccurve = null;
+                tx.Start("Place Accesory on pipe");
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid);
+                    if (elem.Category.Name == "Pipes")
+                    {
+                        MEPCurve pipecurve = elem as MEPCurve;
+                            pipeloccurve = elem.Location as LocationCurve;
+                            Level level = pipecurve.ReferenceLevel as Level;
+                            FamilySymbol symbol = symbolItor.Current as FamilySymbol;
+
+                            XYZ location = pipeloccurve.Curve.Evaluate(0.5, true);
+                            if (location == null) { TaskDialog.Show("error", "location null"); }
+                            if (symbol == null) { TaskDialog.Show("error", "symbol null"); }
+                            instance = doc.Create.NewFamilyInstance(location, symbol, level, level, StructuralType.NonStructural);
+                            
+                    }
+                }
+                tx.Commit();
+                XYZ ac_refline = XYZ.Zero;
+                Reference instaref = instance.GetReferences(FamilyInstanceReferenceType.CenterLeftRight).FirstOrDefault();
+                using (Transaction t = new Transaction(doc))
+                {
+                    t.Start("Create Temporary Sketch Plane");
+                    SketchPlane sk = SketchPlane.Create(doc, instaref);
+                    if (null != sk)
+                    {
+                        Plane pl = sk.GetPlane();
+                        ac_refline = pl.Normal;
+                    }
+                    t.RollBack();
+                }
+                Line pi_refline = pipeloccurve.Curve as Line;
+                if (ac_refline != null) { TaskDialog.Show("Accessory Direction:", ac_refline.ToString()); }
+                TaskDialog.Show("Pipe Direction:", pi_refline.Direction.ToString());
+            }
+              return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class ConduitAngle : IExternalCommand
     {
+        // Adding up angles of conduits and checking if against value
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -169,6 +319,7 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class DuctSurfaceArea : IExternalCommand
     {
+        //Calculates Duct surface area, substracts connection surfaces
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -220,6 +371,9 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class MultiDWG : IExternalCommand
     {
+        //Loads multiple DWG at once
+        //adds DWS-s to detail level based on name
+        //hides med and high details levels
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -279,6 +433,8 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class SwapMultiDWG : IExternalCommand
     {
+        // for swapping existing dwg-s with loading
+        // probably decrepit
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -358,8 +514,109 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class ReplaceInParam : IExternalCommand
+    {
+        //Replaces text in a parameter of selected elements
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Replace in Parameter");
+                double c = 0;
+                foreach (ElementId eid in ids)
+                    {
+                        Element elem = doc.GetElement(eid) as Element;
+                        Parameter para = elem.LookupParameter(Store.left_ib.Value.ToString()) as Parameter;
+                        string original = para.AsString();
+                        if (original != null)
+                        {
+                            para.Set(original.Replace(Store.right_ib.Value.ToString(), Store.firsty_ib.Value.ToString()));
+                            if (para.AsString() != original) { c += 1; newsel.Add(eid); }
+                        }
+                    }
+                trans.Commit();
+                uidoc.Selection.SetElementIds(newsel);
+                TaskDialog.Show("Result", "Replaced: " + Store.right_ib.Value.ToString() + " to: " + Store.firsty_ib.Value.ToString() + " in: " + c.ToString() + " elements");
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class FindVert : IExternalCommand
+    {
+        //Filters out non-vertical elements from selection based on
+        //Bounding box height, checks against value provided on Ribbon
+        public static void GetMenuValue(UIApplication uiapp)
+        {
+            //Gets values out of Ribbon
+            RibbonPanel inputpanel = null;
+            foreach (RibbonPanel panel in uiapp.GetRibbonPanels("Exp. Add-Ins"))
+            {
+                if (panel.Name == "Annotation")
+                { inputpanel = panel; }
+            }
+            foreach (RibbonItem item in inputpanel.GetItems())
+            {
+                if (item.Name == "Step Y")
+                { Store.stepy_ib = (TextBox)item; }
+                if (item.Name == "Left Space")
+                { Store.left_ib = (TextBox)item; }
+                if (item.Name == "Right Space")
+                { Store.right_ib = (TextBox)item; }
+                if (item.Name == "First Y")
+                { Store.firsty_ib = (TextBox)item; }
+            }
+            Double.TryParse(Store.stepy_ib.Value as string, out Store.mod_stepy);
+            if (Store.mod_stepy == 0) { Store.mod_stepy = 0.5; }
+        }
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            GetMenuValue(uiapp);
+            foreach (ElementId eid in ids)
+            {
+                Element fami = doc.GetElement(eid) as Element;
+                BoundingBoxXYZ BB = fami.get_BoundingBox(null);
+                if ((BB.Max.Z - BB.Min.Z) > Store.mod_stepy)
+                { newsel.Add(eid); }
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select vertical");
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class MetaData : IExternalCommand
     {
+        // Simple parameter filler
+        // No real use for this anymore
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -404,6 +661,8 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class TypeParam : IExternalCommand
     {
+        //Converts all type parameters to instance parameters
+        //Should be tested, might be useful
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -433,6 +692,7 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class DeleteDetailItem : IExternalCommand
     {
+        // No use for this anymore
         public Result Execute(
               ExternalCommandData commandData,
               ref string message,
@@ -501,6 +761,7 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class EngToArch : IExternalCommand
     {
+        //No use for this now
         public static List<ElementId> ElementsNamed(Document doc, List<ElementId> elementids, string name)
         {
             List<ElementId> result = new List<ElementId>();
@@ -518,6 +779,7 @@ namespace MultiDWG
               ref string message,
               ElementSet elements)
         {
+            //No USE for this
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Application app = uiapp.Application;
@@ -616,6 +878,7 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class Mullion : IExternalCommand
     {
+        // No use for this
         public void Swap(Document doc, List<string> InsertPaths)
         {
             bool s = true;
@@ -729,6 +992,7 @@ namespace MultiDWG
         }
         public static List<string> GetAllDir(Array Idir, string dirname)
         {
+            // Should test, extracts all folders under one folder
             List<string> engdir = new List<string>();
             foreach (string dir in Idir)
             {
@@ -741,6 +1005,7 @@ namespace MultiDWG
         }
         public List<string> EndFolders(Array Idir)
         {
+            // Returns only the deepest folders of folder structure
             List<string> enddir = new List<string>();
             foreach (string dir in Idir)
             {
@@ -752,6 +1017,7 @@ namespace MultiDWG
             else return new List<string>();
         }
         public class OverwriteFamilyLoadOptions : IFamilyLoadOptions
+            //NO use for this
         {
             #region IFamilyLoadOptions Members
 
@@ -816,6 +1082,7 @@ namespace MultiDWG
         }
         public static List<string> Searchrvt(List<string> dirs,string fileend)
         {
+            // no use
             List<string> files = new List<string>();
             if (dirs != null)
             {

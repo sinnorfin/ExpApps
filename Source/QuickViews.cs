@@ -36,15 +36,9 @@ namespace QuickViews
     {
         List<View> viewList = null;
         List<System.Windows.Forms.ComboBox> dropdowns = AssignViews.createdropdown();
-
+        System.Windows.Forms.ComboBox level_select = new System.Windows.Forms.ComboBox();
         System.Windows.Forms.Button ok_button = new System.Windows.Forms.Button();
-        public static List<System.Windows.Forms.Button> createmenu()
-        {
-            List<System.Windows.Forms.Button> menu = new List<System.Windows.Forms.Button>();
-            for (int i = 1; i <= 6; i++)
-            { menu.Add(new System.Windows.Forms.Button()); }
-            return menu;
-        }
+
         public static List<System.Windows.Forms.ComboBox> createdropdown()
         {
             List<System.Windows.Forms.ComboBox> menu = new List<System.Windows.Forms.ComboBox>();
@@ -52,16 +46,17 @@ namespace QuickViews
             { menu.Add(new System.Windows.Forms.ComboBox()); }
             return menu;
         }
-        public AssignViews(List<View> viewList)
+
+        public AssignViews(List<View> viewList, List<Level> allLevels)
         {
             if (viewList != null)
             {
                 this.MaximizeBox = false; this.MinimizeBox = false;
-                this.MaximumSize = new System.Drawing.Size(610, 260);
-                this.MinimumSize = new System.Drawing.Size(610, 260);
+                this.MaximumSize = new System.Drawing.Size(610, 280);
+                this.MinimumSize = new System.Drawing.Size(610, 280);
                 this.viewList = viewList;
 
-                ok_button.Location = new System.Drawing.Point(10, 180);
+                ok_button.Location = new System.Drawing.Point(10, 200);
                 ok_button.Text = "Save Quick Keys";
                 int ypos = 10;
                 int ind = 0;
@@ -97,6 +92,24 @@ namespace QuickViews
                     ypos += 26;
                     ind += 1;
                 }
+                
+                level_select.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
+                level_select.Location = new System.Drawing.Point(300, ypos);
+                level_select.Size = new System.Drawing.Size(280, 20);
+                level_select.TabIndex = 0;
+                level_select.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+                level_select.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+                System.Windows.Forms.TextBox level_tb = new System.Windows.Forms.TextBox();
+                level_tb.Location = new System.Drawing.Point(10, ypos);
+                level_tb.Size = new System.Drawing.Size(280, 20);
+                try { level_tb.Text = StoreExp.level; }
+                catch { level_tb.Text = "Active PlanView"; }
+                level_tb.ReadOnly = true;
+                Controls.Add(level_tb);
+                foreach (Level level in allLevels)
+                { level_select.Items.Add(level.Name); }
+                level_select.Items.Add("Active PlanView");
+                Controls.Add(level_select);
                 this.Controls.Add(ok_button);
                 ok_button.Click += new EventHandler(ok_Click);
                 this.ShowDialog();
@@ -109,10 +122,15 @@ namespace QuickViews
                 StoreExp.quickViews[qv_ind] = this.viewList[dropdowns[c_ind].SelectedIndex]; 
             }
         }
+        public void setlevel()
+        {
+            StoreExp.level = level_select.SelectedItem.ToString();
+        }
         private void ok_Click(object sender, System.EventArgs e)
         {
             for (int i = 0; i <= 5; i++)
             { setView(i, i); }
+            setlevel();
             this.Close();
         }
     }
@@ -131,11 +149,18 @@ namespace QuickViews
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
             List<View> allViews = new List<View>();
+            List<Level> allLevels = new List<Level>();
             foreach (View view in new FilteredElementCollector(doc).OfClass(typeof(View)))
             {if ((view.IsTemplate == false) && (view.Category != null))
                 { allViews.Add(view);}
             }
-            AssignViews assign = new AssignViews(allViews); 
+            foreach (Level level in new FilteredElementCollector(doc).OfClass(typeof(Level)))
+            {
+                //if ((view.IsTemplate == false) && (view.Category != null))
+                allLevels.Add(level); 
+            }
+            AssignViews assign = new AssignViews(allViews,allLevels);
+
             return Result.Succeeded;
         }
     }

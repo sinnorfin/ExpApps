@@ -37,6 +37,7 @@ namespace Slope
     [Regeneration(RegenerationOption.Manual)]
     public class ChangeSlope : IExternalCommand
     {
+        // creates a pip at the same with the 1/8@12 slope
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,

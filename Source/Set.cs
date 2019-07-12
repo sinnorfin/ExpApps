@@ -26,6 +26,7 @@ using System.Linq;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.ApplicationServices;
 using System;
 using _ExpApps;
@@ -159,6 +160,87 @@ namespace SetViewRange
                 }
                 catch
                 { TaskDialog.Show("Error", "Cannot shift ViewRange this way."); }
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class CopyCrop : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            var view = uidoc.ActiveView;
+            
+            View selectPlan = null;
+            
+            foreach (ElementId eid in ids)
+            {
+                Element elem = doc.GetElement(eid);
+                if (elem.Category.Name == "Views")
+                {
+                    selectPlan = elem as View;
+                    TaskDialog.Show("Copying crop from", selectPlan.ViewName);
+                }
+            }
+            BoundingBoxXYZ box = new BoundingBoxXYZ();
+            XYZ minx = new XYZ(selectPlan.CropBox.Min.X, selectPlan.CropBox.Min.Y, selectPlan.CropBox.Min.Z);
+            XYZ maxx = new XYZ(selectPlan.CropBox.Max.X, selectPlan.CropBox.Max.Y, selectPlan.CropBox.Max.Z);
+            box.Min = minx;
+            box.Max = maxx;
+            using (Transaction t = new Transaction(doc, "Set View Range"))
+            {
+                t.Start();
+                view.CropBoxActive = true;
+                view.CropBox = box;
+                t.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class CopyVR : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ViewPlan viewPlan = uidoc.ActiveView as ViewPlan;
+            PlanViewRange VR = null;
+            foreach (ElementId eid in ids)
+            {
+                Element elem = doc.GetElement(eid);
+                if (elem.Category.Name == "Views")
+                {
+                    ViewPlan selectPlan = elem as ViewPlan;
+                    VR = selectPlan.GetViewRange();
+                    TaskDialog.Show("Copying VR from", selectPlan.ViewName);
+                }
+            }
+            if (VR == null)
+            { TaskDialog.Show("error", "error"); }
+            using (Transaction t = new Transaction(doc, "Set View Range"))
+            {
+                t.Start();
+                viewPlan.SetViewRange(VR);
+                t.Commit();
             }
             return Result.Succeeded;
         }

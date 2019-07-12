@@ -31,78 +31,86 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using System.IO;
 using System.Linq;
+using Autodesk.Revit.UI.Selection;
 
 namespace DWGExport
 {
     [Transaction(TransactionMode.Manual)]
     public class DWGExport : IExternalCommand
-    {
-
-
+    { 
         public Result Execute(
           ExternalCommandData commandData,
           ref string message,
           ElementSet elements)
-            {
+        {
                 UIApplication uiapp = commandData.Application;
                 UIDocument uidoc = uiapp.ActiveUIDocument;
                 Application app = uiapp.Application;
                 Document doc = uidoc.Document;
                 ViewSet myViewSet = new ViewSet();
 
-                //create NWExportOptions
                 DWGExportOptions DwgOptions = new DWGExportOptions();
                 DwgOptions.ExportingAreas = false;
                 DwgOptions.MergedViews = true;
+                
 
-
-                string match = "Export";
-
-            // Use Title on Sheet for select the export views
-
-                foreach (View vs in new FilteredElementCollector(doc).OfClass(typeof(View)).Cast<View>())
+                int c_f = 0;
+                Selection SelectedObjs = uidoc.Selection;
+                ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+                foreach (ElementId eid in ids)
                 {
-                    if (vs.IsTemplate == false && vs.Category != null && vs.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION).AsString().Contains(match))
+                    try
                     {
-                        myViewSet.Insert(vs);
+                        View view = doc.GetElement(eid) as View;
+                        myViewSet.Insert(view);
                     }
+                    catch { c_f += 1; }
                 }
                 List<ElementId> viewIds = new List<ElementId>();
 
-            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-            Nullable<bool> result = dlg.ShowDialog();
-            if (result == true)
-            {
-                string path = dlg.FileName;
-                path = path.Remove(dlg.FileName.LastIndexOf(@"\"))+"\\DWG";
-                var ToRename = new List<String>();
-                string display = "List of Views:";
-                foreach (View View in myViewSet)
+                Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+                Nullable<bool> result = dlg.ShowDialog();
+                if (result == true)
                 {
-                    viewIds.Add(View.Id);
-                    String Filename = doc.Title.Replace(" ","") + "-" + View.get_Parameter(BuiltInParameter.ELEM_TYPE_PARAM).AsValueString()  + " - " + View.ViewName + ".dwg";
-                    ToRename.Add(Filename);
-                    display = display + Environment.NewLine + View.Title;
-                }
-                TaskDialog td = new TaskDialog("Exporting DWGs");
-                td.MainInstruction = ToRename.Count + " Views will be Exported to: " + path;
-                td.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
-                td.ExpandedContent = display;
-                TaskDialogResult response = td.Show();
-                    if ((response != TaskDialogResult.Cancel) && (response != TaskDialogResult.No))
-                        {
-                    if (!Directory.Exists(path))
-                    { Directory.CreateDirectory(path); }
-                    doc.Export(path, "", viewIds, DwgOptions);
-
-                    for (int i = 0; i < ToRename.Count; i++)
+                    string path = dlg.FileName;
+                    path = path.Remove(dlg.FileName.LastIndexOf(@"\"))+"\\DWG";
+                    var ToRename = new List<String>();
+                    string display = "List of Views:";
+                    foreach (View View in myViewSet)
                     {
-                        if (File.Exists(path + "\\" + ToRename[i].Substring(ToRename[i].LastIndexOf(" - ") + 3)))
-                        { File.Delete(path + "\\" + ToRename[i].Substring(ToRename[i].LastIndexOf(" - ") + 3)); }
-                        File.Move(path + "\\" + ToRename[i], path + "\\" + ToRename[i].Substring(ToRename[i].LastIndexOf(" - ") + 3));
+                        viewIds.Add(View.Id);
+                    String Filename = doc.Title.Replace(" ","").Replace(".","-") + "-" + View.Title.Replace(":"," -") + ".dwg";
+                        ToRename.Add(Filename);
+                        display = display + Environment.NewLine + View.Title;
+                    }
+                    if (ToRename.Count == 0)
+                    {
+                        TaskDialog.Show("Exit", "No Selection to Export");
+                        return Result.Succeeded;
+                    }
+                    TaskDialog td = new TaskDialog("Exporting DWGs");
+                    td.MainInstruction = ToRename.Count + " Views will be Exported to: " + path ;
+                    if (c_f != 0) { td.MainInstruction = td.MainInstruction + Environment.NewLine + c_f + " Selected item was not a view"; }
+                    td.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
+                    td.VerificationText = "Compatibility mode (Autocad 2007)";
+                    td.ExpandedContent = display;
+                    TaskDialogResult response = td.Show();
+                        if ((response != TaskDialogResult.Cancel) && (response != TaskDialogResult.No))
+                            {
+                    if (td.WasVerificationChecked()) { DwgOptions.FileVersion = ACADVersion.R2007;}
+                    if (!Directory.Exists(path))
+                        { Directory.CreateDirectory(path); }
+                        doc.Export(path, "", viewIds, DwgOptions);
+
+                        for (int i = 0; i < ToRename.Count; i++)
+                        {
+                        string renamed = path + "\\" + ToRename[i].Substring(ToRename[i].LastIndexOf(" - ") + 3);
+                            if (File.Exists(renamed))
+                            { File.Delete(renamed); }
+                            File.Move(path + "\\" + ToRename[i], renamed);
+                        }
                     }
                 }
-            }
                 return Result.Succeeded; 
         }
     }

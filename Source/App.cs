@@ -36,6 +36,7 @@ namespace _ExpApps
     public class StoreExp
     {
         public static List<View> quickViews = new List<View> { null, null, null, null, null, null };
+        public static string level;
         public static Double vrOpt1; public static Double vrOpt2; public static Double vrOpt3;
         public static Double vrOpt4; public static Double vrOpt5; public static Double vrOpt6;
     }
@@ -80,6 +81,7 @@ namespace _ExpApps
             RibbonPanel panel_Annot = a.CreateRibbonPanel("Exp. Add-Ins", "Annotation");
             RibbonPanel panel_Modeling = a.CreateRibbonPanel("Exp. Add-Ins", "Modeling");
             RibbonPanel panel_Spec = a.CreateRibbonPanel("Exp. Add-Ins", "Specific");
+            RibbonPanel panel_Qt = a.CreateRibbonPanel("Exp. Add-Ins", "Quick Tools");
 
             string thisAssemblyPath = Assembly.GetExecutingAssembly().Location;
             string root = thisAssemblyPath.Remove(thisAssemblyPath.Length - 11);
@@ -89,7 +91,7 @@ namespace _ExpApps
             PushButtonData button_AllExport = new PushButtonData("Button_Navis_DWGExport", "Export All", root + "DWGExport.dll", "ExportAll.ExportAll");
             PushButton button_RevPrint = panel_Export.AddItem(new PushButtonData("Button_RevPrint", "Print Revision", root + "DWGExport.dll", "PrintRevision.PrintRevision")) as PushButton;
 
-            button_DWGExport.ToolTip = "Views with 'Export' as Title on Sheet will be exported to .DWG";
+            button_DWGExport.ToolTip = "Selected Views/Sheets will be exported to .DWG. Tip: use Manage Save/Load selection for sets.";
             button_NavisExport.ToolTip = "Views with 'Export' as Title on Sheet will be exported to .NWC";
             button_AllExport.ToolTip = "Views with 'Export' as Title on Sheet will be exported to .DWG and .NWC";
             button_RevPrint.ToolTip = "Select and Print a certain Revision using the current print settings.";
@@ -110,6 +112,13 @@ namespace _ExpApps
             button_ShiftViewRange_Bottom_Up.ToolTip = "Shifts Bottom of View Range by set value - Up.";
             button_ShiftViewRange_Bottom_Down.ToolTip = "Shifts Bottom of View Range by set value - Down.";
             button_SetViewRange.ToolTip = "Sets View Range of active Plan View to Top and Bottom planes of the Section Box used on identically named 3d View.";
+
+            PushButtonData button_TL = new PushButtonData("ToggleLink", "Toggle Links", root + "MultiDWG.dll",
+                "MultiDWG.ToggleLink");
+            PushButtonData button_TPC = new PushButtonData("TogglePC", "Toggle PCs", root + "MultiDWG.dll",
+                "MultiDWG.TogglePC");
+            button_TL.ToolTip = "Toggles visibility of all Links in the active view";
+            button_TPC.ToolTip = "Toggles visibility of all Point Clouds in the active view";
 
             PushButton button_RehostElements = panel_Reelevate.AddItem(new PushButtonData("Button_RehostElements", "Rehost Elements", root + "Rehost Elements.dll",
                 "RehostElements.RehostElements")) as PushButton;
@@ -134,6 +143,7 @@ namespace _ExpApps
                "MultiDWG.ConduitAngle");
             PushButtonData button_DuctId = new PushButtonData("Button_DI", "Duct Id", root + "MultiDWG.dll",
             "MultiDWG.DuctId");
+
             button_MultiDWG.ToolTip = "Specific: Loads all .DWG-s from selected folder. Sets LOD according to filename, temporarily hides medium and high LOD-s.";
             button_CloneMeta.ToolTip = "Specific: Copies Type-MetaData of selected instance into all type of the same family.";
             button_TypeParam.ToolTip = "Specific: Sets all instance parameters in Construction,Dimensions,and Visibility Parameter Groups. Might need to Run Multiple times";
@@ -177,6 +187,11 @@ namespace _ExpApps
               "AnnoTools.Rack");     
             PushButtonData button_Lin = new PushButtonData("Lin", "Linear", root + "AnnoTools.dll",
              "AnnoTools.LinearAnnotation");
+            string versioned = "AnnoTools";
+            if (a.ControlledApplication.VersionName.Contains("2017"))
+                { versioned = "Exp_apps_R17"; }
+            PushButtonData button_MTag = new PushButtonData("MTag", "MultiTag", root + versioned + ".dll",
+             versioned + ".MultiTag");
             PushButtonData button_ManageRefs = new PushButtonData("Button_ManageRefs", "Mng. Ref.Planes", root + "MultiDWG.dll",
              "MultiDWG.ManageRefPlanes");
 
@@ -184,6 +199,7 @@ namespace _ExpApps
             button_Dim2Grid.ToolTip = "Create Dimension referring the selected element's centerlines and Grids.";
             button_Rack.ToolTip = "Create tag for Conduit Rack, listing conduits: left to right \\ top to bottom";
             button_Lin.ToolTip = "Create Dimension for objects with more distance in-between";
+            button_MTag.ToolTip = "Create Tags by Category for multiple selected elements at once";
             button_ManageRefs.ToolTip = "Create Reference Planes from at the origins of 3 selected items, or Delete Ref.Planes";
           
             TextBoxData leftSpaceData = new TextBoxData("Left Space");
@@ -206,6 +222,19 @@ namespace _ExpApps
                 SetTextBox(item, "Placement", ":Place:", "Placement of annotation along the reference line", 60);
             }
 
+            PulldownButtonData QtData = new PulldownButtonData("Quicktools","QuickTools");
+            PulldownButton QtButtonGroup = panel_Qt.AddItem(QtData) as PulldownButton;
+
+            PushButtonData qt1 = new PushButtonData("Filter Verticals", "Filter Vert", root + "MultiDWG.dll","MultiDWG.FindVert");
+            PushButtonData qt2 = new PushButtonData("Filter Round Hosted", "Filter Round Hosted",root + "AnnoTools.dll", "AnnoTools.CheckTag");
+            PushButtonData qt3 = new PushButtonData("Align Identicals", "Align Identicals", root + "AnnoTools.dll", "AnnoTools.Cleansheet");
+            PushButtonData qt4 = new PushButtonData("Replace in Parameter", "Replace in Parameter", root + "MultiDWG.dll", "MultiDWG.ReplaceInParam");
+
+            qt1.ToolTip = "Filters Vertical elements from selection (:Step: controls vertical sensitivity)";
+            qt2.ToolTip = "Filter the selected tags that are hosted to Round duct - (type in :place: for 'Rectangular' filter)";
+            qt3.ToolTip = "Merges selected tags with same content.(:Left: and :Right: controls sensitivity";
+            qt4.ToolTip = "Replaces text in parameter of selection.(:Left: - Parameter name, :Right: - Original, :Start: - Replace)";
+
             string IconsPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Icons\\");
             string[] files = Directory.GetFiles(IconsPath);
 
@@ -216,7 +245,10 @@ namespace _ExpApps
             string im_ins = IconsPath + "Button_Ins.png"; string im_pre = IconsPath + "Button_PrintRev.png";
             string im_pre_sm = IconsPath + "Button_PrintRev_sm.png"; string im_rak = IconsPath + "Button_Rack.png";
             string im_d2g_sm = IconsPath + "Button_Dim2Grid_sm.png"; string im_ref = IconsPath + "Button_Ref.png";
-            string im_lin_sm = IconsPath + "Button_Lin_sm.png";
+            string im_lin_sm = IconsPath + "Button_Lin_sm.png"; string im_mtag = IconsPath + "Button_MTag.png";
+            string im_tl_sm = IconsPath + "Button_TL_sm.png"; string im_tpc_sm = IconsPath + "Button_TPC_sm.png";
+            string im_qt1 = IconsPath + "Button_qt1.png"; string im_qt2 = IconsPath + "Button_qt2.png";
+            string im_qt3 = IconsPath + "Button_qt3.png"; string im_qt4 = IconsPath + "Button_qt4.png";
 
             button_DWGExport.Image = SetImage(im_dwg);
             button_NavisExport.Image = SetImage(im_nwc);
@@ -233,18 +265,33 @@ namespace _ExpApps
             button_Rack.Image = SetImage(im_rak);
             button_Dim2Grid.Image = SetImage(im_d2g_sm);
             button_Lin.Image = SetImage(im_lin_sm);
+            button_MTag.LargeImage = SetImage(im_mtag);
             button_ManageRefs.LargeImage = SetImage(im_ref);
             button_ManageRefs.Image = SetImage(im_ref);
+            button_TL.Image = SetImage(im_tl_sm);
+            button_TPC.Image = SetImage(im_tpc_sm);
+
+            qt1.LargeImage = SetImage(im_qt1);
+            qt2.LargeImage = SetImage(im_qt2);
+            qt3.LargeImage = SetImage(im_qt3);
+            qt4.LargeImage = SetImage(im_qt4);
+
+            QtButtonGroup.AddPushButton(qt1);
+            QtButtonGroup.AddPushButton(qt2);
+            QtButtonGroup.AddPushButton(qt3);
+            QtButtonGroup.AddPushButton(qt4);
 
             ComboBoxData ShiftRange = new ComboBoxData("ShiftRange");
 
             panel_ViewSetup.AddStackedItems(button_ShiftViewRange_Bottom_Up, button_ShiftViewRange_Bottom_Down);
             panel_ViewSetup.AddStackedItems(button_ShiftViewRange_Top_Up, button_ShiftViewRange_Top_Down);
+            panel_ViewSetup.AddStackedItems(button_TL, button_TPC);
             panel_Export.AddStackedItems(button_DWGExport, button_NavisExport, button_AllExport);
             panel_ViewSetup.AddStackedItems(button_SetViewRange,ShiftRange);
             panel_Reelevate.AddStackedItems(button_AlignToTop, button_AlignToBottom,toggle_Insulation);
             panel_Modeling.AddItem(button_ManageRefs);
             panel_Annot.AddStackedItems(button_Dim2Grid,button_Lin, button_Rack);
+            panel_Annot.AddItem(button_MTag);
 
             a.ApplicationClosing += a_ApplicationClosing;
 

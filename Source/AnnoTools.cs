@@ -51,6 +51,161 @@ namespace AnnoTools
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+
+    // Aligns tags in selection if they contain the same text and are close enough.
+    // Exceptions not added.
+    // Uses the same menu values that AnnoTools.RackDim uses.
+
+    public class Cleansheet : IExternalCommand
+    {
+        public Result Execute(
+               ExternalCommandData commandData,
+               ref string message,
+               ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            List<IndependentTag> prevtags = new List<IndependentTag>();
+
+            // Menu Values have to be acquired from Ribbon.
+            RackDim.GetMenuValues(uiapp);
+
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Merge Tags");
+                bool start = true;
+                bool fits = false;
+                XYZ tagpos = new XYZ(0, 0, 0);
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid);
+                    IndependentTag tag = elem as IndependentTag;
+                    if (start)
+                    {
+                        tagpos = tag.TagHeadPosition;
+                        start = false;
+                        prevtags.Add(tag);
+                    }
+                    else
+                    {
+                        fits = false;
+                        foreach (IndependentTag ptag in prevtags)
+                        {
+                            if (fits == false &&
+                                ptag.TagText == tag.TagText &&
+                                Math.Abs(ptag.TagHeadPosition.X - tag.TagHeadPosition.X) < Store.mod_left &&
+                                Math.Abs(ptag.TagHeadPosition.Y - tag.TagHeadPosition.Y) < Store.mod_right)
+                            {
+                                tag.TagHeadPosition = ptag.TagHeadPosition;
+                                fits = true;
+                            }
+                        }
+                        if (!fits)
+                        {
+                            prevtags.Add(tag);
+                        }
+                    }
+                }
+                tx.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class CheckTag : IExternalCommand
+    {
+        public Result Execute(
+               ExternalCommandData commandData,
+               ref string message,
+               ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            RackDim.GetMenuValues(uiapp);
+            string contains = "Round";
+           if (Store.place_ib.Value as string != null)
+            { contains = "Rectangular"; }
+            foreach (ElementId eid in ids)
+            {
+                IndependentTag tag = doc.GetElement(eid) as IndependentTag;
+                string familyname = tag.GetTaggedLocalElement().get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM).AsValueString();
+                if (familyname.Contains(contains))
+                { newsel.Add(eid); }
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select tags");
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class MultiTag : IExternalCommand
+    {
+        public Result Execute(
+               ExternalCommandData commandData,
+               ref string message,
+               ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Create Tags");
+                bool start = true;
+                XYZ tagpos = new XYZ(0, 0, 0);
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid);
+                    Reference tagref = new Reference(elem);
+                    IndependentTag tag = null;
+                    if (elem.Category.Name.Contains("Tags"))
+                    {
+                        tag = elem as IndependentTag;
+                        if (start)
+                        {
+                            tagpos = tag.TagHeadPosition;
+                            start = false;
+                        }
+                        else { tag.TagHeadPosition = tagpos; }
+                    }
+                    else
+                    {
+                        LocationCurve refline = elem.Location as LocationCurve;
+                        tag = IndependentTag.Create(doc, doc.ActiveView.Id, tagref, true, TagMode.TM_ADDBY_CATEGORY, TagOrientation.Horizontal, refline.Curve.Evaluate(0.5, true));
+
+                        if (start)
+                        {
+                            tagpos = tag.TagHeadPosition;
+                            start = false;
+                        }
+                        else { tag.TagHeadPosition = tagpos; }
+                    }
+                }
+                tx.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class RackDim : IExternalCommand
     {
         public static void GetMenuValues(UIApplication uiapp)
@@ -552,6 +707,7 @@ namespace AnnoTools
     [Regeneration(RegenerationOption.Manual)]
     public class UniteDims : IExternalCommand
     {
+        //Not working? Is this any good?
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -638,6 +794,7 @@ namespace AnnoTools
     [Regeneration(RegenerationOption.Manual)]
     public class LinearAnnotation : IExternalCommand
     {
+        //needs grid, and only MEP elements, this way its quite limited
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,

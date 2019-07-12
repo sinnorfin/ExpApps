@@ -29,6 +29,7 @@ using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.ApplicationServices;
 using System.Collections.Generic;
 using System;
+using _ExpApps;
 
 namespace RehostElements
 {
@@ -54,24 +55,40 @@ namespace RehostElements
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Re-Host Elements");
-                View active = doc.ActiveView;
-                ViewPlan viewPlan = active as ViewPlan;
-                if (viewPlan == null)
-                {
-                    TaskDialog.Show("Please select Plan View", "Active view must be a plan view.");
-                    tx.Commit();
-                    return Result.Succeeded;
-                }
-                Parameter associated = active.LookupParameter("Associated Level");
                 FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
                 ICollection<Element> lvlCollection = lvlCollector.OfClass(typeof(Level)).ToElements();
                 foreach (Element level in lvlCollection)
                 {
                     Level lvl = level as Level;
-                    if (lvl.Name == associated.AsString())
+                    if (level.Name == StoreExp.level)
                     {
                         targetLevel = lvl.Id;
                         targetLevelElev = lvl.Elevation;
+                    }
+                    else if (StoreExp.level == "Active PlanView")
+                    {
+                        targetLevel = null;
+                    }
+                }
+                if (targetLevel == null)
+                {
+                    View active = doc.ActiveView;
+                    ViewPlan viewPlan = active as ViewPlan;
+                    if (viewPlan == null)
+                    {
+                        TaskDialog.Show("Please select Plan View or set level in QuickViews", "Level not selected, or Active view must be a plan view.");
+                        tx.Commit();
+                        return Result.Succeeded;
+                    }
+                    Parameter associated = active.LookupParameter("Associated Level");
+                    foreach (Element level in lvlCollection)
+                    {
+                        Level lvl = level as Level;
+                        if (lvl.Name == associated.AsString())
+                        {
+                            targetLevel = lvl.Id;
+                            targetLevelElev = lvl.Elevation;
+                        }
                     }
                 }
                 if (SelectedObjs != null)
