@@ -33,6 +33,8 @@ using System.Linq;
 
 namespace Progress
 {
+    // May be developed into a clash-free mode
+    // Probably consumes too much resources
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class Progress : IExternalCommand

@@ -56,7 +56,7 @@ namespace PrintRevision
             RevDD.Text = "Available Revisions";
             
             foreach (Revision revis in this.revList)
-            { RevDD.Items.Add("Revision " + revis.RevisionNumber); }
+            { RevDD.Items.Add("Revision " + revis.SequenceNumber); }
             RevDD.SelectedIndex = 0;
             this.Controls.Add(RevDD);
             this.Controls.Add(ok_button);
@@ -114,12 +114,11 @@ namespace PrintRevision
                     }
                 }
             }
-
             PrintManager printManager = doc.PrintManager;
             printManager.PrintRange = PrintRange.Select;
             ViewSheetSetting viewSheetSetting = printManager.ViewSheetSetting;
             viewSheetSetting.CurrentViewSheetSet.Views = FilteredSheets;
-            String sheetSetName ="Rev "+targetRev.RevisionNumber;
+            String sheetSetName ="Rev "+targetRev.SequenceNumber;
             using (Transaction t = new Transaction(doc, "Creating PrintSet"))
             {
                 t.Start();

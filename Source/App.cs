@@ -79,7 +79,7 @@ namespace _ExpApps
             panel_ViewSetup = a.CreateRibbonPanel("Exp. Add-Ins", "View Tools");
             RibbonPanel panel_Reelevate = a.CreateRibbonPanel("Exp. Add-Ins", "Re-Elevate");
             RibbonPanel panel_Annot = a.CreateRibbonPanel("Exp. Add-Ins", "Annotation");
-            RibbonPanel panel_Modeling = a.CreateRibbonPanel("Exp. Add-Ins", "Modeling");
+            RibbonPanel panel_Managers = a.CreateRibbonPanel("Exp. Add-Ins", "Managers");
             RibbonPanel panel_Spec = a.CreateRibbonPanel("Exp. Add-Ins", "Specific");
             RibbonPanel panel_Qt = a.CreateRibbonPanel("Exp. Add-Ins", "Quick Tools");
 
@@ -194,6 +194,8 @@ namespace _ExpApps
              versioned + ".MultiTag");
             PushButtonData button_ManageRefs = new PushButtonData("Button_ManageRefs", "Mng. Ref.Planes", root + "MultiDWG.dll",
              "MultiDWG.ManageRefPlanes");
+            PushButtonData button_ManageRevs = new PushButtonData("Button_ManageRevs", "Mng. Revisions", root + "Revision_Editor.dll",
+             "Revision_Editor.Revision_Editor");
 
             button_SetupQV.ToolTip = "Setup quick access to views.";
             button_Dim2Grid.ToolTip = "Create Dimension referring the selected element's centerlines and Grids.";
@@ -201,7 +203,8 @@ namespace _ExpApps
             button_Lin.ToolTip = "Create Dimension for objects with more distance in-between";
             button_MTag.ToolTip = "Create Tags by Category for multiple selected elements at once";
             button_ManageRefs.ToolTip = "Create Reference Planes from at the origins of 3 selected items, or Delete Ref.Planes";
-          
+            button_ManageRevs.ToolTip = "Manage Revisions";
+
             TextBoxData leftSpaceData = new TextBoxData("Left Space");
             TextBoxData rightSpaceData = new TextBoxData("Right Space");
             TextBoxData firstYData = new TextBoxData("First Y");
@@ -249,6 +252,7 @@ namespace _ExpApps
             string im_tl_sm = IconsPath + "Button_TL_sm.png"; string im_tpc_sm = IconsPath + "Button_TPC_sm.png";
             string im_qt1 = IconsPath + "Button_qt1.png"; string im_qt2 = IconsPath + "Button_qt2.png";
             string im_qt3 = IconsPath + "Button_qt3.png"; string im_qt4 = IconsPath + "Button_qt4.png";
+            string im_rev = IconsPath + "Button_Rev.png";
 
             button_DWGExport.Image = SetImage(im_dwg);
             button_NavisExport.Image = SetImage(im_nwc);
@@ -268,6 +272,8 @@ namespace _ExpApps
             button_MTag.LargeImage = SetImage(im_mtag);
             button_ManageRefs.LargeImage = SetImage(im_ref);
             button_ManageRefs.Image = SetImage(im_ref);
+            button_ManageRevs.LargeImage = SetImage(im_rev);
+            button_ManageRevs.Image = SetImage(im_rev);
             button_TL.Image = SetImage(im_tl_sm);
             button_TPC.Image = SetImage(im_tpc_sm);
 
@@ -289,7 +295,7 @@ namespace _ExpApps
             panel_Export.AddStackedItems(button_DWGExport, button_NavisExport, button_AllExport);
             panel_ViewSetup.AddStackedItems(button_SetViewRange,ShiftRange);
             panel_Reelevate.AddStackedItems(button_AlignToTop, button_AlignToBottom,toggle_Insulation);
-            panel_Modeling.AddItem(button_ManageRefs);
+            panel_Managers.AddItem(button_ManageRefs); panel_Managers.AddItem(button_ManageRevs);
             panel_Annot.AddStackedItems(button_Dim2Grid,button_Lin, button_Rack);
             panel_Annot.AddItem(button_MTag);
 
