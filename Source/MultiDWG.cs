@@ -39,118 +39,14 @@ namespace MultiDWG
     public static class Store
         //For storing values that are updated from the Ribbon
     {
-        public static Double mod_stepy = 1;
-        public static TextBox stepy_ib = null;
-        public static Double mod_left = 1;
-        public static TextBox left_ib = null;
-        public static Double mod_right = 1;
-        public static TextBox right_ib = null;
-        public static Double mod_firsty = 1;
-        public static TextBox firsty_ib = null;
-    }
-
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class DuctId : IExternalCommand
-    {
-        private string Correct(string system)
-            //Searches String for varies typos, corrects to preset standard
-        {
-            string abr = null;
-            if (system.Contains("EXH")) { abr = "EA"; }
-            else if (system.Contains("RET")) { abr = "RA"; }
-            else if (system.Contains("SUP")) { abr = "SA"; }
-            else if (system.Contains("FLUE")) { abr = "F"; }
-            else if (system.Contains("CAI")) { abr = "CAI"; }
-            else { abr = system; }
-            return abr;
-        }
-        private List<List<Element>> SortParam_String(List<List<Element>> toSort, string param)
-        {
-            //Sorts by String
-            List<List<Element>> Sorted = new List<List<Element>>();
-            foreach (List<Element> sortable in toSort)
-            {
-                List<List<Element>> Sortation = new List<List<Element>>();
-                Sortation = sortable.GroupBy(s => s.LookupParameter(param).AsString()).Select(x => x.ToList()).ToList();
-                Sorted.AddRange(Sortation);
-            }
-            return Sorted;
-        }
-        private List<List<Element>> SortParam_VString(List<List<Element>> toSort, string param)
-        {
-            //Sorts by ValueString
-            //Should be merged to the above
-            //Should be standardized sortation mechanism
-            List<List<Element>> Sorted = new List<List<Element>>();
-            foreach (List<Element> sortable in toSort)
-            {
-                List<List<Element>> Sortation = new List<List<Element>>();
-                Sortation = sortable.GroupBy(s => s.LookupParameter(param).AsValueString()).Select(x => x.ToList()).ToList();
-                Sorted.AddRange(Sortation);
-            }
-            return Sorted;
-        }
-        public Result Execute(
-            ExternalCommandData commandData,
-            ref string message,
-            ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
-            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            List<Element> Ducts = new List<Element>();
-            List<List<Element>> Systems = new List<List<Element>>();
-            // Could be standardised, replace variables with settings from inside the program
-            foreach (ElementId eid in ids)
-            {
-                Element elem = doc.GetElement(eid);
-                //FamilyInstance fami = elem as FamilyInstance;
-                //MechanicalFitting mep = fami.MEPModel as MechanicalFitting;
-                //if (mep.PartType == PartType.Elbow)
-                //{  }
-                if (elem.Category.Name == "Ducts") // Change elem.Category.Name = "" as Category requires
-                {
-                    Ducts.Add(elem);
-                }
-            }
-            Systems = Ducts.GroupBy(s => s.LookupParameter("System Abbreviation").AsString()).Select(x => x.ToList()).ToList();
-            List<List<Element>> Family = SortParam_String(Systems, "Family Name");
-            List<List<Element>> Sizes = SortParam_String(Family,"Size");
-            List<List<Element>> Length = SortParam_VString(Sizes, "Length");
-            // Add sortation as needed, refer previous, replace parameter name as needed
-            //List<List<Element>> Off1 = SortParam_VString(Length, "Actual Transition Offset 1");
-            //List<List<Element>> Off2 = SortParam_VString(Off1, "Actual Transition Offset 2");
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Duct ID");
-                Int32 count = -1; // set to start ID number -1
-                List<string> SortSys = new List<string>();
-                foreach (List<Element> listElem in Length)  // replace 'in ...' with last sorted list
-                {
-                    if (!SortSys.Contains(Correct(listElem[0].LookupParameter("System Abbreviation").AsString())))
-                    {
-                        SortSys.Add(Correct(listElem[0].LookupParameter("System Abbreviation").AsString()));
-                        count = 0;
-                    }
-                    else
-                    {
-                        count += 1;
-                    }
-                    foreach (Element elem in listElem)
-                    {
-                        string abr = Correct(elem.LookupParameter("System Abbreviation").AsString());
-                        elem.LookupParameter("Manual ID").Set(abr + "-" + count.ToString("000")); // Change format accordingly
-                    }
-                }
-                trans.Commit();
-            }
-            TaskDialog.Show("Created Manual IDs", "Sys:" + Systems.Count.ToString() + " Size:" + Sizes.Count.ToString() + " Len:" + Length.Count.ToString());
-            return Result.Succeeded;
-        }
+        public static Double menu_1 = 1;
+        public static TextBox menu_1_Box = null;
+        public static Double menu_A = 1;
+        public static TextBox menu_A_Box = null;
+        public static Double menu_B = 1;
+        public static TextBox menu_B_Box = null;
+        public static Double menu_C = 1;
+        public static TextBox menu_C_Box = null;
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -216,73 +112,6 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class PlaceAccessory : IExternalCommand
-    {
-        // Not working, Accessory needs to be aligned
-        // pipe has to manually recreated and connected back on both ends
-        // Pipe has to connect to previous connector + new connector on fitting
-        public Result Execute(
-            ExternalCommandData commandData,
-            ref string message,
-            ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
-            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            FilteredElementCollector collector = new FilteredElementCollector(doc);
-            ICollection<Element> collection = collector.OfClass(typeof(FamilySymbol))
-                                                       .OfCategory(BuiltInCategory.OST_PipeAccessory)
-                                                       .ToElements();
-            IEnumerator<Element> symbolItor = collection.GetEnumerator();
-            symbolItor.MoveNext();
-            using (Transaction tx = new Transaction(doc))
-            {
-                FamilyInstance instance = null;
-                LocationCurve pipeloccurve = null;
-                tx.Start("Place Accesory on pipe");
-                foreach (ElementId eid in ids)
-                {
-                    Element elem = doc.GetElement(eid);
-                    if (elem.Category.Name == "Pipes")
-                    {
-                        MEPCurve pipecurve = elem as MEPCurve;
-                            pipeloccurve = elem.Location as LocationCurve;
-                            Level level = pipecurve.ReferenceLevel as Level;
-                            FamilySymbol symbol = symbolItor.Current as FamilySymbol;
-
-                            XYZ location = pipeloccurve.Curve.Evaluate(0.5, true);
-                            if (location == null) { TaskDialog.Show("error", "location null"); }
-                            if (symbol == null) { TaskDialog.Show("error", "symbol null"); }
-                            instance = doc.Create.NewFamilyInstance(location, symbol, level, level, StructuralType.NonStructural);
-                            
-                    }
-                }
-                tx.Commit();
-                XYZ ac_refline = XYZ.Zero;
-                Reference instaref = instance.GetReferences(FamilyInstanceReferenceType.CenterLeftRight).FirstOrDefault();
-                using (Transaction t = new Transaction(doc))
-                {
-                    t.Start("Create Temporary Sketch Plane");
-                    SketchPlane sk = SketchPlane.Create(doc, instaref);
-                    if (null != sk)
-                    {
-                        Plane pl = sk.GetPlane();
-                        ac_refline = pl.Normal;
-                    }
-                    t.RollBack();
-                }
-                Line pi_refline = pipeloccurve.Curve as Line;
-                if (ac_refline != null) { TaskDialog.Show("Accessory Direction:", ac_refline.ToString()); }
-                TaskDialog.Show("Pipe Direction:", pi_refline.Direction.ToString());
-            }
-              return Result.Succeeded;
-        }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
     public class ConduitAngle : IExternalCommand
     {
         // Adding up angles of conduits and checking if against value
@@ -301,10 +130,10 @@ namespace MultiDWG
             foreach (ElementId eid in ids)
             { Element elem = doc.GetElement(eid);
                 if (elem.Category.Name == "Conduit Fittings")
-                { Double AddAngle = 0;
+                {
                     string anglestring = elem.LookupParameter("Angle").AsValueString();
                     string formatted = anglestring.Remove(anglestring.Length-4, 4);
-                    Double.TryParse(formatted,out AddAngle);
+                    Double.TryParse(formatted,out double AddAngle);
                     TotalAngle += AddAngle;
                     }
             } 
@@ -371,7 +200,7 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class MultiDWG : IExternalCommand
     {
-        //Loads multiple DWG at once
+        //Loads all DWG from a directory at once
         //adds DWS-s to detail level based on name
         //hides med and high details levels
         public Result Execute(
@@ -389,41 +218,40 @@ namespace MultiDWG
                 tx.Start("Load Multiple DWGs");
                     Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
                     Nullable<bool> result = dlg.ShowDialog();
-                    if (result == true)
+                if (result == true)
+                {
+                    DWGImportOptions ImportOptions = new DWGImportOptions
                     {
-                        DWGImportOptions ImportOptions = new DWGImportOptions();
-                        ImportOptions.Placement = ImportPlacement.Origin;
-                        ImportOptions.ColorMode = ImportColorMode.BlackAndWhite;
-                        string filepath = dlg.FileName;
-                        filepath = filepath.Remove(dlg.FileName.LastIndexOf(@"\"));
-                        Array files = System.IO.Directory.GetFiles(filepath);
-                        foreach (string e in files)
+                        Placement = ImportPlacement.Origin,
+                        ColorMode = ImportColorMode.BlackAndWhite
+                    };
+                    string filepath = dlg.FileName;
+                    filepath = filepath.Remove(dlg.FileName.LastIndexOf(@"\"));
+                    Array files = System.IO.Directory.GetFiles(filepath);
+                    foreach (string e in files)
+                    {
+                        doc.Import(e, ImportOptions, doc.ActiveView, out ElementId elementid);
+                        Element elem = doc.GetElement(elementid);
+                        Parameter LOD = elem.get_Parameter(BuiltInParameter.GEOM_VISIBILITY_PARAM);
+                        int LODvis = LOD.AsInteger();
+                        if (e.Contains("low") || (e.Contains("LOW")))
                         {
-                            ElementId elementid = null;
-                            doc.Import(e, ImportOptions, doc.ActiveView, out elementid);
-                            Element elem = doc.GetElement(elementid);
-                            Parameter LOD = elem.get_Parameter(BuiltInParameter.GEOM_VISIBILITY_PARAM);
-                            int LODvis = LOD.AsInteger();
-                            if (e.Contains("low") || (e.Contains("LOW")))
-                            {
-                                LODvis = LODvis & ~(1 << 14);
-                                LODvis = LODvis & ~(1 << 15);
-                            }
-                            else if (e.Contains("med") || (e.Contains("MED")))
-                            {
-                                LODvis = LODvis & ~(1 << 13);
-                                LODvis = LODvis & ~(1 << 15);
-                                doc.ActiveView.HideElementTemporary(elementid);
-                            }
-                            else if (e.Contains("fine") || (e.Contains("FINE")))
-                            {
-                                LODvis = LODvis & ~(1 << 13);
-                                LODvis = LODvis & ~(1 << 14);
-                                doc.ActiveView.HideElementTemporary(elementid);
-                            }
-                            LOD.Set(LODvis);
+                            LODvis = LODvis & ~(1 << 14);
+                            LODvis = LODvis & ~(1 << 15);
                         }
+                        else if (e.Contains("med") || (e.Contains("MED")))
+                        {
+                            LODvis = LODvis & ~(1 << 13);
+                            LODvis = LODvis & ~(1 << 15);
+                        }
+                        else if (e.Contains("fine") || (e.Contains("FINE")))
+                        {
+                            LODvis = LODvis & ~(1 << 13);
+                            LODvis = LODvis & ~(1 << 14);
+                        }
+                        LOD.Set(LODvis);
                     }
+                }
                 tx.Commit();
             }
             return Result.Succeeded;
@@ -431,10 +259,10 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class SwapMultiDWG : IExternalCommand
+    public class MemoryAdd : IExternalCommand
     {
-        // for swapping existing dwg-s with loading
-        // probably decrepit
+        //Stores Selection
+
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -442,73 +270,64 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            //ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            //Options geOpt = new Options();
-            //Element style = doc.GetElement(ids.FirstOrDefault());
-            //TaskDialog.Show("asd", style.Name);
-            //ElementId grap = style.get_Geometry(geOpt).GraphicsStyleId;
-            using (Transaction tx = new Transaction(doc))
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = _ExpApps.StoreExp.SelectionMemory;
+            using (Transaction trans = new Transaction(doc))
             {
-                List<Element> imports = new FilteredElementCollector(doc).OfClass(typeof(ImportInstance)).ToList();
-                string importName = doc.PathName.Remove(doc.PathName.Length-doc.Title.Length-16)+"DWGs\\";
-                //TaskDialog.Show("PATH", importName);
-                tx.Start("Swap Multiple DWGs");
-                foreach (Element elem in imports)
+                trans.Start("Store Selection in Memory");
+                foreach (ElementId eid in ids)
                 {
-                //    GeometryElement impi = elem.get_Geometry(geOpt);
-                //    foreach (GeometryInstance geoInst in impi)
-                //    {
-                //        Curve curve = null;
-                //        foreach (var item in geoInst.GetSymbolGeometry())
-                //        {
-                //            curve = item as Curve;
-                //            if (curve != null)
-                //            { curve.SetGraphicsStyleId(grap);
-                //                //TaskDialog.Show("A", "A");
-                //            }
-                //        }
-                //    }
-                //    //{ curve.SetGraphicsStyleId(grap); }                  
-                  doc.Delete(elem.Id);
-                }
-                Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-                dlg.FileName = importName;
-                    DWGImportOptions ImportOptions = new DWGImportOptions();
-                    ImportOptions.Placement = ImportPlacement.Origin;
-                    ImportOptions.ColorMode = ImportColorMode.BlackAndWhite;
-                    string filepath = dlg.FileName;
-                    filepath = filepath.Remove(dlg.FileName.LastIndexOf(@"\"));
-                    Array files = System.IO.Directory.GetFiles(filepath);
-                    foreach (string e in files)
+                    Element elem = doc.GetElement(eid) as Element;
+                    try
                     {
-                        ElementId elementid = null;
-                        doc.Import(e, ImportOptions, doc.ActiveView, out elementid);
-                        Element elem = doc.GetElement(elementid);
-                        Parameter LOD = elem.get_Parameter(BuiltInParameter.GEOM_VISIBILITY_PARAM);
-                        int LODvis = LOD.AsInteger();
-                       if (e.Contains("low") || (e.Contains("LOW")))
-                        {
-                           LODvis = LODvis & ~(1 << 14);
-                            LODvis = LODvis & ~(1 << 15);
-                        }
-                        else if (e.Contains("med") || (e.Contains("MED")))
-                        {
-                            LODvis = LODvis & ~(1 << 13);
-                            LODvis = LODvis & ~(1 << 15);
-                            doc.ActiveView.HideElementTemporary(elementid);
-                        }
-                        else if (e.Contains("fine") || (e.Contains("FINE")))
-                        {
-                            LODvis = LODvis & ~(1 << 13);
-                            LODvis = LODvis & ~(1 << 14);
-                            doc.ActiveView.HideElementTemporary(elementid);
-                        }
-                        LOD.Set(LODvis);
+                        newsel.Add(eid);
                     }
-                tx.Commit();
+                    catch {}
+                }
+                _ExpApps.StoreExp.SelectionMemory = newsel;
+                trans.Commit();
             }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class MemorySel : IExternalCommand
+    {
+        //Selects stored Selection
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            uidoc.Selection.SetElementIds(_ExpApps.StoreExp.SelectionMemory);
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class MemoryDel : IExternalCommand
+    {
+        //Selects stored Selection
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            _ExpApps.StoreExp.SelectionMemory = new List<ElementId>();
             return Result.Succeeded;
         }
     }
@@ -535,20 +354,483 @@ namespace MultiDWG
             {
                 trans.Start("Replace in Parameter");
                 double c = 0;
+                double x = 0;
                 foreach (ElementId eid in ids)
                     {
                         Element elem = doc.GetElement(eid) as Element;
-                        Parameter para = elem.LookupParameter(Store.left_ib.Value.ToString()) as Parameter;
-                        string original = para.AsString();
-                        if (original != null)
+                        Parameter para;
+                        try
                         {
-                            para.Set(original.Replace(Store.right_ib.Value.ToString(), Store.firsty_ib.Value.ToString()));
-                            if (para.AsString() != original) { c += 1; newsel.Add(eid); }
+                            para = elem.LookupParameter(Store.menu_A_Box.Value.ToString()) as Parameter;
+                            string original = para.AsString();
+                            if (Store.menu_B_Box.Value.ToString() == "*add")
+                            { para.Set(original + Store.menu_C_Box.Value.ToString()); }
+                            else if (Store.menu_B_Box.Value.ToString() == "add*")
+                            { para.Set(Store.menu_C_Box.Value.ToString() + original); }
+
+                            {para.Set(original.Replace(Store.menu_B_Box.Value.ToString(), Store.menu_C_Box.Value.ToString()));}
+                            if (para.AsString() != original)
+                            {
+                                c += 1; newsel.Add(eid);
+                            }
                         }
+                        catch { x += 1; }
                     }
                 trans.Commit();
                 uidoc.Selection.SetElementIds(newsel);
-                TaskDialog.Show("Result", "Replaced: " + Store.right_ib.Value.ToString() + " to: " + Store.firsty_ib.Value.ToString() + " in: " + c.ToString() + " elements");
+                string text = "Replaced '" +  Store.menu_B_Box.Value.ToString() 
+                              + "' to '" + Store.menu_C_Box.Value.ToString() 
+                              + "' in " + c.ToString() + " elements";
+                if (c == 0) { text = "No replacement occurred"; }
+                if (x > 0) { text += Environment.NewLine + "No such parameter: " + x.ToString(); }
+                TaskDialog.Show("Result", text);
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class DuplicateSheets : IExternalCommand
+    {
+        //Replaces text in a parameter of selected elements
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+            List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
+            FamilySymbol fs = new FilteredElementCollector(doc)
+           .OfClass(typeof(FamilySymbol))
+           .OfCategory(BuiltInCategory.OST_TitleBlocks)
+           .FirstOrDefault() as FamilySymbol;
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Duplicate Sheets");
+                foreach (ElementId eid in ids)
+                {
+                    ViewSheet sheet = doc.GetElement(eid) as ViewSheet;
+                    ViewSheet newsheet = ViewSheet.Create(doc, fs.Id);
+                    string num_suffix = "-New";
+                    string name_suffix = " - Duplication";
+                    if (Store.menu_A_Box.Value != null)
+                    {
+                        if (Store.menu_A_Box.Value.ToString() != "")
+                        { num_suffix = Store.menu_A_Box.Value.ToString(); }
+                    }
+                    if (Store.menu_B_Box.Value != null)
+                    {
+                        if (Store.menu_B_Box.Value.ToString() != "")
+                        {
+                            newsheet.Name = sheet.Name + Store.menu_B_Box.Value.ToString();
+                        }
+                    }
+                    //FindVert.GetMenuValue(uiapp);
+                    try
+                    {
+                        if (Store.menu_A_Box.Value.ToString() != "*auto*")
+                        {
+                            newsheet.SheetNumber = sheet.SheetNumber + num_suffix; 
+                        }
+                    }
+                    catch
+                    {
+                        TaskDialog error = new TaskDialog("Error");
+                        error.MainInstruction = "Sheet Number already exists."
+                            + Environment.NewLine + "Create as: " + Environment.NewLine
+                            + newsheet.SheetNumber + "-" + newsheet.Name + " ?";
+                        error.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
+                        TaskDialogResult response = error.Show();
+                        if (response == TaskDialogResult.No)
+                        {
+                            doc.Delete(newsheet.Id);
+                            trans.Commit();
+                            return Result.Succeeded;
+                        }
+                    } 
+
+                    // //Copy custom parameters from sheet to duplicate Specific to project
+
+                    //Parameter para = newsheet.LookupParameter("MOD_DESCRIPTION_A");
+                    //para.Set(sheet.LookupParameter("MOD_DESCRIPTION_A").AsString());
+
+                    // //End of project specific
+
+                    ICollection<ElementId> delete = new List<ElementId>();
+                    foreach (Element e in new FilteredElementCollector(doc).OwnedByView(newsheet.Id))
+                    {
+                        delete.Add(e.Id);
+                    }
+                    doc.Delete(delete);
+                    ICollection<ElementId> copy = new List<ElementId>();
+                    IList<Element> ElementsOnSheet = new List<Element>();
+                    foreach (Element e in new FilteredElementCollector(doc).OwnedByView(sheet.Id))
+                    {
+                        ElementsOnSheet.Add(e);
+                    }
+                    foreach (Element el in ElementsOnSheet)
+                    {
+                       if (el is FamilyInstance)
+                        {
+                            copy.Add(el.Id);
+                        }
+                    }
+                    foreach (ElementId portid in sheet.GetAllViewports())
+                    {
+                        ViewDuplicateOption d_Option = ViewDuplicateOption.WithDetailing;
+                        if (Store.menu_C_Box.Value != null)
+                        {
+                            if (Store.menu_C_Box.Value.ToString() != "")
+                            {
+                                d_Option = ViewDuplicateOption.AsDependent;
+                            }
+                            if (Store.menu_C_Box.Value.ToString() == "E")
+                            {
+                                d_Option = ViewDuplicateOption.Duplicate;
+                            }
+                        }
+                            Viewport vp = doc.GetElement(portid) as Viewport;
+                        List<ElementId> newlist = new List<ElementId>();
+                        Element viewelem = doc.GetElement(vp.ViewId);
+                        View view = viewelem as View;
+                        if (view.Title.Contains("Legend"))
+                        {
+                            newlist.Add(view.Id);
+                        }
+                        else
+                        { View dview = doc.GetElement(view.Duplicate(d_Option)) as View;
+                          newlist.Add(dview.Id);
+                        }
+                        newlist.Add(vp.Id);
+                        newlist.Add(newsheet.Id);
+                        sheetsandview.Add(newlist);
+                    }
+                    View from = sheet as View;
+                    View to = newsheet as View;
+                    CopyPasteOptions cp = new CopyPasteOptions();
+                    ElementTransformUtils.CopyElements(from,copy,to,null,cp);
+                }
+                trans.Commit();
+            }
+            using (Transaction trans2 = new Transaction(doc))
+            {
+                trans2.Start("place view");
+                    foreach (List<ElementId> list in sheetsandview)
+                    { Viewport vp = doc.GetElement(list[1]) as Viewport;
+                      Viewport newvp = Viewport.Create(doc,list[2],list[0], vp.GetBoxCenter());
+                    }
+                trans2.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SheetForLevel : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+            List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
+            FamilySymbol fs = new FilteredElementCollector(doc)
+           .OfClass(typeof(FamilySymbol))
+           .OfCategory(BuiltInCategory.OST_TitleBlocks)
+           .FirstOrDefault() as FamilySymbol;
+            List<Level> allLevels = new List<Level>();
+            foreach (Level level in new FilteredElementCollector(doc).OfClass(typeof(Level)))
+            {
+                allLevels.Add(level);
+            }
+            Double distance = allLevels[1].Elevation - allLevels[0].Elevation;
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Sheets for levels");
+                foreach (ElementId eid in ids)
+                {
+                    ViewSheet sheet = doc.GetElement(eid) as ViewSheet;
+                    ViewSheet newsheet = ViewSheet.Create(doc, fs.Id);
+                    string num_suffix = "-New";
+                    string name_suffix = " - Duplication";
+                    if (Store.menu_A_Box.Value != null)
+                    {
+                        if (Store.menu_A_Box.Value.ToString() != "")
+                        { num_suffix = Store.menu_A_Box.Value.ToString(); }
+                    }
+                    if (Store.menu_B_Box.Value != null)
+                    {
+                        if (Store.menu_B_Box.Value.ToString() != "")
+                        {
+                            newsheet.Name = sheet.Name + Store.menu_B_Box.Value.ToString();
+                        }
+                    }
+                    try
+                    {
+                        if (Store.menu_A_Box.Value.ToString() != "*auto*")
+                        {
+                            newsheet.SheetNumber = sheet.SheetNumber + num_suffix;
+                        }
+                    }
+                    catch
+                    {
+                        TaskDialog error = new TaskDialog("Error");
+                        error.MainInstruction = "Sheet Number already exists."
+                            + Environment.NewLine + "Create as: " + Environment.NewLine
+                            + newsheet.SheetNumber + "-" + newsheet.Name + " ?";
+                        error.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
+                        TaskDialogResult response = error.Show();
+                        if (response == TaskDialogResult.No)
+                        {
+                            doc.Delete(newsheet.Id);
+                            trans.Commit();
+                            return Result.Succeeded;
+                        }
+                    }
+
+                    // //Copy custom parameters from sheet to duplicate Specific to project
+
+                    //Parameter para = newsheet.LookupParameter("MOD_DESCRIPTION_A");
+                    //para.Set(sheet.LookupParameter("MOD_DESCRIPTION_A").AsString());
+
+                    // //End of project specific
+
+                    ICollection<ElementId> delete = new List<ElementId>();
+                    foreach (Element e in new FilteredElementCollector(doc).OwnedByView(newsheet.Id))
+                    {
+                        delete.Add(e.Id);
+                    }
+                    doc.Delete(delete);
+                    ICollection<ElementId> copy = new List<ElementId>();
+                    IList<Element> ElementsOnSheet = new List<Element>();
+                    foreach (Element e in new FilteredElementCollector(doc).OwnedByView(sheet.Id))
+                    {
+                        ElementsOnSheet.Add(e);
+                    }
+                    foreach (Element el in ElementsOnSheet)
+                    {
+                        if (el is FamilyInstance)
+                        {
+                            copy.Add(el.Id);
+                        }
+                    }
+                    foreach (ElementId portid in sheet.GetAllViewports())
+                    {
+                        ViewDuplicateOption d_Option = ViewDuplicateOption.WithDetailing;
+                        if (Store.menu_C_Box.Value != null)
+                        {
+                            if (Store.menu_C_Box.Value.ToString() != "")
+                            {
+                                d_Option = ViewDuplicateOption.AsDependent;
+                            }
+                            if (Store.menu_C_Box.Value.ToString() == "E")
+                            {
+                                d_Option = ViewDuplicateOption.Duplicate;
+                            }
+                        }
+                        Viewport vp = doc.GetElement(portid) as Viewport;
+                        List<ElementId> newlist = new List<ElementId>();
+                        Element viewelem = doc.GetElement(vp.ViewId);
+                        View view = viewelem as View;
+                        if (view.Title.Contains("Legend"))
+                        {
+                            newlist.Add(view.Id);
+                        }
+                        if (view.ViewType == ViewType.Section)
+                        {
+                            View dview = doc.GetElement(view.Duplicate(d_Option)) as View;
+                            BoundingBoxXYZ cropregion = dview.CropBox;
+                            XYZ cropmin = cropregion.Min;
+                            XYZ cropmax = cropregion.Max;
+                            XYZ diff = new XYZ(0, distance, 0);
+                            XYZ newcropmin = cropmin.Add(diff);
+                            XYZ newcropmax = cropmax.Add(diff);
+                            cropregion.Max = newcropmax;
+                            cropregion.Min = newcropmin;
+                            dview.CropBox = cropregion; 
+                            newlist.Add(dview.Id);
+                        }
+                        if (view.ViewType == ViewType.ThreeD)
+                        {
+                            View3D dview = doc.GetElement(view.Duplicate(d_Option)) as View3D;
+                            BoundingBoxXYZ cropregion = dview.CropBox;
+                            BoundingBoxXYZ sectionbox = dview.GetSectionBox();
+                            XYZ cropmin = cropregion.Min;
+                            XYZ cropmax = cropregion.Max;
+                            XYZ diff = new XYZ(0, distance, 0);
+                            XYZ newcropmin = cropmin.Add(diff);
+                            XYZ newcropmax = cropmax.Add(diff);
+                            cropregion.Max = newcropmax;
+                            cropregion.Min = newcropmin;
+                            dview.CropBox = cropregion;
+
+                            XYZ scropmin = sectionbox.Min;
+                            XYZ scropmax = sectionbox.Max;
+                            XYZ sdiff = new XYZ(0, 0, distance);
+                            XYZ newscropmin = scropmin.Add(sdiff);
+                            XYZ newscropmax = scropmax.Add(sdiff);
+                            sectionbox.Max = newscropmax;
+                            sectionbox.Min = newscropmin;
+                            dview.SetSectionBox(sectionbox);
+                            newlist.Add(dview.Id);
+                        }
+                        if (view.ViewType == ViewType.FloorPlan || view.ViewType == ViewType.CeilingPlan)
+                        {
+                            int count = 0;
+                            Level currentLevel = view.GenLevel;
+                            foreach (Level level in allLevels) 
+                            {
+                                if (level.Name == currentLevel.Name)
+                                { break; }
+                                else { count++; }
+                            }
+                            Level nextlevel = allLevels[count+1];
+                            View newview = ViewPlan.Create(doc,view.GetTypeId(),nextlevel.Id);
+                            newview.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).Set(view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId());
+                            //newview.CropBox = view.CropBox;
+                            newview.ViewTemplateId = view.ViewTemplateId;
+                            newlist.Add(newview.Id);
+                        }
+                        newlist.Add(vp.Id);
+                        newlist.Add(newsheet.Id);
+                        sheetsandview.Add(newlist);
+                    }
+                    View from = sheet as View;
+                    View to = newsheet as View;
+                    CopyPasteOptions cp = new CopyPasteOptions();
+                    ElementTransformUtils.CopyElements(from, copy, to, null, cp);
+                }
+                trans.Commit();
+            }
+            using (Transaction trans2 = new Transaction(doc))
+            {
+                trans2.Start("place view");
+                foreach (List<ElementId> list in sheetsandview)
+                {
+                    Viewport vp = doc.GetElement(list[1]) as Viewport;
+                    Viewport newvp = Viewport.Create(doc, list[2], list[0], vp.GetBoxCenter());
+                    newvp.Rotation = vp.Rotation;
+                    newvp.SetBoxCenter(vp.GetBoxCenter());
+                    newvp.ChangeTypeId(vp.GetTypeId());
+                }
+                trans2.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class Rotatesheet : IExternalCommand
+    {
+        //Rotates selected sheet clockwise
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            //FindVert.GetMenuValue(uiapp);
+            List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
+            
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Rotate Sheets");
+                foreach (ElementId eid in ids)
+                {
+                    ViewSheet sheet = doc.GetElement(eid) as ViewSheet;
+                    IList<Element> ElementsOnSheet = new List<Element>();
+                    foreach (Element e in new FilteredElementCollector(doc).OwnedByView(sheet.Id))
+                    {
+                        ElementsOnSheet.Add(e);
+                    }
+                    foreach (Element el in ElementsOnSheet)
+                    {
+                        if (el is FamilyInstance)
+                        {
+                            FamilyInstance famel = el as FamilyInstance;
+                            XYZ point = new XYZ(0, 0, 0);
+                            XYZ point1 = new XYZ(0, 0, -10);
+                            Line axis = Line.CreateBound(point, point1);
+                            double angle = Math.PI / 2;
+                            ElementTransformUtils.RotateElement(doc, famel.Id, axis, angle);
+                        }
+                    }
+                    foreach (ElementId portid in sheet.GetAllViewports())
+                    {
+                       
+                        Viewport vp = doc.GetElement(portid) as Viewport;
+                        XYZ center = vp.GetBoxCenter();
+                        XYZ newcenter = new XYZ(center.Y, center.X * (-1), center.Z);
+                        vp.Rotation = ViewportRotation.Clockwise;
+                        vp.SetBoxCenter(newcenter);
+
+                    }
+                }
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class Rotatelegend : IExternalCommand
+    {
+        //Rotates selected sheet clockwise
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Rotate Legends");
+                foreach (ElementId eid in ids)
+                {
+                    ViewSheet sheet = doc.GetElement(eid) as ViewSheet;
+                    foreach (ElementId portid in sheet.GetAllViewports())
+                    {
+                        Viewport vp = doc.GetElement(portid) as Viewport;
+                        Element viewelem = doc.GetElement(vp.ViewId);
+                        View view = viewelem as View;
+                        if (view.Title.Contains("Legend"))
+                        {
+                            vp.Rotation = ViewportRotation.Clockwise;
+                        }
+                        //XYZ center = vp.GetBoxCenter();
+                        //XYZ newcenter = new XYZ(center.Y, center.X * (-1), center.Z);
+                        //vp.Rotation = ViewportRotation.Clockwise;
+                        //vp.SetBoxCenter(newcenter);
+
+                    }
+                }
+                trans.Commit();
             }
             return Result.Succeeded;
         }
@@ -570,17 +852,17 @@ namespace MultiDWG
             }
             foreach (RibbonItem item in inputpanel.GetItems())
             {
-                if (item.Name == "Step Y")
-                { Store.stepy_ib = (TextBox)item; }
-                if (item.Name == "Left Space")
-                { Store.left_ib = (TextBox)item; }
-                if (item.Name == "Right Space")
-                { Store.right_ib = (TextBox)item; }
-                if (item.Name == "First Y")
-                { Store.firsty_ib = (TextBox)item; }
+                if (item.Name == "1")
+                { Store.menu_1_Box = (TextBox)item; }
+                if (item.Name == "A")
+                { Store.menu_A_Box = (TextBox)item; }
+                if (item.Name == "B")
+                { Store.menu_B_Box = (TextBox)item; }
+                if (item.Name == "C")
+                { Store.menu_C_Box = (TextBox)item; }
             }
-            Double.TryParse(Store.stepy_ib.Value as string, out Store.mod_stepy);
-            if (Store.mod_stepy == 0) { Store.mod_stepy = 0.5; }
+            Double.TryParse(Store.menu_1_Box.Value as string, out Store.menu_1);
+            if (Store.menu_1 == 0) { Store.menu_1 = 0.5; }
         }
         public Result Execute(
             ExternalCommandData commandData,
@@ -599,7 +881,7 @@ namespace MultiDWG
             {
                 Element fami = doc.GetElement(eid) as Element;
                 BoundingBoxXYZ BB = fami.get_BoundingBox(null);
-                if ((BB.Max.Z - BB.Min.Z) > Store.mod_stepy)
+                if ((BB.Max.Z - BB.Min.Z) > Store.menu_1)
                 { newsel.Add(eid); }
             }
             using (Transaction trans = new Transaction(doc))
@@ -610,494 +892,7 @@ namespace MultiDWG
             }
             return Result.Succeeded;
         }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class MetaData : IExternalCommand
-    {
-        // Simple parameter filler
-        // No real use for this anymore
-        public Result Execute(
-            ExternalCommandData commandData,
-            ref string message,
-            ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
-            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            foreach (ElementId eid in ids)
-            {
-                FamilyInstance fami = doc.GetElement(eid) as FamilyInstance;
-                string keynote = "";
-                string model = "";
-                string manufacturer = "";
-                string url = "";
-                string description = "";
-                string uniformat = "";
-                Family fam = fami.Symbol.Family;
-                using (Transaction trans = new Transaction(doc))
-                {
-                    trans.Start("Set Parameters");
-                    foreach (ElementId famsym in fam.GetFamilySymbolIds())
-                    {
-                        FamilySymbol famtype = doc.GetElement(famsym) as FamilySymbol;
-                        famtype.get_Parameter(BuiltInParameter.KEYNOTE_PARAM).Set(keynote);
-                        famtype.get_Parameter(BuiltInParameter.ALL_MODEL_MODEL).Set(model);
-                        famtype.get_Parameter(BuiltInParameter.ALL_MODEL_MANUFACTURER).Set(manufacturer);
-                        famtype.get_Parameter(BuiltInParameter.ALL_MODEL_URL).Set(url);
-                        famtype.get_Parameter(BuiltInParameter.ALL_MODEL_DESCRIPTION).Set(description);
-                        famtype.get_Parameter(BuiltInParameter.UNIFORMAT_CODE).Set(uniformat);
-                    }
-                    trans.Commit();
-                }
-            }
-            return Result.Succeeded;
-        }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class TypeParam : IExternalCommand
-    {
-        //Converts all type parameters to instance parameters
-        //Should be tested, might be useful
-        public Result Execute(
-            ExternalCommandData commandData,
-            ref string message,
-            ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            FamilyManager famman = doc.FamilyManager;
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Set to Type");
-                foreach (FamilyParameter fampar in famman.Parameters)
-                {
-                    if (fampar.Definition.ParameterGroup == BuiltInParameterGroup.PG_IDENTITY_DATA)
-                    {
-                       famman.Set(fampar,""); 
-                    }
-                }
-                trans.Commit();
-            }
-            return Result.Succeeded;
-        }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class DeleteDetailItem : IExternalCommand
-    {
-        // No use for this anymore
-        public Result Execute(
-              ExternalCommandData commandData,
-              ref string message,
-              ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Array load_dirs = System.IO.Directory.GetDirectories("O:\\2_Project_Data\\22_Model\\223_Families\\01_Wall Systems");
-            List<string> arch_load = Mullion.GetAllDir(load_dirs, "Architectural");
-            List<string> fl_arch_load = Mullion.Searchrvt(arch_load, "v02.rvt");
-            TextWriter tw_arch_load = new StreamWriter("E:\\ARCH_DDI.txt");
-            IFamilyLoadOptions famoption = new Mullion.OverwriteFamilyLoadOptions();
-            foreach (String s in fl_arch_load)
-                tw_arch_load.WriteLine(s);
-            tw_arch_load.Close();
-            int count = 0;
-            foreach (string path in fl_arch_load)
-            {
-                //if (count > -1 && count < 3) //|| (count == 6) || (count == 8) || (count == 12) || (count == 56) || (count == 66)) // PROJECT
-              //  {
-                    uiapp.OpenAndActivateDocument(path);
-                    doc.Close();
-                    doc = uiapp.ActiveUIDocument.Document;
-                    List<ElementId> prof_ids = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_ProfileFamilies).ToElementIds().ToList();
-                //TaskDialog.Show("sd", prof_ids.Count().ToString());
-                foreach (ElementId profile in prof_ids)
-                {
-                    //TaskDialog.Show("asd", profile.Name);
-                    FamilySymbol faminst = doc.GetElement(profile) as FamilySymbol;
-                    Family fam = faminst.Family;
-                    if (!fam.Name.Contains("OSC"))
-                    {
-                        Document editFamily = doc.EditFamily(fam);
-                        using (Transaction trans = new Transaction(editFamily))
-                        {
-                            trans.Start("Remove Detail items");
-                            List<ElementId> detailItems = new FilteredElementCollector(editFamily).OfCategory(BuiltInCategory.OST_DetailComponents).ToElementIds().ToList();
-                            //TaskDialog.Show("asd", detailItems.Count().ToString());// != 0)
-                            {
-                                foreach (ElementId detailId in detailItems)
-                                {
-                                    try
-                                    {
-                                        editFamily.Delete(detailId);
-                                    }
-                                    catch { }
-
-                                }
-                            }
-                            trans.Commit();
-                        }
-                        editFamily.LoadFamily(doc, famoption);
-                    }
-                }
-                    count += 1;
-                //}
-               // else { count += 1; }
-            }
-            TaskDialog.Show("Finish", "Finished");
-            return Result.Succeeded;
-        }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class EngToArch : IExternalCommand
-    {
-        //No use for this now
-        public static List<ElementId> ElementsNamed(Document doc, List<ElementId> elementids, string name)
-        {
-            List<ElementId> result = new List<ElementId>();
-            foreach (ElementId eid in elementids)
-            {
-                if (doc.GetElement(eid).Name.Contains(name))
-                {
-                    result.Add(eid);
-                }
-            }
-            return result;
-        }
-        public Result Execute(
-              ExternalCommandData commandData,
-              ref string message,
-              ElementSet elements)
-        {
-            //No USE for this
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Array load_dirs = System.IO.Directory.GetDirectories("O:\\2_Project_Data\\22_Model\\223_Families\\01_Wall Systems");
-            List<string> eng_load = Mullion.GetAllDir(load_dirs,"Engineering");
-            List<string> arch_load = Mullion.GetAllDir(load_dirs,"Architectural");
-            List<string> fl_eng_load = Mullion.Searchrvt(eng_load, "v02.rvt");
-            List<string> fl_arch_load = Mullion.Searchrvt(arch_load, ".rvt");
-            TextWriter tw_eng_load = new StreamWriter("E:\\ENG.txt");
-            foreach (String s in fl_eng_load)
-                tw_eng_load.WriteLine(s);
-            tw_eng_load.Close();
-            TextWriter tw_arch_load = new StreamWriter("E:\\ARCH.txt");
-            foreach (String s in fl_arch_load)
-                tw_arch_load.WriteLine(s);
-            tw_arch_load.Close();
-            int count = 0;
-            string inpath = null;
-            foreach (string path in fl_eng_load)
-            {
-                if (count > 48 && count < 50) //|| (count == 6) || (count == 8) || (count == 12) || (count == 56) || (count == 66)) // PROJECT
-                {
-                    uiapp.OpenAndActivateDocument(path);
-                    doc.Close();
-                    doc = uiapp.ActiveUIDocument.Document;
-                    
-                    foreach (string insertpath in fl_arch_load)
-                    {
-                    string pathname = insertpath.Remove(0, insertpath.LastIndexOf('\\')+1);
-                    string name = pathname.Remove(pathname.Length - 4, 4);
-                        //TaskDialog.Show("asd", name + " VS " + doc.Title.Remove(doc.Title.Length - 4, 4));
-                    // if (insertpath.Contains(doc.Title.Remove(doc.Title.Length - 4, 4)))
-                    if (name == doc.Title.Remove(doc.Title.Length-4,4))
-                        {
-                        inpath = insertpath;
-                        }
-                    }
-                    List<ElementId> prof_ids = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_ProfileFamilies).ToElementIds().ToList();
-                    List<ElementId> mull_ids = new List<ElementId>();
-                    List<Element> mulls = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_CurtainWallMullions).Where(q => q.Location == null).ToList();
-                    foreach (Element elem in mulls)
-                    { mull_ids.Add(elem.Id); }
-                    List<ElementId> wall_ids = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).ToElementIds().ToList();
-                    List<ElementId> tocopy = ElementsNamed(doc, prof_ids, "XXX");
-                    
-                    tocopy.AddRange(ElementsNamed(doc, mull_ids, "XXX"));
-                    //foreach ( ElementId wall in wall_ids) {if (doc.GetElement(wall).get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM).AsValueString() == "Curtain Wall" && doc.GetElement(wall).Location == null) { tocopy.Add(wall); } }
-
-                    Document targetDoc = app.OpenDocumentFile(inpath);
-                    using (Transaction trans = new Transaction(targetDoc))
-                    {
-                        trans.Start("Copy Families");
-                        ElementTransformUtils.CopyElements(doc, tocopy, targetDoc, null, new CopyPasteOptions());
-                        trans.Commit();
-                        targetDoc.SaveAs(inpath.Remove(inpath.Length-4,4)+"_v02.rvt");
-                    }
-
-                    // // COPY CURTAIN WALLS CONTAINING 'XXX' // // 
-
-                    //List<Element> CWcopy = new List<Element>();
-                    //List<Element> curtainwalls = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).ToElements().ToList();
-                    //TaskDialog.Show("ad", curtainwalls.Count().ToString());
-                    //foreach (Element elem in curtainwalls)
-                    //{
-                    //    try
-                    //    {
-                    //        Wall wall = elem as Wall;
-                    //        ICollection<ElementId> mullions = wall.CurtainGrid.GetMullionIds();
-                    //        foreach (ElementId eid in mullions)
-                    //        {
-                    //            if (doc.GetElement(eid).Name.Contains("OSC-L"))
-                    //            {
-                    //                CWcopy.Add(elem);
-                    //                TaskDialog.Show("FOUND", "Found");
-                    //                break;
-                    //            }
-                    //        }
-                    //    }
-                    //    catch { }
-                    //}
-                    //TaskDialog.Show("asd", CWcopy.Count().ToString());
-
-                    // // END OF SECTION // //
-
-                    count += 1;
-                }
-                else { count += 1; }
-            }              
-                //IFamilyLoadOptions famoption = new OverwriteFamilyLoadOptions();
-                //ReloadFam(doc, fl_insert, famoption);
-                return Result.Succeeded;
-        }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class Mullion : IExternalCommand
-    {
-        // No use for this
-        public void Swap(Document doc, List<string> InsertPaths)
-        {
-            bool s = true;
-            List<string> swapped = new List<string>();
-            FilteredElementCollector profiles = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_ProfileFamilies);
-            FilteredElementCollector mullions = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_CurtainWallMullions);
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Load Circle");
-                Family circle = null;
-                FamilySymbol cirtyp = null;
-                doc.LoadFamily("E:\\Family1.rfa", out circle);
-                foreach (ElementId eid in circle.GetFamilySymbolIds())
-                {
-                    cirtyp = doc.GetElement(eid) as FamilySymbol;
-                    break;
-                }
-                trans.Commit();
-
-                foreach (Element pr in profiles)
-                {
-                    s = true;
-                    string name = pr.Name;
-                    foreach (string path in InsertPaths)
-                    {
-                        if (s == false) { break; }
-
-                        string type = path.Remove(0, path.LastIndexOf("\\") + 1);
-                        string typename = type.Remove(type.Length - 4, 4);
-                        if (path.Contains(name) && swapped.Contains(name) != true)
-                        {
-                            //TaskDialog.Show("asd", "Megvan");
-                            //if (doc.PathName.Contains("Architectural") && path.Contains("Engineering")) { }
-                            //if (doc.PathName.Contains("Engineering") && path.Contains("Architectural")) { }
-                            //else
-                            //{
-                            swapped.Add(name);
-                            foreach (Element mu in mullions)
-                            {
-                                if (s == true)
-                                {
-                                    try
-                                    {
-                                        FamilyInstance famins = mu as FamilyInstance;
-                                        if (s == true)
-                                        {
-                                            foreach (ElementId famsym in famins.Symbol.Family.GetFamilySymbolIds())
-                                            {
-                                                FamilySymbol famtype = doc.GetElement(famsym) as FamilySymbol;
-                                                if (famtype.get_Parameter(BuiltInParameter.MULLION_PROFILE).AsValueString() == typename + " : " + typename)
-                                                {
-                                                    trans.Start("Swap family");
-                                                    famtype.get_Parameter(BuiltInParameter.MULLION_PROFILE).Set(cirtyp.Id);
-                                                    FamilySymbol prsym = pr as FamilySymbol;
-                                                    //TaskDialog.Show("asd", "Cseretipus törlésébe fagyok");
-                                                    doc.Delete(prsym.Family.Id);
-                                                    //TaskDialog.Show("asd", "Toltesbe fagyok");
-                                                    doc.LoadFamily(path);
-                                                    //TaskDialog.Show("asd", "Toltve");
-                                                    profiles = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_ProfileFamilies);
-                                                    foreach (Element prof in profiles)
-                                                    {
-                                                        if (prof.Name == typename)
-                                                        {
-                                                            //TaskDialog.Show("asd", "Cserébe fagyok");
-                                                            famtype.get_Parameter(BuiltInParameter.MULLION_PROFILE).Set(prof.Id);
-                                                            //TaskDialog.Show("asd", "Csere" + Environment.NewLine + "PATH:" + path + Environment.NewLine
-                                                            //  + "PROFILE NAME :" + prof.Name);
-                                                            s = false; trans.Commit(); break;
-                                                            //  }
-                                                        }
-                                                    }
-                                                    trans.Commit();
-                                                }
-                                            }
-                                        }
-                                        else { break; }
-                                    }
-                                    catch
-                                    { //TaskDialog.Show("asd", "HIBA"); 
-                                    }
-                                }
-                                else { break; }
-                                //}
-                            }
-                        }
-                    }
-                }
-                trans.Start("Delete Circle");
-                doc.Delete(circle.Id);
-                trans.Commit();
-            }
-        }
-        public void ReloadFam(Document doc, List<string> InsertPaths,IFamilyLoadOptions loadOptions)
-        {
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Reload");
-                int count = 0;
-                foreach (string path in InsertPaths)
-                {
-                    if (count == 0 || count == 2 || count == 4 || count == 6 || count == 8 || count == 10 || count == 12 || count == 14) // FAMILY
-                    {
-                        doc.LoadFamily(path,loadOptions,out Family fam);
-                        count += 1;
-                    }
-                    else count += 1;
-                }
-                trans.Commit();
-            }
-        }
-        public static List<string> GetAllDir(Array Idir, string dirname)
-        {
-            // Should test, extracts all folders under one folder
-            List<string> engdir = new List<string>();
-            foreach (string dir in Idir)
-            {
-                if (dir.Contains(dirname))
-                { engdir.Add(dir); }
-                else { engdir.AddRange(GetAllDir(System.IO.Directory.GetDirectories(dir),dirname)); }
-            }
-            if (engdir != null) return engdir;
-            else return new List<string>();
-        }
-        public List<string> EndFolders(Array Idir)
-        {
-            // Returns only the deepest folders of folder structure
-            List<string> enddir = new List<string>();
-            foreach (string dir in Idir)
-            {
-                if (System.IO.Directory.GetDirectories(dir).Length == 0 && dir.Contains("Engineering"))
-                { enddir.Add(dir); }
-                else { enddir.AddRange(EndFolders(System.IO.Directory.GetDirectories(dir))); }
-            }
-            if (enddir != null) return enddir;
-            else return new List<string>();
-        }
-        public class OverwriteFamilyLoadOptions : IFamilyLoadOptions
-            //NO use for this
-        {
-            #region IFamilyLoadOptions Members
-
-            public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
-            {
- 
-                    overwriteParameterValues = true;
-              
-                    return true;
-                
-            }
-
-            public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues)
-            {
-                    source = FamilySource.Family;
-                    overwriteParameterValues = true;
-                    return true;
-            }
-            #endregion
-        }
-        public Result Execute(
-            ExternalCommandData commandData,
-            ref string message,
-            ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Array load_dirs = System.IO.Directory.GetDirectories("O:\\2_Project_Data\\22_Model\\223_Families\\01_Wall Systems");
-            Array insert_dirs = System.IO.Directory.GetDirectories("O:\\3_Deliverables\\02_Entrances");
-            List<string> load = GetAllDir(load_dirs,"Engineering");
-            List<string> fl_load = Searchrvt(load,"v02.rvt");
-            List<string> insert = EndFolders(insert_dirs);
-            List<string> fl_insert = Searchrvt(insert, ".rfa");
-            TextWriter tw_load = new StreamWriter("E:\\SavedLoad.txt");
-            foreach (String s in fl_load)
-                tw_load.WriteLine(s);
-            tw_load.Close();
-            TextWriter tw_insert = new StreamWriter("E:\\SavedInsert.txt");
-            foreach (String s in fl_insert)
-                tw_insert.WriteLine(s);
-            tw_insert.Close();
-            //return Result.Succeeded;
-            int count = 0;
-            foreach (string path in fl_load)
-            {
-                if ( count == 29 || count == 31 || count == 33 || count == 35) //|| (count == 6) || (count == 8) || (count == 12) || (count == 56) || (count == 66)) // PROJECT
-                {
-                    uiapp.OpenAndActivateDocument(path);
-                    doc = uiapp.ActiveUIDocument.Document;
-                    //Swap(doc, OscPaths);
-                    IFamilyLoadOptions famoption = new OverwriteFamilyLoadOptions();
-                    ReloadFam(doc, fl_insert,famoption);
-                    count += 1;
-                }
-                else
-                { count += 1; }
-            }
-            TaskDialog.Show("Finish","Files were reloaded");
-            return Result.Succeeded;
-        }
-        public static List<string> Searchrvt(List<string> dirs,string fileend)
-        {
-            // no use
-            List<string> files = new List<string>();
-            if (dirs != null)
-            {
-                foreach (string dirpath in dirs)
-                {
-                    foreach (string path in System.IO.Directory.GetFiles(dirpath))
-                    {
-                        if (path.EndsWith(fileend) && path.Contains(".00") != true)
-                        { files.Add(path); }
-                    }
-                }
-            }
-            return files;
-        }
-    }
+    } 
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class ManageRefPlanes : IExternalCommand
