@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -32,6 +32,7 @@ namespace PrintRevision
 {
     public class SelectRev : System.Windows.Forms.Form
     {
+        public string path;
         List<Revision> revList = null;
         System.Windows.Forms.ComboBox RevDD = new System.Windows.Forms.ComboBox();
         System.Windows.Forms.Button ok_button = new System.Windows.Forms.Button();
@@ -41,8 +42,7 @@ namespace PrintRevision
             this.MaximizeBox = false; this.MinimizeBox = false;
             this.MaximumSize = new System.Drawing.Size(250, 120);
             this.revList = revList;
-            this.FormClosed += quit;
-           
+            this.FormClosed += Quit;
 
             ok_button.Location = new System.Drawing.Point(10, 50);
             ok_button.Name = "Ok";
@@ -56,12 +56,32 @@ namespace PrintRevision
             RevDD.Text = "Available Revisions";
             
             foreach (Revision revis in this.revList)
-            { RevDD.Items.Add("Revision " + revis.SequenceNumber); }
+            { RevDD.Items.Add(revis.SequenceNumber + ": " + revis.Description); }
             RevDD.SelectedIndex = 0;
+
+            System.Windows.Forms.Button pathButton = new System.Windows.Forms.Button
+            {
+                Text = "Set Print Path",
+                Location = new System.Drawing.Point(90, 50),
+                Size = new System.Drawing.Size(100, 20)
+            };
+            pathButton.Click += new System.EventHandler(path_Click);
             this.Controls.Add(RevDD);
+            this.Controls.Add(pathButton);
             this.Controls.Add(ok_button);
             ok_button.Click += new EventHandler(ok_Click);
             System.Windows.Forms.Application.Run(this);
+        }
+        private void path_Click(object sender, EventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog folderselect = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select Folder to Print to"
+            };
+            if (folderselect.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                 path = folderselect.SelectedPath;
+            }
         }
         public Revision getRevision()
         {
@@ -73,7 +93,7 @@ namespace PrintRevision
             this.Close();
             this.closed = false;
         }
-        private void quit(object sender, System.EventArgs e)
+        private void Quit(object sender, System.EventArgs e)
         {
             this.closed = true ;
         }
@@ -98,7 +118,6 @@ namespace PrintRevision
             {            
                 revList.Add(revis);
             }
-
             SelectRev revMenu = new SelectRev(revList);
             Revision targetRev = revMenu.getRevision();
             if (revMenu.closed)
@@ -118,7 +137,7 @@ namespace PrintRevision
             printManager.PrintRange = PrintRange.Select;
             ViewSheetSetting viewSheetSetting = printManager.ViewSheetSetting;
             viewSheetSetting.CurrentViewSheetSet.Views = FilteredSheets;
-            String sheetSetName ="Rev "+targetRev.SequenceNumber;
+            String sheetSetName = targetRev.SequenceNumber + ": " +targetRev.Description;
             using (Transaction t = new Transaction(doc, "Creating PrintSet"))
             {
                 t.Start();
@@ -143,16 +162,42 @@ namespace PrintRevision
                     viewSheetSetting_alt.SaveAs(sheetSetName);
                 }
                 t.Commit();
-                try
-                { if (FilteredSheets.Size != 0)
-                    { doc.Print(FilteredSheets); }
-                else { TaskDialog.Show("Please select another Revision", "Selected Revision has not been added to any of the sheets."); }
+                TaskDialog td = new TaskDialog("Printing Revision")
+                {
+                    MainInstruction = sheetSetName + " - created as new print set (" + FilteredSheets.Size + " sheets)." 
+                                      + Environment.NewLine +"Start Print with current Settings?",
+                    FooterText = doc.PrintManager.PrinterName
+                };
+                if (doc.PrintManager.PrinterName.Contains("\\")) { td.FooterText = td.FooterText.Insert(td.FooterText.Length, " *!Real Print!* ").Insert(0, " *!Real Print!* "); }
+                td.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
+                TaskDialogResult response = td.Show();
+                if ((response != TaskDialogResult.Cancel) && (response != TaskDialogResult.No))
+                {
+                    try
+                    {
+                        if (FilteredSheets.Size != 0)
+                        {
+                            doc.Print(FilteredSheets);
+                            //if (revMenu.path != null)
+                            //{
+                                  //set print setting to selected path
+
+                                    //Open XMl at C:\Users\(ID)\AppData\Roaming\Foxit Software\Foxit PDF Creator\Foxit Reader PDF Printer
+                                    //Find latest .XML
+                                    //Overwrite path ( folderarray 0 ++ )
+
+                                    //Implement rename
+                                    //TaskDialog.Show("Path", revMenu.path);
+                            //}
+                                //else just implement rename
+                        }
+                        else { TaskDialog.Show("Please select another Revision", "Selected Revision has not been added to any of the sheets."); }
+                    }
+                    catch (Autodesk.Revit.Exceptions.InvalidOperationException)
+                    { TaskDialog.Show("Please select another Revision", "Selected Revision has not been added to any of the sheets."); }
                 }
-               
-                catch (Autodesk.Revit.Exceptions.InvalidOperationException)
-                { TaskDialog.Show("Please select another Revision", "Selected Revision has not been added to any of the sheets."); }
+                return Result.Succeeded;
             }
-            return Result.Succeeded;
         }
     }
 }

@@ -44,12 +44,15 @@ namespace Revision_Editor
             Document doc = uidoc.Document;
             List<ViewSheet> allSheets = new List<ViewSheet>();
             List<Revision> allRevs = new List<Revision>();
+            //Get All Sheets and Revisions
             foreach (ViewSheet sheet in new FilteredElementCollector(doc).OfClass(typeof(ViewSheet)))
             { allSheets.Add(sheet); }
             allSheets.Sort((a, b) => a.SheetNumber.CompareTo(b.SheetNumber));
             foreach (Revision rev in new FilteredElementCollector(doc).OfClass(typeof(Revision)))
             { allRevs.Add(rev); }
+            //Sort revisions by sequencenumber
             allRevs.Sort((a, b) => a.SequenceNumber.CompareTo(b.SequenceNumber));
+            //Create window
             Revision_Editor_Window Editor = new Revision_Editor_Window(allSheets, allRevs, doc);
             return Result.Succeeded;
         }
@@ -98,6 +101,7 @@ namespace Revision_Editor
                     if (rev.SequenceNumber.ToString() == text.Split(' ')[0])
                     {
                         sheetswithRev.Add(sheet);
+                        TaskDialog.Show("T", "DOUND");
                     }
                 }
             }
@@ -167,72 +171,87 @@ namespace Revision_Editor
         {
             if (sheetList != null)
             {
+                //Adjust Size to content
                 this.Text = "ExpApps - Revision Editor";
-                int sh_y = sheetList.Count * 30;
-                int re_y = revList.Count * 30;
-                int size_y = System.Math.Max(sh_y, re_y);
+                int sh_y = sheetList.Count * 26 + 15 ;
+                int re_y = revList.Count * 26 + 15;
+                int size_y = System.Math.Max(sh_y, re_y) +100;
+
                 if (sh_y > 700) { sh_y = 720; }
                 if (re_y > 700) { re_y = 720; }
                 if (size_y > 800) { size_y = 800; }
                 this.MaximizeBox = false; this.MinimizeBox = false;
-                this.MaximumSize = new System.Drawing.Size(1410, size_y);
-                this.MinimumSize = new System.Drawing.Size(1410, size_y);
+                this.MaximumSize = new System.Drawing.Size(1285, size_y);
+                this.MinimumSize = new System.Drawing.Size(1285, size_y);
                 //Tooltip
                 System.Windows.Forms.ToolTip tooltips = new System.Windows.Forms.ToolTip();
                 sheetListPanel.Location = new System.Drawing.Point(10, 30);
-                sheetListPanel.Size = new System.Drawing.Size(670, sh_y);
+                sheetListPanel.Size = new System.Drawing.Size(570, sh_y);
                 sheetListPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
                 int ypos = 0;
+                //Create buttons for each sheet
                 foreach (ViewSheet sheet in sheetList)
                 {
-                    System.Windows.Forms.CheckBox sheetbutton = new System.Windows.Forms.CheckBox();
-                    sheetbutton.Appearance = System.Windows.Forms.Appearance.Button;
-                    sheetbutton.Text = sheet.SheetNumber + " - " + sheet.Name;
-                    sheetbutton.Size = new System.Drawing.Size(545, 20);
-                    sheetbutton.Location = new System.Drawing.Point(sheetListPanel.Location.X +45, 10 + ypos);
+                    System.Windows.Forms.CheckBox sheetbutton = new System.Windows.Forms.CheckBox
+                    {
+                        Appearance = System.Windows.Forms.Appearance.Button,
+                        Text = sheet.SheetNumber + " - " + sheet.Name,
+                        Size = new System.Drawing.Size(545, 20),
+                        Location = new System.Drawing.Point(10, 10 + ypos),
+                        BackColor = DefaultBackColor
+                    };
                     sheetbutton.Click += new System.EventHandler(sel_Click);
-                    sheetbutton.BackColor = DefaultBackColor;
                     tooltips.SetToolTip(sheetbutton, "Show Revisions on this Sheet."+ System.Environment.NewLine + "( Shift + click to Edit or Add more Sheets ) ");
                     ypos += 26;
                     sheetListPanel.Controls.Add(sheetbutton);
                     sheetListButtons.Add(sheetbutton);
                 }
+                //Add sheet buttons
                 sheetListPanel.AutoScroll = true;
                 this.Controls.Add(sheetListPanel);
 
-                revListPanel.Location = new System.Drawing.Point(690, 30);
+                revListPanel.Location = new System.Drawing.Point(590, 30);
                 revListPanel.Size = new System.Drawing.Size(670, re_y);
                 revListPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
                 ypos = 0;
+                //Create and add Buttons for Revisions
                 foreach (Revision rev in revList)
                 {
                     //Title
-                    System.Windows.Forms.Label label = new System.Windows.Forms.Label();
-                    label.Text = rev.SequenceNumber + " : " + rev.RevisionDate + " - " + rev.Description;
-                    label.Size = new System.Drawing.Size(495, 20);
-                    label.Location = new System.Drawing.Point(55, 10 + ypos);
-                    label.BackColor = System.Drawing.SystemColors.ControlLight;
+                    System.Windows.Forms.Label label = new System.Windows.Forms.Label
+                    {
+                        Text = rev.SequenceNumber + " : " + rev.RevisionDate + " - " + rev.Description,
+                        Size = new System.Drawing.Size(495, 20),
+                        Location = new System.Drawing.Point(55, 10 + ypos),
+                        BackColor = System.Drawing.SystemColors.ControlLight
+                    };
                     //'Add' Button
-                    System.Windows.Forms.Button add = new System.Windows.Forms.Button();
-                    add.Text = "+";
-                    add.Size = new System.Drawing.Size(40, 20);
-                    add.Location = new System.Drawing.Point(605 , 10 + ypos);
+                    System.Windows.Forms.Button add = new System.Windows.Forms.Button
+                    {
+                        Text = "+",
+                        Size = new System.Drawing.Size(40, 20),
+                        Location = new System.Drawing.Point(605, 10 + ypos)
+                    };
                     add.Click += new System.EventHandler((sender, e) => add_Click(sender, e, label.Text));
                     add.Enabled = false;
                     tooltips.SetToolTip(add, "Add on selected Sheets.");
                     //'Rmv' Button
-                    System.Windows.Forms.Button rmv = new System.Windows.Forms.Button();
-                    rmv.Text = "-";
-                    rmv.Size = new System.Drawing.Size(40, 20);
-                    rmv.Location = new System.Drawing.Point(560, 10 + ypos);
+                    System.Windows.Forms.Button rmv = new System.Windows.Forms.Button
+                    {
+                        Text = "-",
+                        Size = new System.Drawing.Size(40, 20),
+                        Location = new System.Drawing.Point(560, 10 + ypos)
+                    };
                     rmv.Click += new System.EventHandler((sender, e) => rmv_Click(sender, e, label.Text));
                     rmv.Enabled = false;
                     tooltips.SetToolTip(rmv, "Remove from selected Sheets." +System.Environment.NewLine + "( Revision Cloud prevents removal )");
                     //'Sel' Button
-                    System.Windows.Forms.Button sel = new System.Windows.Forms.Button();
-                    sel.Text = "o";
-                    sel.Size = new System.Drawing.Size(40, 20);
-                    sel.Location = new System.Drawing.Point(10, 10 + ypos);
+                    System.Windows.Forms.Button sel = new System.Windows.Forms.Button
+                    {
+                        Text = "o",
+                        Size = new System.Drawing.Size(40, 20),
+                        Location = new System.Drawing.Point(10, 10 + ypos)
+                    };
                     sel.Click += new System.EventHandler((sender, e) => selsheets_Click(sender, e, label.Text));
                     tooltips.SetToolTip(sel, "Select all Sheets using Revision." + System.Environment.NewLine + 
                                             "( Shift + click to select Sheets that use all the selected Revisions ) ");
@@ -248,18 +267,22 @@ namespace Revision_Editor
                 revListPanel.AutoScroll = true;
                 this.Controls.Add(revListPanel);
                 //Labels
-                System.Windows.Forms.Label SheetTitle = new System.Windows.Forms.Label();
-                SheetTitle.Text = "Sheets in document";
-                SheetTitle.Size = new System.Drawing.Size(200, 20);
-                SheetTitle.Location = new System.Drawing.Point(sheetListPanel.Location.X, 5);
-                SheetTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+                System.Windows.Forms.Label SheetTitle = new System.Windows.Forms.Label
+                {
+                    Text = "Sheets in document",
+                    Size = new System.Drawing.Size(200, 20),
+                    Location = new System.Drawing.Point(sheetListPanel.Location.X, 5),
+                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft
+                };
                 this.Controls.Add(SheetTitle);
 
-                System.Windows.Forms.Label RevTitle = new System.Windows.Forms.Label();
-                RevTitle.Text = "Revisions in document";
-                RevTitle.Size = new System.Drawing.Size(200, 20);
-                RevTitle.Location = new System.Drawing.Point(revListPanel.Location.X, 5);
-                RevTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+                System.Windows.Forms.Label RevTitle = new System.Windows.Forms.Label
+                {
+                    Text = "Revisions in document",
+                    Size = new System.Drawing.Size(200, 20),
+                    Location = new System.Drawing.Point(revListPanel.Location.X, 5),
+                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft
+                };
                 this.Controls.Add(RevTitle);
             }
             ShowDialog();

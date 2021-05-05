@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -47,22 +47,27 @@ namespace SetViewRange
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            ViewPlan viewPlan = doc.ActiveView as ViewPlan;
 
-            if (viewPlan == null)
+            if (!(doc.ActiveView is ViewPlan viewPlan))
             {
                 TaskDialog.Show("Please select Plan view", "Select Plan view to change it's View Range");
                 return Result.Succeeded;
             }
             Level level = viewPlan.GenLevel;
             View3D view3d = null;
+            string source3d = StoreExp.ThreeDview;
+            if (source3d == "Same Name")
+            {
+                source3d = viewPlan.Name;
+            }
             try
             {
-                view3d = (from v in new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>() where v.Name == viewPlan.Name select v).First();
+                view3d = (from v in new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>() where v.Name == source3d select v).First();
             }
             catch
             {
-                TaskDialog.Show("Please rename 3D view", "Rename 3D view to match:  '" + viewPlan.Name + "'");
+                TaskDialog.Show("Please rename 3D view or Select in Options", "Rename 3D view to match:" + Environment.NewLine + "'" + viewPlan.Name +
+                                "'" + Environment.NewLine + " or, Select source 3D view in Options");
                 return Result.Succeeded;
             }
             BoundingBoxXYZ bbox = view3d.GetSectionBox();
@@ -113,9 +118,7 @@ namespace SetViewRange
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            ViewPlan viewPlan = doc.ActiveView as ViewPlan;
-
-            if (viewPlan == null)
+            if (!(doc.ActiveView is ViewPlan viewPlan))
             {
                 TaskDialog.Show("Please select Plan view", "Select Plan view to change it's View Range");
                 return Result.Succeeded;
@@ -258,9 +261,8 @@ namespace SetViewRange
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            ViewPlan viewPlan = doc.ActiveView as ViewPlan;
 
-            if (viewPlan == null)
+            if (!(doc.ActiveView is ViewPlan viewPlan))
             {
                 TaskDialog.Show("Please select Plan view", "Select Plan view to change it's View Range");
                 return Result.Succeeded;
@@ -329,9 +331,8 @@ namespace SetViewRange
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            ViewPlan viewPlan = doc.ActiveView as ViewPlan;
 
-            if (viewPlan == null)
+            if (!(doc.ActiveView is ViewPlan viewPlan))
             {
                 TaskDialog.Show("Please select Plan view", "Select Plan view to change it's View Range");
                 return Result.Succeeded;
@@ -401,9 +402,8 @@ namespace SetViewRange
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            ViewPlan viewPlan = doc.ActiveView as ViewPlan;
 
-            if (viewPlan == null)
+            if (!(doc.ActiveView is ViewPlan viewPlan ))
             {
                 TaskDialog.Show("Please select Plan view", "Select Plan view to change it's View Range");
                 return Result.Succeeded;

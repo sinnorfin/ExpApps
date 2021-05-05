@@ -36,8 +36,27 @@ namespace QuickViews
     {
         List<View> viewList = null;
         List<System.Windows.Forms.ComboBox> dropdowns = AssignViews.createdropdown();
-        System.Windows.Forms.ComboBox level_select = new System.Windows.Forms.ComboBox();
-        System.Windows.Forms.Button ok_button = new System.Windows.Forms.Button();
+        System.Windows.Forms.ComboBox level_select = new System.Windows.Forms.ComboBox
+        {
+            DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown,
+            Size = new System.Drawing.Size(280, 20),
+            TabIndex = 0,
+            AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems,
+            AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest
+        };
+        System.Windows.Forms.ComboBox ThreeD_select = new System.Windows.Forms.ComboBox
+        {
+            DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown,
+            Size = new System.Drawing.Size(280, 20),
+            TabIndex = 0,
+            AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems,
+            AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest
+        };
+        System.Windows.Forms.Button ok_button = new System.Windows.Forms.Button
+        {
+           Location = new System.Drawing.Point(10, 260),
+           Text = "Save Quick Keys"
+        };
 
         public static List<System.Windows.Forms.ComboBox> createdropdown()
         {
@@ -47,17 +66,14 @@ namespace QuickViews
             return menu;
         }
 
-        public AssignViews(List<View> viewList, List<Level> allLevels)
+        public AssignViews(List<View> viewList, List<View> threeDviewList, List<Level> allLevels)
         {
             if (viewList != null)
             {
-                this.MaximizeBox = false; this.MinimizeBox = false;
-                this.MaximumSize = new System.Drawing.Size(610, 280);
-                this.MinimumSize = new System.Drawing.Size(610, 280);
+                MaximizeBox = false; MinimizeBox = false;
+                MaximumSize = new System.Drawing.Size(700, 340);
+                MinimumSize = new System.Drawing.Size(700, 340);
                 this.viewList = viewList;
-
-                ok_button.Location = new System.Drawing.Point(10, 200);
-                ok_button.Text = "Save Quick Keys";
                 int ypos = 10;
                 int ind = 0;
                 foreach (System.Windows.Forms.ComboBox combo in dropdowns)
@@ -69,69 +85,107 @@ namespace QuickViews
                     combo.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
                     combo.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
 
-                    foreach (View view in this.viewList)
-                    { combo.Items.Add(view.Title);}
-                    this.Controls.Add(combo);
-                    System.Windows.Forms.TextBox tb = new System.Windows.Forms.TextBox();
-                    
-                    tb.Location = new System.Drawing.Point(300, ypos);
-                    tb.Size = new System.Drawing.Size(280, 20);
+                    foreach (View view in viewList)
+                    { combo.Items.Add(view.Title); }
+                    Controls.Add(combo);
+                    System.Windows.Forms.TextBox tb = new System.Windows.Forms.TextBox
+                    {
+                        Location = new System.Drawing.Point(390, ypos),
+                        Size = new System.Drawing.Size(280, 20)
+                    };
                     if (StoreExp.quickViews[ind] != null) {
                         try
                         {
-                            tb.Text = "("+ (ind+1).ToString() + ") " + StoreExp.quickViews[ind].ViewName;
+                            tb.Text = StoreExp.quickViews[ind].ViewName;
                             tb.ReadOnly = true;
-                            this.Controls.Add(tb);
+                            Controls.Add(tb);
                         }
-                        catch { TaskDialog.Show("View Lost","View lost due to renaming or deletion");
-                            tb.Text ="("+ (ind+1).ToString()+") "+ ":Lost:";
+                        catch { TaskDialog.Show("View Lost", "View lost due to renaming or deletion");
+                            tb.Text = ":Lost:";
                             tb.ReadOnly = true;
-                            this.Controls.Add(tb);
+                            Controls.Add(tb);
                         }
                     }
                     ypos += 26;
                     ind += 1;
                 }
-                
-                level_select.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
-                level_select.Location = new System.Drawing.Point(300, ypos);
-                level_select.Size = new System.Drawing.Size(280, 20);
-                level_select.TabIndex = 0;
-                level_select.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-                level_select.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-                System.Windows.Forms.TextBox level_tb = new System.Windows.Forms.TextBox();
-                level_tb.Location = new System.Drawing.Point(10, ypos);
-                level_tb.Size = new System.Drawing.Size(280, 20);
+                level_select.Location = new System.Drawing.Point(390, ypos);
+                System.Windows.Forms.TextBox level_tb = new System.Windows.Forms.TextBox
+                {
+                    Location = new System.Drawing.Point(10, ypos),
+                    Size = new System.Drawing.Size(280, 20),
+                    ReadOnly = true
+                };
+                System.Windows.Forms.TextBox Label_RL = new System.Windows.Forms.TextBox
+                {
+                    Text = "Rehost Level",
+                    BackColor = System.Drawing.SystemColors.ActiveCaption,
+                    Location = new System.Drawing.Point(300, ypos),
+                    Size = new System.Drawing.Size(80, 20),
+                    ReadOnly = true
+                };
+                ypos += 26;
+                ThreeD_select.Location = new System.Drawing.Point(390, ypos);
+
+                System.Windows.Forms.TextBox ThreeD_tb = new System.Windows.Forms.TextBox
+                {
+                    Location = new System.Drawing.Point(10, ypos),
+                    Size = new System.Drawing.Size(280, 20),
+                    ReadOnly = true
+                };
+                System.Windows.Forms.TextBox Label_TD = new System.Windows.Forms.TextBox
+                {
+                    Text = "3D Source",
+                    BackColor = System.Drawing.SystemColors.ActiveCaption,
+                    Location = new System.Drawing.Point(300, ypos),
+                    Size = new System.Drawing.Size(80, 20),
+                    ReadOnly = true
+                };
                 try { level_tb.Text = StoreExp.level; }
                 catch { level_tb.Text = "Active PlanView"; }
-                level_tb.ReadOnly = true;
                 Controls.Add(level_tb);
                 foreach (Level level in allLevels)
                 { level_select.Items.Add(level.Name); }
                 level_select.Items.Add("Active PlanView");
-                Controls.Add(level_select);
-                this.Controls.Add(ok_button);
+
+                try { ThreeD_tb.Text = StoreExp.ThreeDview; }
+                catch { ThreeD_tb.Text = "Same Name"; }
+                Controls.Add(ThreeD_tb);
+                foreach (View view in threeDviewList)
+                { ThreeD_select.Items.Add(view.Name); }
+                ThreeD_select.Items.Add("Same Name");
+
                 ok_button.Click += new EventHandler(ok_Click);
-                this.ShowDialog();
+
+                Controls.Add(Label_RL);
+                Controls.Add(Label_TD);
+                Controls.Add(level_select);
+                Controls.Add(ThreeD_select);
+                Controls.Add(ok_button);
+                ShowDialog();
             }
         }
         public void setView(int qv_ind, int c_ind)
         {
-           if ((dropdowns[c_ind].SelectedIndex >= 0) && (this.viewList[dropdowns[c_ind].SelectedIndex].Category.Name == "Views"))
+            if ((dropdowns[c_ind].SelectedIndex >= 0) && (viewList[dropdowns[c_ind].SelectedIndex].Category.Name == "Views"))
             {
-                StoreExp.quickViews[qv_ind] = this.viewList[dropdowns[c_ind].SelectedIndex]; 
+                StoreExp.quickViews[qv_ind] = viewList[dropdowns[c_ind].SelectedIndex]; 
             }
         }
-        public void setlevel()
+        public void setothers()
         {
-            StoreExp.level = level_select.SelectedItem.ToString();
+
+            try { StoreExp.level = level_select.SelectedItem.ToString(); }
+            catch {}
+            try { StoreExp.ThreeDview = ThreeD_select.SelectedItem.ToString(); }
+            catch {}
         }
         private void ok_Click(object sender, System.EventArgs e)
         {
             for (int i = 0; i <= 5; i++)
             { setView(i, i); }
-            setlevel();
-            this.Close();
+            setothers();
+            Close();
         }
     }
 
@@ -150,16 +204,22 @@ namespace QuickViews
             Document doc = uidoc.Document;
             List<View> allViews = new List<View>();
             List<Level> allLevels = new List<Level>();
+            List<View> allThreeDViews = new List<View>();
+
+            foreach (View view in new FilteredElementCollector(doc).OfClass(typeof(View)))
+            {
+                if ((view.IsTemplate == false) && (view.ViewType == ViewType.ThreeD))
+                { allThreeDViews.Add(view); }
+            }
             foreach (View view in new FilteredElementCollector(doc).OfClass(typeof(View)))
             {if ((view.IsTemplate == false) && (view.Category != null))
                 { allViews.Add(view);}
             }
             foreach (Level level in new FilteredElementCollector(doc).OfClass(typeof(Level)))
             {
-                //if ((view.IsTemplate == false) && (view.Category != null))
                 allLevels.Add(level); 
             }
-            AssignViews assign = new AssignViews(allViews,allLevels);
+            AssignViews assign = new AssignViews(allViews,allThreeDViews,allLevels);
 
             return Result.Succeeded;
         }

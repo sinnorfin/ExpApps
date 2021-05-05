@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -72,15 +72,13 @@ namespace RehostElements
                 }
                 if (targetLevel == null)
                 {
-                    View active = doc.ActiveView;
-                    ViewPlan viewPlan = active as ViewPlan;
-                    if (viewPlan == null)
+                    if (!(doc.ActiveView is ViewPlan viewPlan ))
                     {
                         TaskDialog.Show("Please select Plan View or set level in QuickViews", "Level not selected, or Active view must be a plan view.");
                         tx.Commit();
                         return Result.Succeeded;
                     }
-                    Parameter associated = active.LookupParameter("Associated Level");
+                    Parameter associated = doc.ActiveView.LookupParameter("Associated Level");
                     foreach (Element level in lvlCollection)
                     {
                         Level lvl = level as Level;

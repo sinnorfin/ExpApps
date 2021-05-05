@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -36,9 +36,10 @@ namespace _ExpApps
     public class StoreExp
     {
         public static List<View> quickViews = new List<View> { null, null, null, null, null, null };
-        public static string level;
+        public static string level = "Active PlanView" ; public static string ThreeDview = "Same Name";
         public static Double vrOpt1; public static Double vrOpt2; public static Double vrOpt3;
         public static Double vrOpt4; public static Double vrOpt5; public static Double vrOpt6;
+        public static ICollection<ElementId> SelectionMemory = new List<ElementId> { };
     }
     class App : IExternalApplication
     {
@@ -59,6 +60,13 @@ namespace _ExpApps
             Uri uriImage = new Uri(path);
             BitmapImage Image = new BitmapImage(uriImage);
             return Image;
+        }
+        public void CreatePanels(UIControlledApplication a,string ribbon,IList<string> panels)
+        {
+            foreach (string Panel in panels)
+            {
+                RibbonPanel NewPanel = a.CreateRibbonPanel(ribbon,Panel);
+            }
         }
         public Result OnStartup(UIControlledApplication a)
         {
@@ -133,26 +141,16 @@ namespace _ExpApps
 
             PushButtonData button_MultiDWG =new PushButtonData("Button_MultiDWG", "MultiDWG", root + "MultiDWG.dll",
                "MultiDWG.MultiDWG");
-            PushButtonData button_CloneMeta = new PushButtonData("Button_CloneMeta", "Clone MetaData", root + "MultiDWG.dll",
-               "MultiDWG.MetaData");
-            PushButtonData button_TypeParam = new PushButtonData("Button_TypeParam", "TypeParam", root + "MultiDWG.dll",
-               "MultiDWG.TypeParam");
             PushButtonData button_DuctSurfaceArea = new PushButtonData("Button_DSA", "Duct F. Unfolded", root + "MultiDWG.dll",
                "MultiDWG.DuctSurfaceArea");
             PushButtonData button_ConduitAngle = new PushButtonData("Button_CA", "Conduit Angles", root + "MultiDWG.dll",
                "MultiDWG.ConduitAngle");
-            PushButtonData button_DuctId = new PushButtonData("Button_DI", "Duct Id", root + "MultiDWG.dll",
-            "MultiDWG.DuctId");
 
             button_MultiDWG.ToolTip = "Specific: Loads all .DWG-s from selected folder. Sets LOD according to filename, temporarily hides medium and high LOD-s.";
-            button_CloneMeta.ToolTip = "Specific: Copies Type-MetaData of selected instance into all type of the same family.";
-            button_TypeParam.ToolTip = "Specific: Sets all instance parameters in Construction,Dimensions,and Visibility Parameter Groups. Might need to Run Multiple times";
             button_DuctSurfaceArea.ToolTip = "Specific: Inserts total surface area without connections into \"Duct Surface Area\" Project Parameter.";
             button_ConduitAngle.ToolTip = "Specific: Sums the angles of selected Conduit turns";
-            button_DuctId.ToolTip = "Specific: Selected Ducts are grouped and Id-d based on System Abbreviation, Size and Length. Needs instance parameter for ducts: Manual ID ";
 
-            panel_Spec.AddStackedItems(button_MultiDWG, button_CloneMeta,button_TypeParam);
-            panel_Spec.AddStackedItems(button_DuctSurfaceArea,button_ConduitAngle,button_DuctId);
+            panel_Spec.AddStackedItems(button_MultiDWG, button_DuctSurfaceArea, button_ConduitAngle);
 
             PushButtonData toggle_Insulation = new PushButtonData("Toggle_Insulation", "Align to INS", root + "AlignToBottom.dll",
               "Toggle.Toggle");
@@ -179,8 +177,8 @@ namespace _ExpApps
             panel_ViewSetup.AddStackedItems(button_Qv1, button_Qv2, button_Qv3);
             panel_ViewSetup.AddStackedItems(button_Qv4, button_Qv5, button_Qv6);
 
-            PushButton button_SetupQV = panel_ViewSetup.AddItem(new PushButtonData("Button_SetupQV", "Quick Views", root + "SetViewRange.dll",
-           "QuickViews.QuickViews")) as PushButton;
+            PushButton button_SetupQV = panel_ViewSetup.AddItem(new PushButtonData("Button_SetupQV", "Options",
+                                        root + "SetViewRange.dll", "QuickViews.QuickViews")) as PushButton;
             PushButtonData button_Dim2Grid = new PushButtonData("Dimtogrid", "RackDim", root + "AnnoTools.dll",
               "AnnoTools.RackDim");        
             PushButtonData button_Rack = new PushButtonData("Rack", "Rack", root + "AnnoTools.dll",
@@ -197,7 +195,7 @@ namespace _ExpApps
             PushButtonData button_ManageRevs = new PushButtonData("Button_ManageRevs", "Mng. Revisions", root + "Revision_Editor.dll",
              "Revision_Editor.Revision_Editor");
 
-            button_SetupQV.ToolTip = "Setup quick access to views.";
+            button_SetupQV.ToolTip = "Set quick access to views and more.";
             button_Dim2Grid.ToolTip = "Create Dimension referring the selected element's centerlines and Grids.";
             button_Rack.ToolTip = "Create tag for Conduit Rack, listing conduits: left to right \\ top to bottom";
             button_Lin.ToolTip = "Create Dimension for objects with more distance in-between";
@@ -205,24 +203,24 @@ namespace _ExpApps
             button_ManageRefs.ToolTip = "Create Reference Planes from at the origins of 3 selected items, or Delete Ref.Planes";
             button_ManageRevs.ToolTip = "Manage Revisions";
 
-            TextBoxData leftSpaceData = new TextBoxData("Left Space");
-            TextBoxData rightSpaceData = new TextBoxData("Right Space");
-            TextBoxData firstYData = new TextBoxData("First Y");
-            TextBoxData stepYData = new TextBoxData("Step Y");
-            TextBoxData splitPointData = new TextBoxData("Split Point");
-            TextBoxData placementData = new TextBoxData("Placement");
+            TextBoxData leftSpaceData = new TextBoxData("A");
+            TextBoxData rightSpaceData = new TextBoxData("B");
+            TextBoxData firstYData = new TextBoxData("C");
+            TextBoxData stepYData = new TextBoxData("1");
+            TextBoxData splitPointData = new TextBoxData("2");
+            TextBoxData placementData = new TextBoxData("3");
 
             panel_Annot.AddStackedItems(leftSpaceData, rightSpaceData, firstYData);
             panel_Annot.AddStackedItems(stepYData, splitPointData,placementData);
             
             foreach (RibbonItem item in panel_Annot.GetItems())
             {
-                SetTextBox(item, "Left Space", ":Left:", "Distance of TextBoxes on Left", 60);
-                SetTextBox(item, "Right Space", ":Right:", "Distance of TextBoxes on Right", 60);
-                SetTextBox(item, "First Y", ":Start:", "Height offset of TextBoxes", 60);
-                SetTextBox(item, "Step Y", ":Step:", "Gap between TextBoxes", 60);
-                SetTextBox(item, "Split Point", ":Split:", "Controls directional switch, and linebreaks of TextBoxes", 60);
-                SetTextBox(item, "Placement", ":Place:", "Placement of annotation along the reference line", 60);
+                SetTextBox(item, "A", ":A:", "Distance of TextBoxes on Left", 60);
+                SetTextBox(item, "B", ":B:", "Distance of TextBoxes on Right", 60);
+                SetTextBox(item, "C", ":C:", "Height offset of TextBoxes", 60);
+                SetTextBox(item, "1", ":1:", "Gap between TextBoxes", 60);
+                SetTextBox(item, "2", ":2:", "Controls directional switch, and linebreaks of TextBoxes", 60);
+                SetTextBox(item, "3", ":3:", "Placement of annotation along the reference line", 60);
             }
 
             PulldownButtonData QtData = new PulldownButtonData("Quicktools","QuickTools");
@@ -232,11 +230,15 @@ namespace _ExpApps
             PushButtonData qt2 = new PushButtonData("Filter Round Hosted", "Filter Round Hosted",root + "AnnoTools.dll", "AnnoTools.CheckTag");
             PushButtonData qt3 = new PushButtonData("Align Identicals", "Align Identicals", root + "AnnoTools.dll", "AnnoTools.Cleansheet");
             PushButtonData qt4 = new PushButtonData("Replace in Parameter", "Replace in Parameter", root + "MultiDWG.dll", "MultiDWG.ReplaceInParam");
+            PushButtonData qt5 = new PushButtonData("Duplicate Sheets", "Duplicate Sheets", root + "MultiDWG.dll", "MultiDWG.DuplicateSheets");
 
-            qt1.ToolTip = "Filters Vertical elements from selection (:Step: controls vertical sensitivity)";
-            qt2.ToolTip = "Filter the selected tags that are hosted to Round duct - (type in :place: for 'Rectangular' filter)";
-            qt3.ToolTip = "Merges selected tags with same content.(:Left: and :Right: controls sensitivity";
-            qt4.ToolTip = "Replaces text in parameter of selection.(:Left: - Parameter name, :Right: - Original, :Start: - Replace)";
+            qt1.ToolTip = "Filters Vertical elements from selection " + Environment.NewLine + ":1: controls vertical sensitivity";
+            qt2.ToolTip = "Filter the selected tags that are hosted to Round duct " + Environment.NewLine + ":3: Type for 'Rectangular' filter";
+            qt3.ToolTip = "Merges selected tags with same content." + Environment.NewLine + ":A: and :B: controls sensitivity";
+            qt4.ToolTip = "Replaces text in parameter of selection." + Environment.NewLine + ":A: - Parameter name" + Environment.NewLine 
+                        + ":B: - Original" + Environment.NewLine + ":C: - Replace";
+            qt5.ToolTip = "Duplicates the selected sheets." + Environment.NewLine + ":A: - Suffix - Sheet Number" + Environment.NewLine
+                        + ":B: - Suffix - Sheet Name" + Environment.NewLine + ":C: - Type for Dependent view duplicates";
 
             string IconsPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Icons\\");
             string[] files = Directory.GetFiles(IconsPath);
@@ -252,6 +254,7 @@ namespace _ExpApps
             string im_tl_sm = IconsPath + "Button_TL_sm.png"; string im_tpc_sm = IconsPath + "Button_TPC_sm.png";
             string im_qt1 = IconsPath + "Button_qt1.png"; string im_qt2 = IconsPath + "Button_qt2.png";
             string im_qt3 = IconsPath + "Button_qt3.png"; string im_qt4 = IconsPath + "Button_qt4.png";
+            string im_qt5 = IconsPath + "Button_qt5.png";
             string im_rev = IconsPath + "Button_Rev.png";
 
             button_DWGExport.Image = SetImage(im_dwg);
@@ -281,11 +284,13 @@ namespace _ExpApps
             qt2.LargeImage = SetImage(im_qt2);
             qt3.LargeImage = SetImage(im_qt3);
             qt4.LargeImage = SetImage(im_qt4);
+            qt5.LargeImage = SetImage(im_qt5);
 
             QtButtonGroup.AddPushButton(qt1);
             QtButtonGroup.AddPushButton(qt2);
             QtButtonGroup.AddPushButton(qt3);
             QtButtonGroup.AddPushButton(qt4);
+            QtButtonGroup.AddPushButton(qt5);
 
             ComboBoxData ShiftRange = new ComboBoxData("ShiftRange");
 

@@ -32,6 +32,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB.Structure;
+using _ExpApps;
 //using Autodesk.Revit.DB.Mechanical;
 
 namespace MultiDWG
@@ -41,6 +42,10 @@ namespace MultiDWG
     {
         public static Double menu_1 = 1;
         public static TextBox menu_1_Box = null;
+        public static Double menu_2 = 1;
+        public static TextBox menu_2_Box = null;
+        public static Double menu_3 = 1;
+        public static TextBox menu_3_Box = null;
         public static Double menu_A = 1;
         public static TextBox menu_A_Box = null;
         public static Double menu_B = 1;
@@ -160,6 +165,7 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             Options geOpt = new Options();
+            FindVert.GetMenuValue(uiapp);
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Calculate Duct Surface Area");
@@ -168,27 +174,53 @@ namespace MultiDWG
                     Element elem = doc.GetElement(eid);
                     FamilyInstance fami = elem as FamilyInstance;
                     MEPModel mepModel = fami.MEPModel;
-                    Double connectorAreas = 0; 
+                    double connectorAreas = 0;
+                    double surfaceAreas = 0;
+                    int ConnectorCount = 0;
+                    // siwtch to mepModel.ConnectorManager.Connectors.Size for counting connectors
                     foreach (Connector connector in mepModel.ConnectorManager.Connectors)
                     {
+                        ConnectorCount += 1;
                         try { 
-                            connectorAreas += Math.Pow(connector.Radius, 2) * Math.PI;
+                            connectorAreas += (Math.Pow(connector.Radius, 2) * Math.PI);
+                            
                         }
                         catch ( Autodesk.Revit.Exceptions.InvalidOperationException)
                         {
-                            connectorAreas += connector.Width * connector.Height;
+                            connectorAreas += (connector.Width * connector.Height);
                         }
                     }
+                    double parts = 0;
                     GeometryElement geoelem = elem.get_Geometry(geOpt);
                     foreach (GeometryInstance geoInst in geoelem)
                     {
-                        foreach (Solid solid in geoInst.GetInstanceGeometry())
+                        foreach (var solid in geoInst.GetInstanceGeometry())
                         {
-                            if (solid.SurfaceArea > 0)
+                            try
                             {
-                                elem.LookupParameter("Duct Surface Area").Set(solid.SurfaceArea-connectorAreas);
+                                Solid ssolid = solid as Solid;
+                                if ((ssolid.SurfaceArea > 0) && ((ssolid.SurfaceArea / ssolid.Volume) < 80))
+                                {
+                                    surfaceAreas += ssolid.SurfaceArea;
+                                    parts += 1;
+                                }
                             }
+                            catch (System.NullReferenceException)
+                            { continue; }
                         }
+                    }
+                    double total = surfaceAreas - connectorAreas *  parts ;
+                    elem.LookupParameter("Duct Surface Area").Set(total);
+                    // CHECK NUMBER OF PARTS
+                    if (Store.menu_A_Box.Value.ToString() != "") { TaskDialog.Show("Report", "Parts counted: " + parts); }
+                    // TO ONLY INCLUDE CONNECTOR SIZE ON ENDCAPS
+                    if (ConnectorCount == 1 ) { elem.LookupParameter("Duct Surface Area").Set(connectorAreas); }
+                    // TO USE BUILT-IN AREA FOR ROUND REDUCERS
+                    if (parts == 5 || Store.menu_B_Box.Value.ToString() != "")
+                    {
+                        FamilySymbol famsim = doc.GetElement(elem.GetTypeId()) as FamilySymbol;
+                        try { elem.LookupParameter("Duct Surface Area").Set(famsim.LookupParameter("Duct Area").AsDouble()); }
+                        catch { elem.LookupParameter("Duct Surface Area").Set(elem.LookupParameter("Duct Area").AsDouble()); }
                     }
                 }
                 tx.Commit();
@@ -390,6 +422,166 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class InjectParam : IExternalCommand
+    {
+        //Inject parameter value to target parameter
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            FindVert.GetMenuValue(uiapp);
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Inject Parameter");
+                double c = 0;
+                double x = 0;
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid) as Element;
+                    Parameter targetPara;
+                    Parameter sourcePara;
+                    try
+                    {
+                        targetPara = elem.LookupParameter(Store.menu_B_Box.Value.ToString()) as Parameter;
+                        sourcePara = elem.LookupParameter(Store.menu_A_Box.Value.ToString()) as Parameter;
+                        if (Store.menu_C_Box.Value.ToString() != "")
+                        {
+                            double orig;
+                            double oper;
+                            Double.TryParse(sourcePara.AsValueString(), out orig);
+                            Double.TryParse(Store.menu_C_Box.Value.ToString(), out oper);
+                            double sum = orig + oper;
+                            targetPara.Set(sum.ToString());
+
+                        }
+                        else
+                        {
+                            targetPara.Set(sourcePara.AsValueString());
+                        }
+                        c += 1;
+                    }
+                    catch { x += 1; }
+                }
+                trans.Commit();
+                string text = "Replaced '" + Store.menu_A_Box.Value.ToString()
+                              + "' to '" + Store.menu_B_Box.Value.ToString()
+                              + "' in " + c.ToString() + " elements";
+                if (c == 0) { text = "No replacement occurred"; }
+                if (x > 0) { text += Environment.NewLine + "No such parameter: " + x.ToString(); }
+                TaskDialog.Show("Result", text);
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class RecessHeight : IExternalCommand
+    {
+        //Replaces text in a parameter of selected elements
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Recess Heights");
+                double c = 0;
+                double r = 0;
+                double x = 0;
+                Level HostLevel = null;
+                double HostLevelElevation = 0;
+                FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
+                ICollection<Element> lvlCollection = lvlCollector.OfClass(typeof(Level)).ToElements();
+
+                if (Store.menu_1_Box.Value.ToString() != "")
+                {
+                    
+                    foreach (Element level in lvlCollection)
+                    {
+                        Level lvl = level as Level;
+                        if (level.Name == StoreExp.level)
+                        {
+                            HostLevel = lvl;
+                            HostLevelElevation = HostLevel.ProjectElevation; //Feet
+                        }
+                    }
+                }
+                foreach (ElementId eid in ids)
+                {
+                    String TargetParaString = "Comments";
+                    Double Resultelevation;
+                    Element elem = doc.GetElement(eid);
+                    //Get host Level's elevation
+                    if (HostLevel == null)
+                    { 
+                        FamilyInstance fami = elem as FamilyInstance;
+                        ElementId HostLevelId = fami.get_Parameter(BuiltInParameter.INSTANCE_SCHEDULE_ONLY_LEVEL_PARAM).AsElementId();
+                        HostLevel = doc.GetElement(HostLevelId) as Level;
+                        HostLevelElevation = HostLevel.ProjectElevation; //Feet
+                    }
+                    //Get Element Geom Center elevation
+                    LocationPoint ElemLocation = elem.Location as LocationPoint;
+                    Double ElemCenterElevation = ElemLocation.Point.Z;
+                    //Determine Center Elevation
+                    Resultelevation = ElemCenterElevation - HostLevelElevation ;
+                    Resultelevation = UnitUtils.ConvertFromInternalUnits(Resultelevation, DisplayUnitType.DUT_MILLIMETERS);
+                    Resultelevation = Math.Round(Resultelevation, 0);
+                    string familyName = elem.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM).AsValueString();
+                    if (Store.menu_3_Box.Value.ToString() != "")
+                    {
+                        TargetParaString = Store.menu_3_Box.Value.ToString();
+                    }
+                    try
+                    {
+                        Parameter para_inject;
+                        para_inject = elem.LookupParameter(TargetParaString) as Parameter;
+                   
+                        if (familyName.Contains("Circ"))
+                        {
+                            para_inject.Set(Resultelevation.ToString());
+                            c += 1;
+                        }
+                        if (familyName.Contains("Rect"))
+                        {
+                            double recess_height = UnitUtils.ConvertFromInternalUnits(elem.LookupParameter("Recess Height").AsDouble(), DisplayUnitType.DUT_MILLIMETERS);
+                            recess_height = Math.Round(recess_height, 0);
+                            Resultelevation -= (recess_height / 2);
+                            para_inject.Set(Resultelevation.ToString());
+                            r += 1;
+                        }
+                    }
+                    catch { x += 1; newsel.Add(elem.Id); }
+                }
+                trans.Commit();
+                uidoc.Selection.SetElementIds(newsel);
+                string text = "Circular Recess updated: " + c.ToString()
+                              + Environment.NewLine +  "Rectangular Recess updated: " + r.ToString()
+                              + Environment.NewLine + "Invalid Elements (selected) :" + x.ToString();
+                TaskDialog.Show("Result", text);
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class DuplicateSheets : IExternalCommand
     {
         //Replaces text in a parameter of selected elements
@@ -523,9 +715,13 @@ namespace MultiDWG
             {
                 trans2.Start("place view");
                     foreach (List<ElementId> list in sheetsandview)
-                    { Viewport vp = doc.GetElement(list[1]) as Viewport;
-                      Viewport newvp = Viewport.Create(doc,list[2],list[0], vp.GetBoxCenter());
-                    }
+                    {
+                    Viewport vp = doc.GetElement(list[1]) as Viewport;
+                    Viewport newvp = Viewport.Create(doc,list[2],list[0], vp.GetBoxCenter());
+                    newvp.Rotation = vp.Rotation;
+                    newvp.SetBoxCenter(vp.GetBoxCenter());
+                    newvp.ChangeTypeId(vp.GetTypeId());
+                }
                 trans2.Commit();
             }
             return Result.Succeeded;
@@ -558,7 +754,14 @@ namespace MultiDWG
             {
                 allLevels.Add(level);
             }
-            Double distance = allLevels[1].Elevation - allLevels[0].Elevation;
+            allLevels = allLevels.OrderBy(level => level.Elevation).ToList();
+            Double distance;
+            if (Store.menu_1_Box.Value.ToString() == "")
+            { distance = allLevels[17].Elevation - allLevels[16].Elevation; }
+            else
+            {
+                distance = UnitUtils.ConvertToInternalUnits(Double.Parse(Store.menu_1_Box.Value.ToString()), DisplayUnitType.DUT_MILLIMETERS);
+            }
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Sheets for levels");
@@ -662,7 +865,7 @@ namespace MultiDWG
                             XYZ newcropmax = cropmax.Add(diff);
                             cropregion.Max = newcropmax;
                             cropregion.Min = newcropmin;
-                            dview.CropBox = cropregion; 
+                            dview.CropBox = cropregion;
                             newlist.Add(dview.Id);
                         }
                         if (view.ViewType == ViewType.ThreeD)
@@ -693,14 +896,19 @@ namespace MultiDWG
                         {
                             int count = 0;
                             Level currentLevel = view.GenLevel;
-                            foreach (Level level in allLevels) 
+                            foreach (Level level in allLevels)
                             {
                                 if (level.Name == currentLevel.Name)
                                 { break; }
                                 else { count++; }
                             }
-                            Level nextlevel = allLevels[count+1];
-                            View newview = ViewPlan.Create(doc,view.GetTypeId(),nextlevel.Id);
+                            int newLevel = 1;
+                            if (Store.menu_2_Box.Value.ToString() != "")
+                            {
+                                newLevel = Int32.Parse(Store.menu_2_Box.Value.ToString());
+                            }
+                            Level nextlevel = allLevels[count + newLevel];
+                            View newview = ViewPlan.Create(doc, view.GetTypeId(), nextlevel.Id);
                             newview.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).Set(view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId());
                             //newview.CropBox = view.CropBox;
                             newview.ViewTemplateId = view.ViewTemplateId;
@@ -724,8 +932,11 @@ namespace MultiDWG
                 {
                     Viewport vp = doc.GetElement(list[1]) as Viewport;
                     Viewport newvp = Viewport.Create(doc, list[2], list[0], vp.GetBoxCenter());
-                    newvp.Rotation = vp.Rotation;
-                    newvp.SetBoxCenter(vp.GetBoxCenter());
+                    if (newvp.Rotation != vp.Rotation)
+                    {
+                        newvp.Rotation = vp.Rotation;
+                        newvp.SetBoxCenter(vp.GetBoxCenter());
+                    }
                     newvp.ChangeTypeId(vp.GetTypeId());
                 }
                 trans2.Commit();
@@ -837,6 +1048,90 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class NotOnSheet : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
+            foreach (ElementId eid in ids)
+            {
+                Element view = doc.GetElement(eid) as Element;
+                string SheetNum = view.LookupParameter("Sheet Number").AsString();
+                if (SheetNum == "---")
+                { newsel.Add(eid);
+                    ViewNames += view.LookupParameter("View Name").AsString() + Environment.NewLine;
+                }
+            }
+            ViewNames += "Press Delete after closing this window to delete.";
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select views not on sheet");
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+                TaskDialog.Show("List", ViewNames);
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class BkFlowCheck : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            //string ViewNames = "ID - different flow:" + Environment.NewLine;
+            foreach (ElementId eid in ids)
+            {
+                Element elem = doc.GetElement(eid);
+                FamilyInstance faminst = elem as FamilyInstance;
+                MEPModel mepmod = faminst.MEPModel;
+                Element connectedduct = null;
+                foreach ( Connector connector in mepmod.ConnectorManager.Connectors)
+                {
+                    foreach (Connector connected in connector.AllRefs)
+                    { connectedduct = connected.Owner; }
+                    break;
+                }
+                string Bmcflow = elem.LookupParameter("BMC_Flow").AsValueString();
+                string Reaflow = connectedduct.LookupParameter("Flow").AsValueString();
+                if (Bmcflow != Reaflow) { newsel.Add(eid);
+                TaskDialog.Show("Wrong","BMC: "+Bmcflow + Environment.NewLine + "Real: " + Reaflow); }
+            }
+            
+            //ViewNames += "Press Delete after closing this window to delete.";
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select Different");
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+                //TaskDialog.Show("List", ViewNames);
+            }
+            return Result.Succeeded;
+        }
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class FindVert : IExternalCommand
     {
         //Filters out non-vertical elements from selection based on
@@ -854,6 +1149,10 @@ namespace MultiDWG
             {
                 if (item.Name == "1")
                 { Store.menu_1_Box = (TextBox)item; }
+                if (item.Name == "2")
+                { Store.menu_2_Box = (TextBox)item; }
+                if (item.Name == "3")
+                { Store.menu_3_Box = (TextBox)item; }
                 if (item.Name == "A")
                 { Store.menu_A_Box = (TextBox)item; }
                 if (item.Name == "B")
@@ -863,6 +1162,8 @@ namespace MultiDWG
             }
             Double.TryParse(Store.menu_1_Box.Value as string, out Store.menu_1);
             if (Store.menu_1 == 0) { Store.menu_1 = 0.5; }
+            Double.TryParse(Store.menu_2_Box.Value as string, out Store.menu_2);
+            Double.TryParse(Store.menu_3_Box.Value as string, out Store.menu_3);
         }
         public Result Execute(
             ExternalCommandData commandData,

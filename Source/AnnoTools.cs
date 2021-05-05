@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -42,10 +42,12 @@ namespace AnnoTools
         public static Double scaleMod = 1;
         public static Options Dimop(View ActiveView)
         {
-            Options dimop = new Options();
-            dimop.ComputeReferences = true;
-            dimop.IncludeNonVisibleObjects = true;
-            dimop.View = ActiveView;
+            Options dimop = new Options
+            {
+                ComputeReferences = true,
+                IncludeNonVisibleObjects = true,
+                View = ActiveView
+            };
             return dimop;
         }
     }
@@ -220,17 +222,17 @@ namespace AnnoTools
             }
             foreach (RibbonItem item in inputpanel.GetItems())
             {
-                if (item.Name == "Left Space")
+                if (item.Name == "A")
                 { Store.left_ib = (TextBox)item; }
-                else if (item.Name == "Right Space")
+                else if (item.Name == "B")
                 { Store.right_ib = (TextBox)item; }
-                else if (item.Name == "First Y")
+                else if (item.Name == "C")
                 { Store.firsty_ib = (TextBox)item; }
-                else if (item.Name == "Step Y")
+                else if (item.Name == "1")
                 { Store.stepy_ib = (TextBox)item; }
-                else if (item.Name == "Split Point")
+                else if (item.Name == "2")
                 { Store.split_ib = (TextBox)item; }
-                else if (item.Name == "Placement")
+                else if (item.Name == "3")
                 { Store.place_ib = (TextBox)item; }
             }
             Double.TryParse(Store.left_ib.Value as string,out Store.mod_left);
@@ -571,12 +573,18 @@ namespace AnnoTools
                 else
                 {
                     Line texRot = Line.CreateBound(firstP.Curve.GetEndPoint(0), firstP.Curve.GetEndPoint(1));
-                    TextNoteOptions textRotate = new TextNoteOptions();
-                    textRotate.TypeId = defTextType; bool fix = false;
                     Double textAngle = texRot.Direction.AngleTo(new XYZ(0, -1, 0));
-                    if (textAngle >= Math.PI / 2) { textAngle = Math.PI - textAngle;
-                        fix = true; }
-                    textRotate.Rotation = textAngle;
+                    bool fix = false;
+                    if (textAngle >= Math.PI / 2)
+                    {
+                        textAngle = Math.PI - textAngle;
+                        fix = true;
+                    }
+                    TextNoteOptions textRotate = new TextNoteOptions
+                    {
+                        TypeId = defTextType, 
+                        Rotation = textAngle
+                    };
                     TextNote text = TextNote.Create(doc, doc.ActiveView.Id, LineDir.Evaluate(Store.mod_place, true), diameters, textRotate);
                     text.get_Parameter(BuiltInParameter.TEXT_ALIGN_HORZ).Set((Int32)TextAlignFlags.TEF_ALIGN_BOTTOM);
                     if (fix)
@@ -676,7 +684,7 @@ namespace AnnoTools
             }
             return xSorted;
         }
-        public List<List<ElementId>> SortZ(ICollection<ElementId> toSort, Document doc,double dMax)
+        public List<List<ElementId>> SortZ(ICollection<ElementId> toSort, Document doc, double dMax)
         {
             List<ElementId> zAbove = new List<ElementId>();
             List<ElementId> zBelow = new List<ElementId>();
@@ -691,15 +699,17 @@ namespace AnnoTools
                     if (eid.IntegerValue == compEid.IntegerValue) { continue; }
                     LocationCurve compLine = doc.GetElement(compEid).Location as LocationCurve;
                     double diffZ = checkZ - compLine.Curve.Evaluate(0.5, true).Z;
-                    if (Math.Abs(diffZ) > dMax/2)
+                    if (Math.Abs(diffZ) > dMax / 2)
                     { if (diffZ > 0) { zAbove.Add(eid); row = false; break; }
                         else { zBelow.Add(eid); row = false; break; }
                     }
                 }
-                if (row) { zRow.Add(eid);  }
+                if (row) { zRow.Add(eid); }
             }
-            List<List<ElementId>> zSorted = new List<List<ElementId>>();
-            zSorted.Add(zAbove);zSorted.Add(zBelow);zSorted.Add(zRow);
+            List<List<ElementId>> zSorted = new List<List<ElementId>>
+            {
+            zAbove, zBelow, zRow
+            };
             return zSorted;
         }
     }

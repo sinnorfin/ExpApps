@@ -1,7 +1,7 @@
 /**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
  *                     and Ildikó Trick <ildiko_trick@trimble.com>
  *
  * This file is part of Experimental Apps.
@@ -37,22 +37,23 @@ namespace DWGExport
 {
     [Transaction(TransactionMode.Manual)]
     public class DWGExport : IExternalCommand
-    { 
+    {
         public Result Execute(
           ExternalCommandData commandData,
           ref string message,
           ElementSet elements)
         {
-                UIApplication uiapp = commandData.Application;
-                UIDocument uidoc = uiapp.ActiveUIDocument;
-                Application app = uiapp.Application;
-                Document doc = uidoc.Document;
-                ViewSet myViewSet = new ViewSet();
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ViewSet myViewSet = new ViewSet();
 
-                DWGExportOptions DwgOptions = new DWGExportOptions();
-                DwgOptions.ExportingAreas = false;
-                DwgOptions.MergedViews = true;
-                
+            DWGExportOptions DwgOptions = new DWGExportOptions
+            {
+                ExportingAreas = false,
+                MergedViews = true
+            };
 
                 int c_f = 0;
                 Selection SelectedObjs = uidoc.Selection;
@@ -88,12 +89,15 @@ namespace DWGExport
                         TaskDialog.Show("Exit", "No Selection to Export");
                         return Result.Succeeded;
                     }
-                    TaskDialog td = new TaskDialog("Exporting DWGs");
-                    td.MainInstruction = ToRename.Count + " Views will be Exported to: " + path ;
+                    TaskDialog td = new TaskDialog("Exporting DWGs")
+                    {
+                        MainInstruction = ToRename.Count + " Views will be Exported to: " + path,
+                        CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No,
+                        VerificationText = "Compatibility mode (Autocad 2007)",
+                        ExpandedContent = display
+                    };
                     if (c_f != 0) { td.MainInstruction = td.MainInstruction + Environment.NewLine + c_f + " Selected item was not a view"; }
-                    td.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
-                    td.VerificationText = "Compatibility mode (Autocad 2007)";
-                    td.ExpandedContent = display;
+                    
                     TaskDialogResult response = td.Show();
                         if ((response != TaskDialogResult.Cancel) && (response != TaskDialogResult.No))
                             {
