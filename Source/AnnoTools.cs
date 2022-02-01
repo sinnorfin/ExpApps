@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019,2020,2021 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -167,6 +167,7 @@ namespace AnnoTools
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> newSel = new List<ElementId>();
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             using (Transaction tx = new Transaction(doc))
             {
@@ -184,9 +185,9 @@ namespace AnnoTools
                         if (start)
                         {
                             tagpos = tag.TagHeadPosition;
-                            start = false;
+                            start = false; newSel.Add(tag.Id);
                         }
-                        else { tag.TagHeadPosition = tagpos; }
+                        else { tag.TagHeadPosition = tagpos; newSel.Add(tag.Id); }
                     }
                     else
                     {
@@ -197,10 +198,12 @@ namespace AnnoTools
                         {
                             tagpos = tag.TagHeadPosition;
                             start = false;
+                            newSel.Add(tag.Id);
                         }
-                        else { tag.TagHeadPosition = tagpos; }
+                        else { tag.TagHeadPosition = tagpos; newSel.Add(tag.Id); }
                     }
                 }
+                uidoc.Selection.SetElementIds(newSel);
                 tx.Commit();
             }
             return Result.Succeeded;
