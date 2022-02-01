@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019,2020,2021 by Attila Kalina <attilakalina.arch@gmail.com>
  *                     and Ildikó Trick <ildiko_trick@trimble.com>
  *
  * This file is part of Experimental Apps.
@@ -100,7 +100,7 @@ namespace ExportAll
                         doc.Export(path, View.get_Parameter(BuiltInParameter.VIEW_NAME).AsString() + ".nwc", options: nweOptions);
                         viewIds.Add(View.Id);
                         display = display + Environment.NewLine + View.Title;
-                        String Filename = doc.Title.Replace(" ", "") + "-" + View.get_Parameter(BuiltInParameter.ELEM_TYPE_PARAM).AsValueString() + " - " + View.ViewName + ".dwg";
+                        String Filename = doc.Title.Replace(" ", "") + "-" + View.get_Parameter(BuiltInParameter.ELEM_TYPE_PARAM).AsValueString() + " - " + View.Name + ".dwg";
                         ToRename.Add(Filename);
                     }
                     path = rootpath + "\\DWG";

@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019,2020,2021 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -24,6 +24,7 @@
 
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.ApplicationServices;
@@ -395,11 +396,13 @@ namespace MultiDWG
                         {
                             para = elem.LookupParameter(Store.menu_A_Box.Value.ToString()) as Parameter;
                             string original = para.AsString();
-                            if (Store.menu_B_Box.Value.ToString() == "*add")
-                            { para.Set(original + Store.menu_C_Box.Value.ToString()); }
+                        if (Store.menu_B_Box.Value.ToString() == "*add")
+                            {
+                            original += Store.menu_C_Box.Value.ToString();
+                            para.Set(original); }
                             else if (Store.menu_B_Box.Value.ToString() == "add*")
                             { para.Set(Store.menu_C_Box.Value.ToString() + original); }
-
+                        else
                             {para.Set(original.Replace(Store.menu_B_Box.Value.ToString(), Store.menu_C_Box.Value.ToString()));}
                             if (para.AsString() != original)
                             {
@@ -452,19 +455,24 @@ namespace MultiDWG
                     {
                         targetPara = elem.LookupParameter(Store.menu_B_Box.Value.ToString()) as Parameter;
                         sourcePara = elem.LookupParameter(Store.menu_A_Box.Value.ToString()) as Parameter;
-                        if (Store.menu_C_Box.Value.ToString() != "")
+
+
+                        if (Store.menu_C_Box.Value.ToString() == "S")
+                        {
+                            targetPara.Set(sourcePara.AsString());
+                        }
+                        else if (Store.menu_C_Box.Value.ToString() == "VS")
+                        {
+                            targetPara.Set(sourcePara.AsValueString());
+                        }
+                        else if (Store.menu_C_Box.Value.ToString() != "")
                         {
                             double orig;
                             double oper;
-                            Double.TryParse(sourcePara.AsValueString(), out orig);
+                            Double.TryParse(sourcePara.AsString(), out orig);
                             Double.TryParse(Store.menu_C_Box.Value.ToString(), out oper);
                             double sum = orig + oper;
                             targetPara.Set(sum.ToString());
-
-                        }
-                        else
-                        {
-                            targetPara.Set(sourcePara.AsValueString());
                         }
                         c += 1;
                     }
@@ -526,7 +534,9 @@ namespace MultiDWG
                 }
                 foreach (ElementId eid in ids)
                 {
-                    String TargetParaString = "Comments";
+                    //Custom Inject Parameter
+
+                    // String TargetParaString = "Comments";
                     Double Resultelevation;
                     Element elem = doc.GetElement(eid);
                     //Get host Level's elevation
@@ -545,17 +555,21 @@ namespace MultiDWG
                     Resultelevation = UnitUtils.ConvertFromInternalUnits(Resultelevation, DisplayUnitType.DUT_MILLIMETERS);
                     Resultelevation = Math.Round(Resultelevation, 0);
                     string familyName = elem.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM).AsValueString();
-                    if (Store.menu_3_Box.Value.ToString() != "")
-                    {
-                        TargetParaString = Store.menu_3_Box.Value.ToString();
-                    }
+                    
+                    // Custom Inject Parameter
+
+                    //if (Store.menu_3_Box.Value.ToString() != "")
+                    //{
+                    //    TargetParaString = Store.menu_3_Box.Value.ToString();
+                    //}
                     try
                     {
                         Parameter para_inject;
-                        para_inject = elem.LookupParameter(TargetParaString) as Parameter;
+                        //para_inject = elem.LookupParameter(TargetParaString) as Parameter;
                    
                         if (familyName.Contains("Circ"))
                         {
+                            para_inject = elem.LookupParameter("Ass.Level Elevation Center") as Parameter;
                             para_inject.Set(Resultelevation.ToString());
                             c += 1;
                         }
@@ -564,6 +578,7 @@ namespace MultiDWG
                             double recess_height = UnitUtils.ConvertFromInternalUnits(elem.LookupParameter("Recess Height").AsDouble(), DisplayUnitType.DUT_MILLIMETERS);
                             recess_height = Math.Round(recess_height, 0);
                             Resultelevation -= (recess_height / 2);
+                            para_inject = elem.LookupParameter("Ass.Level Elevation Bottom") as Parameter;
                             para_inject.Set(Resultelevation.ToString());
                             r += 1;
                         }
@@ -578,6 +593,116 @@ namespace MultiDWG
                 TaskDialog.Show("Result", text);
             }
             return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ConvertRCFtoFloorPlan : IExternalCommand
+    {
+        //Replaces text in a parameter of selected elements
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            
+            FindVert.GetMenuValue(uiapp);
+            List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
+            FamilySymbol fs = new FilteredElementCollector(doc)
+           .OfClass(typeof(FamilySymbol))
+           .OfCategory(BuiltInCategory.OST_TitleBlocks)
+           .FirstOrDefault() as FamilySymbol;
+
+            IEnumerable<ViewFamilyType> ret = new FilteredElementCollector(doc)
+                            .WherePasses(new ElementClassFilter(typeof(ViewFamilyType), false))
+                            .Cast<ViewFamilyType>();
+            ViewFamilyType FamType = ret.Where(e => e.ViewFamily == ViewFamily.FloorPlan).First() as ViewFamilyType;
+
+            List<Level> allLevels = new List<Level>();
+            foreach (Level level in new FilteredElementCollector(doc).OfClass(typeof(Level)))
+            {
+                allLevels.Add(level);
+            }
+            allLevels = allLevels.OrderBy(level => level.Elevation).ToList();
+
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Convert Ceiling to Floor");
+                foreach (ElementId eid in ids)
+                {
+                    View view = doc.GetElement(eid) as View;
+                    if (view.ViewType == ViewType.CeilingPlan)
+                    {
+                        int count = 0;
+                        Level currentLevel = view.GenLevel;
+                        foreach (Level sellevel in allLevels)
+                        {
+                            if (sellevel.Name == currentLevel.Name)
+                            { break; }
+                            else { count++; }
+                        }
+                    Level level = allLevels[count];
+                        
+                        View newview = ViewPlan.Create(doc, FamType.Id, level.Id);
+                        
+                        newview.Name = view.Name.ToString() + " FP";
+                        
+                    ViewPlan newViewPlan = newview as ViewPlan;
+                    ViewPlan oldViewPlan = view as ViewPlan;
+                    newview.LookupParameter("Title on Sheet").Set(view.LookupParameter("Title on Sheet").AsString());
+                    newViewPlan.SetUnderlayOrientation(UnderlayOrientation.LookingDown);
+                    Level genlevel = newViewPlan.GenLevel;
+                    PlanViewRange oldVR = oldViewPlan.GetViewRange();
+                    PlanViewRange newVR = newViewPlan.GetViewRange();
+                    newVR.SetLevelId(PlanViewPlane.TopClipPlane, oldVR.GetLevelId(PlanViewPlane.ViewDepthPlane));
+                    newVR.SetLevelId(PlanViewPlane.CutPlane, oldVR.GetLevelId(PlanViewPlane.TopClipPlane));
+                    newVR.SetLevelId(PlanViewPlane.BottomClipPlane, oldVR.GetLevelId(PlanViewPlane.CutPlane));
+                    newVR.SetLevelId(PlanViewPlane.ViewDepthPlane, oldVR.GetLevelId(PlanViewPlane.CutPlane));
+                    newVR.SetOffset(PlanViewPlane.TopClipPlane, oldVR.GetOffset(PlanViewPlane.ViewDepthPlane));
+                    newVR.SetOffset(PlanViewPlane.CutPlane, oldVR.GetOffset(PlanViewPlane.TopClipPlane));
+                    newVR.SetOffset(PlanViewPlane.BottomClipPlane, oldVR.GetOffset(PlanViewPlane.CutPlane));
+                    newVR.SetOffset(PlanViewPlane.ViewDepthPlane, oldVR.GetOffset(PlanViewPlane.CutPlane));
+                    newViewPlan.SetViewRange(newVR);
+                    newview.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).Set(view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId());
+                    newview.ViewTemplateId = view.ViewTemplateId;
+                    CopyAnnot(doc, view, newview);
+                    }
+                }
+                trans.Commit();
+            }
+
+            return Result.Succeeded;
+        }
+        static void CopyAnnot(Document doc, View from, View to)
+        {
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FilteredElementCollector elementsInView = new FilteredElementCollector(doc, from.Id);
+            ICollection<Element> elems = elementsInView.ToElements();
+            string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
+            foreach (Element e in elems)
+            {
+                try
+                {
+                    string categoryName = e.Category.Name.ToString();
+                    if (e.Category.CategoryType == CategoryType.Annotation && categoryName != "Grids" && categoryName != "Section Boxes" && categoryName != "Reference Planes" && categoryName != "Levels")
+                    {
+                        newsel.Add(e.Id);
+                    }
+                }
+                catch { }
+            }
+            try
+            {
+                CopyPasteOptions cp = new CopyPasteOptions();
+                ElementTransformUtils.CopyElements(from, newsel, to, null, cp);
+            }
+            catch { }
         }
     }
     [Transaction(TransactionMode.Manual)]
@@ -1048,6 +1173,45 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class SwitchTeeTap : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            string RouteType = "No Change";
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Switch Tap/Tee Routing preference");
+                foreach (ElementId eid in ids)
+                {
+                    Duct duct = doc.GetElement(eid) as Duct;
+                    if (duct.DuctType.RoutingPreferenceManager.PreferredJunctionType == PreferredJunctionType.Tap)
+                    { duct.DuctType.RoutingPreferenceManager.PreferredJunctionType = PreferredJunctionType.Tee;
+                        RouteType = "Tee";
+                    }
+                    else { duct.DuctType.RoutingPreferenceManager.PreferredJunctionType = PreferredJunctionType.Tap;
+                        RouteType = "Tap";
+                    }
+                    break;
+                }
+                trans.Commit();
+                TaskDialog.Show("Info","Switched routing to: "+ RouteType);
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class NotOnSheet : IExternalCommand
     {
         public Result Execute(
@@ -1085,6 +1249,594 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class RemoveProjectParameter : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            FindVert.GetMenuValue(uiapp);
+            string parametername = Store.menu_A_Box.Value.ToString();
+            IEnumerable<ParameterElement> _params = new FilteredElementCollector(doc)
+                    .WhereElementIsNotElementType()
+                    .OfClass(typeof(ParameterElement))
+                    .Cast<ParameterElement>();
+            List<ParameterElement> ProjectParameters = new List<ParameterElement>();
+            foreach (ParameterElement pElem in _params)
+            {
+                if (pElem.GetDefinition().Name.Contains(parametername))
+                {
+                    ProjectParameters.Add(pElem);
+                }
+            }
+            using (Transaction t = new Transaction(doc, "remove projectparameter containing -A- "))
+            {
+                t.Start();
+                foreach (ParameterElement parameterElement in ProjectParameters)
+                {
+                    doc.Delete(parameterElement.Id);
+                }
+                t.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SectionsNotOnCurrentSheet : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            //UIApplication uiapp = commandData.Application;
+            //UIDocument uidoc = uiapp.ActiveUIDocument;
+            //Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            //Document doc = uidoc.Document;
+            //FindVert.GetMenuValue(uiapp);
+            //string parametername = Store.menu_A_Box.Value.ToString();
+            //IEnumerable<ParameterElement> _params = new FilteredElementCollector(doc)
+            //        .WhereElementIsNotElementType()
+            //        .OfClass(typeof(ParameterElement))
+            //        .Cast<ParameterElement>();
+            //List<ParameterElement> ProjectParameters = new List<ParameterElement>();
+            //foreach (ParameterElement pElem in _params)
+            //{
+            //    if (pElem.GetDefinition().Name.Contains(parametername))
+            //    {
+            //        ProjectParameters.Add(pElem);
+            //    }
+            //}
+            //using (Transaction t = new Transaction(doc, "remove projectparameter containing -A- "))
+            //{
+            //    t.Start();
+            //    foreach (ParameterElement parameterElement in ProjectParameters)
+            //    {
+            //        doc.Delete(parameterElement.Id);
+            //    }
+            //    t.Commit();
+            //}
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SelectAllOnLevel : IExternalCommand
+    {
+        //Returns elements that are referred to a link/import
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+            string LevelName = "X";
+            // Type in 'A' to select WITHOUT annotation instead
+            if (Store.menu_A_Box.Value != null)
+            {
+                if (Store.menu_A_Box.Value.ToString() != "")
+                { LevelName = Store.menu_A_Box.Value.ToString(); }
+            }
+            if (uidoc.Selection.GetElementIds().Count == 0)
+            {
+                FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                ICollection<Element> elems = elementsInView.ToElements();
+
+                string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
+                foreach (Element e in elems)
+                {
+                    try { 
+                    string check = "Y";
+                    if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
+                    else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
+
+                    if (check == LevelName)
+                        newsel.Add(e.Id);
+                        }
+                    
+                    catch { }
+                }
+            }
+            else
+            {
+                foreach (ElementId eid in uidoc.Selection.GetElementIds())
+                {
+                    Element e = doc.GetElement(eid);
+                    try
+                    {
+                        string check = "Y";
+                        if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
+                        else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
+                        
+                        if ( check == LevelName )
+                        {
+                            newsel.Add(e.Id);
+                        }
+                    }
+                    catch { }
+                }
+            }
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Select all annotation in view");
+                    uidoc.Selection.SetElementIds(newsel);
+                    trans.Commit();
+                }
+            
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class OverrideAllOnLevel : IExternalCommand
+    {
+        //Overrides graphics of elements grouped by level on active view
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+            Random rnd = new Random();
+            
+            FillPatternElement SolidPattern = null;
+            FilteredElementCollector allpatterns = new FilteredElementCollector(doc).OfClass(typeof(FillPatternElement));
+            FilteredElementCollector alllevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
+            OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
+            foreach (FillPatternElement pattern in allpatterns)
+            { if (pattern.GetFillPattern().IsSolidFill)
+                {SolidPattern = pattern; }
+            }
+            newOverride.SetSurfaceBackgroundPatternId(SolidPattern.Id);
+            newOverride.SetSurfaceForegroundPatternId(SolidPattern.Id);
+            foreach (Level level in alllevels)
+            {
+                string LevelName = level.Name;
+                Byte R = (byte)rnd.Next(0, 255);
+                Byte G = (byte)rnd.Next(0, 255);
+                Byte B = (byte)rnd.Next(0, 255);
+                newOverride.SetSurfaceBackgroundPatternColor(new Color(R, G, B));
+                newOverride.SetSurfaceForegroundPatternColor(new Color(R, G, B));
+                newOverride.SetProjectionLineColor(new Color(R, G, B));
+
+                if (uidoc.Selection.GetElementIds().Count == 0)
+                {
+                    FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                    ICollection<Element> elems = elementsInView.ToElements();
+                    foreach (Element e in elems)
+                    {
+                        try
+                        {
+                            string check = "Y";
+                            if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
+                            else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
+
+                            if (check == LevelName)
+                                newsel.Add(e.Id);
+                        }
+                        catch { }
+                    }
+                }
+                else
+                {
+                    foreach (ElementId eid in uidoc.Selection.GetElementIds())
+                    {
+                        Element e = doc.GetElement(eid);
+                        try
+                        {
+                            string check = "Y";
+                            if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
+                            else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
+
+                            if (check == LevelName)
+                            {
+                                newsel.Add(e.Id);
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Override Per level in view");
+                    foreach (ElementId eid in newsel)
+                    {doc.ActiveView.SetElementOverrides(eid, newOverride); }
+                    newsel = new List<ElementId>();
+                    trans.Commit();
+                }
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class OverrideAllByParameter : IExternalCommand
+    {
+        static UniqueValue checkUV(List<UniqueValue> uniqueValues, string name)
+        {
+            foreach (UniqueValue UV in uniqueValues)
+            {
+                if (UV.name == name)
+                { return UV; }
+            }
+            return null;
+        }
+    static List<Byte> Rndcolor()
+        {
+            List<Byte> colors = new List<byte>();
+            Random rnd = new Random();
+            colors.Add((byte)rnd.Next(0, 255));
+            colors.Add((byte)rnd.Next(0, 255));
+            colors.Add((byte)rnd.Next(0, 255));
+            return colors;  }
+        class UniqueValue
+        { public string name;
+            public Byte r;
+            public Byte g;
+            public Byte b;
+            public OverrideGraphicSettings newOverride;
+            public UniqueValue(string Name, Byte R, Byte G, Byte B,OverrideGraphicSettings OVGS)
+            {
+                name = Name;
+                r=R; g = G; b = B;
+                newOverride = new OverrideGraphicSettings();
+                newOverride.SetSurfaceBackgroundPatternId(OVGS.SurfaceBackgroundPatternId);
+                newOverride.SetSurfaceForegroundPatternId(OVGS.SurfaceForegroundPatternId);
+                newOverride.SetSurfaceBackgroundPatternColor(new Color(R, G, B));
+                newOverride.SetSurfaceForegroundPatternColor(new Color(R, G, B));
+                newOverride.SetProjectionLineColor(new Color(R, G, B));
+            }
+        }
+        //Overrides graphics of elements grouped by parameter on active view
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+
+            string parameterName = null;
+            string Menu_B = null;
+            bool ValueStringSwitch = true;
+            try
+            {
+                parameterName = Store.menu_A_Box.Value.ToString();
+                Menu_B = Store.menu_B_Box.Value.ToString(); }
+            catch{}
+            if (Menu_B == null || Menu_B == "") { ValueStringSwitch = false; }
+            List<UniqueValue> uniqueValues = new List<UniqueValue>();
+            Random rnd = new Random();
+            
+            FillPatternElement SolidPattern = null;
+            FilteredElementCollector allpatterns = new FilteredElementCollector(doc).OfClass(typeof(FillPatternElement));
+            OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
+            foreach (FillPatternElement pattern in allpatterns)
+            {
+                if (pattern.GetFillPattern().IsSolidFill)
+                { SolidPattern = pattern; }
+            }
+            newOverride.SetSurfaceBackgroundPatternId(SolidPattern.Id);
+            newOverride.SetSurfaceForegroundPatternId(SolidPattern.Id);
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Override Per parameter in view");
+                if (uidoc.Selection.GetElementIds().Count == 0)
+                {
+                    FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                    ICollection<Element> elems = elementsInView.ToElements();
+                    foreach (Element e in elems)
+                    {
+                       
+                        try
+                        {
+                            if (e.LookupParameter(parameterName) != null)
+                        {
+                                string value;
+                                if (ValueStringSwitch) { value = e.LookupParameter(parameterName).AsValueString(); }
+                                else { value = e.LookupParameter(parameterName).AsString();}
+                                UniqueValue checkedUV = checkUV(uniqueValues, value);
+                                
+                            if (checkedUV != null)
+                            { 
+                                doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
+                            }
+                            else {
+                                    UniqueValue newUV = new UniqueValue(value,
+                             (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
+                                    uniqueValues.Add(newUV);
+                                    doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                                }
+                        }
+                            else
+                            { }     
+                        }
+                        catch { }
+                    }
+                }
+                else
+                {
+                    foreach (ElementId eid in uidoc.Selection.GetElementIds())
+                    {
+                        Element e = doc.GetElement(eid);
+                        try
+                        {
+                            
+                            if (e.LookupParameter(parameterName) != null)
+                            {
+                                UniqueValue checkedUV = checkUV(uniqueValues, e.LookupParameter(parameterName).AsString());
+                                if (checkedUV != null)
+                                {
+                                    doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
+                                }
+                                else
+                                {
+                                    UniqueValue newUV = new UniqueValue(e.LookupParameter(parameterName).AsString(),
+                                (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
+                                    uniqueValues.Add(newUV);
+                                    doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                                }
+                            }
+                            else
+                            {
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                    trans.Commit();
+                }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class OnlyAnnotation : IExternalCommand
+    {
+        //Returns elements that are referred to a link/import
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FindVert.GetMenuValue(uiapp);
+            bool Annot = true;
+            // Type in 'A' to select WITHOUT annotation instead
+            if (Store.menu_A_Box.Value != null)
+            {
+                if (Store.menu_A_Box.Value.ToString() != "")
+                { Annot = false; }
+            }
+            if (uidoc.Selection.GetElementIds().Count == 0)
+            {
+                FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                ICollection<Element> elems = elementsInView.ToElements();
+
+                string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
+                foreach (Element e in elems)
+                {
+                    if (Annot)
+                    {
+                        try
+                        {
+                            if (e.Category.CategoryType == CategoryType.Annotation && e.Category.Name.ToString() != "Grids" && e.Category.Name.ToString() != "Section Boxes" && e.Category.Name.ToString() != "Reference Planes" && e.Category.Name.ToString() != "Levels")
+                            {
+                                newsel.Add(e.Id);
+                            }
+                        }
+                        catch { }
+                    }
+                    else {
+                        try
+                        {
+                            if (e.Category.CategoryType != CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                            {
+                                newsel.Add(e.Id);
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            else
+            {
+                foreach (ElementId eid in uidoc.Selection.GetElementIds())
+                    {
+                    if (Annot)
+                    {
+                        try
+                        {
+                            Element e = doc.GetElement(eid);
+                            if (e.Category.CategoryType == CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                            {
+                                newsel.Add(e.Id);
+                            }
+                        }
+                        catch { }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            Element e = doc.GetElement(eid);
+                            if (e.Category.CategoryType != CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                            {
+                                newsel.Add(e.Id);
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+                
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Select all annotation in view");
+                    uidoc.Selection.SetElementIds(newsel);
+                    trans.Commit();
+                }
+            
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class RefertoRefPlane : IExternalCommand
+    {
+        //Returns elements that are referred to a link/import
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
+            foreach (ElementId eid in ids)
+            {
+                Dimension dimension = doc.GetElement(eid) as Dimension;
+                foreach (Reference reference in dimension.References)
+                {
+
+                    if ((doc.GetElement(reference.ElementId) is ImportInstance) || (doc.GetElement(reference.ElementId) is RevitLinkInstance))
+                    {
+                        newsel.Add(eid);
+                    }
+                }
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Move reference of Dimensionline to refplane");
+                if (newsel.Count > 0) { TaskDialog.Show("x", "Reffered to Link!"); }
+                uidoc.Selection.SetElementIds(newsel);
+
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ReferredToImport : IExternalCommand
+    {
+        //Returns elements that are referred to a link/import
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
+            foreach (ElementId eid in ids)
+            {
+                Dimension dimension = doc.GetElement(eid) as Dimension;
+                foreach (Reference reference in dimension.References)
+                {
+
+                    if ((doc.GetElement(reference.ElementId) is ImportInstance) || (doc.GetElement(reference.ElementId) is RevitLinkInstance))
+                    {
+                        newsel.Add(eid);
+                    }
+                }
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select views referred to an import");
+                if (newsel.Count > 0) { TaskDialog.Show("x", "Reffered to Link!"); }
+                uidoc.Selection.SetElementIds(newsel);
+                
+                trans.Commit();
+            }
+            return Result.Succeeded;
+            }
+        }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SetInsWorkset : IExternalCommand
+    {
+        //Returns elements that are referred to a link/import
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            foreach (ElementId eid in ids)
+            {
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Set Ins to host ");
+
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class BkFlowCheck : IExternalCommand
     {
         public Result Execute(
@@ -1099,8 +1851,11 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            //string ViewNames = "ID - different flow:" + Environment.NewLine;
-            foreach (ElementId eid in ids)
+            FindVert.GetMenuValue(uiapp);
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("BK Flow Check/Set");
+                foreach (ElementId eid in ids)
             {
                 Element elem = doc.GetElement(eid);
                 FamilyInstance faminst = elem as FamilyInstance;
@@ -1113,23 +1868,62 @@ namespace MultiDWG
                     break;
                 }
                 string Bmcflow = elem.LookupParameter("BMC_Flow").AsValueString();
-                string Reaflow = connectedduct.LookupParameter("Flow").AsValueString();
-                if (Bmcflow != Reaflow) { newsel.Add(eid);
-                TaskDialog.Show("Wrong","BMC: "+Bmcflow + Environment.NewLine + "Real: " + Reaflow); }
+                string Realflow = connectedduct.LookupParameter("Flow").AsValueString();
+                if (Bmcflow != Realflow)
+                {
+                    newsel.Add(eid);
+                    //Type in 'A' for option to copy real flow to BK
+                    //OPTION
+                    if (Store.menu_A_Box.Value != null)
+                    {
+                            Parameter para_bmcflow = elem.LookupParameter("BMC_Flow") as Parameter;
+                        para_bmcflow.Set(connectedduct.LookupParameter("Flow").AsDouble());
+                    }
+                    TaskDialog.Show("Wrong","BMC: "+Bmcflow + Environment.NewLine + "Real: " + Realflow); }
             }
             
-            //ViewNames += "Press Delete after closing this window to delete.";
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Select Different");
+
+            
                 uidoc.Selection.SetElementIds(newsel);
                 trans.Commit();
-                //TaskDialog.Show("List", ViewNames);
             }
             return Result.Succeeded;
         }
     }
-
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class DisconnectMEP : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Disconnect MEP");
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid);
+                    FamilyInstance faminst = elem as FamilyInstance;
+                    MEPModel mepmod = faminst.MEPModel;
+                    foreach (Connector connector in mepmod.ConnectorManager.Connectors)
+                    {
+                        foreach (Connector connected in connector.AllRefs)
+                        {connector.DisconnectFrom(connected);}
+                    }
+                }
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class FindVert : IExternalCommand
@@ -1147,18 +1941,21 @@ namespace MultiDWG
             }
             foreach (RibbonItem item in inputpanel.GetItems())
             {
-                if (item.Name == "1")
-                { Store.menu_1_Box = (TextBox)item; }
-                if (item.Name == "2")
-                { Store.menu_2_Box = (TextBox)item; }
-                if (item.Name == "3")
-                { Store.menu_3_Box = (TextBox)item; }
-                if (item.Name == "A")
-                { Store.menu_A_Box = (TextBox)item; }
-                if (item.Name == "B")
-                { Store.menu_B_Box = (TextBox)item; }
-                if (item.Name == "C")
-                { Store.menu_C_Box = (TextBox)item; }
+                switch (item.Name)
+                {
+                    case "1":
+                        Store.menu_1_Box = (TextBox)item; break;
+                    case "2":
+                        Store.menu_2_Box = (TextBox)item; break;
+                    case "3":
+                        Store.menu_3_Box = (TextBox)item; break;
+                    case "A":
+                        Store.menu_A_Box = (TextBox)item; break;
+                    case "B":
+                        Store.menu_B_Box = (TextBox)item; break;
+                    case "C":
+                        Store.menu_C_Box = (TextBox)item; break; 
+                }
             }
             Double.TryParse(Store.menu_1_Box.Value as string, out Store.menu_1);
             if (Store.menu_1 == 0) { Store.menu_1 = 0.5; }

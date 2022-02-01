@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019,2020,2021 by Attila Kalina <attilakalina.arch@gmail.com>
  *
  * This file is part of Experimental Apps.
  * Exp Apps has been developed from June 2017 until end of March 2018 under the endorsement and for the use of hungarian BackOffice of Trimble VDC Services.
@@ -192,7 +192,7 @@ namespace SetViewRange
                 if (elem.Category.Name == "Views")
                 {
                     selectPlan = elem as View;
-                    TaskDialog.Show("Copying crop from", selectPlan.ViewName);
+                    TaskDialog.Show("Copying crop from", selectPlan.Title);
                 }
             }
             BoundingBoxXYZ box = new BoundingBoxXYZ();
@@ -234,7 +234,7 @@ namespace SetViewRange
                 {
                     ViewPlan selectPlan = elem as ViewPlan;
                     VR = selectPlan.GetViewRange();
-                    TaskDialog.Show("Copying VR from", selectPlan.ViewName);
+                    TaskDialog.Show("Copying VR from", selectPlan.Title);
                 }
             }
             if (VR == null)

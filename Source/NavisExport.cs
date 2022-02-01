@@ -1,7 +1,7 @@
 ﻿/**
  * Experimental Apps - Add-in For AutoDesk Revit
  *
- *  Copyright 2017,2018,2019 by Attila Kalina <attilakalina.arch@gmail.com>
+ *  Copyright 2017,2018,2019,2020,2021 by Attila Kalina <attilakalina.arch@gmail.com>
  *                     and Ildikó Trick <ildiko_trick@trimble.com> (2017)
  *
  * This file is part of Experimental Apps.

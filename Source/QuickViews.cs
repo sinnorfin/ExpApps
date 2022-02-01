@@ -96,7 +96,7 @@ namespace QuickViews
                     if (StoreExp.quickViews[ind] != null) {
                         try
                         {
-                            tb.Text = StoreExp.quickViews[ind].ViewName;
+                            tb.Text = StoreExp.quickViews[ind].Title;
                             tb.ReadOnly = true;
                             Controls.Add(tb);
                         }

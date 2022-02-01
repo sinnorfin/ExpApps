@@ -101,7 +101,6 @@ namespace Revision_Editor
                     if (rev.SequenceNumber.ToString() == text.Split(' ')[0])
                     {
                         sheetswithRev.Add(sheet);
-                        TaskDialog.Show("T", "DOUND");
                     }
                 }
             }
@@ -135,7 +134,8 @@ namespace Revision_Editor
             {
                 foreach (ViewSheet sheet in sheets)
                 {
-                    if (sheet.SheetNumber == button.Text.Substring(0,sheet.SheetNumber.Length))
+                   
+                    if (button.Text.Contains(sheet.SheetNumber.ToString()))
                     {
                         button.BackColor = highlight;
                     }
