@@ -31,6 +31,7 @@ using Autodesk.Revit.ApplicationServices;
 using System;
 using System.Linq;
 
+
 namespace AnnoTools
 {
     public static class Store
@@ -209,7 +210,9 @@ namespace AnnoTools
             return Result.Succeeded;
         }
     }
-    [Transaction(TransactionMode.Manual)]
+
+
+[Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class RackDim : IExternalCommand
     {
@@ -220,7 +223,7 @@ namespace AnnoTools
             RibbonPanel inputpanel = null;
             foreach (RibbonPanel panel in uiapp.GetRibbonPanels("Exp. Add-Ins"))
             {
-                if (panel.Name == "Annotation")
+                if (panel.Name == "Universal Modifiers")
                 { inputpanel = panel; }
             }
             foreach (RibbonItem item in inputpanel.GetItems())

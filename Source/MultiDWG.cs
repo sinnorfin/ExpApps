@@ -30,6 +30,7 @@ using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.ApplicationServices;
 using System.Collections.Generic;
 using System;
+using System.Windows.Media.Imaging;
 using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB.Structure;
@@ -38,8 +39,47 @@ using _ExpApps;
 
 namespace MultiDWG
 {
+    public static class GUI
+    {
+        public static void togglebutton(UIApplication uiapp,string panelname, string togglebutton_OFF, string togglebutton_ON)
+        {
+            RibbonPanel inputpanel = null;
+            PushButton toggle = null;
+            foreach (RibbonPanel panel in uiapp.GetRibbonPanels("Exp. Add-Ins"))
+            {
+                if (panel.Name == panelname)
+                { inputpanel = panel;
+                }
+            }
+            foreach (RibbonItem item in inputpanel.GetItems())
+            {
+                if (item.Name == togglebutton_OFF)
+                { toggle = (PushButton)item;
+                }
+            }
+            string s = toggle.ToolTip;
+            toggle.ToolTip = s.Equals(togglebutton_OFF) ? togglebutton_ON : togglebutton_OFF;
+            //find and switch button and data 
+            string IconsPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Icons\\");
+            string im_off = IconsPath + togglebutton_OFF + ".png"; string im_on = IconsPath + togglebutton_ON + ".png";
+            if (toggle.ToolTip == togglebutton_OFF)
+            {
+                Uri uriImage = new Uri(im_off);
+                BitmapImage Image = new BitmapImage(uriImage);
+                toggle.Image = Image;
+                toggle.ItemText = "OFF";
+            }
+            else
+            {
+                Uri uriImage = new Uri(im_on);
+                BitmapImage Image = new BitmapImage(uriImage);
+                toggle.Image = Image;
+                toggle.ItemText = "ON";
+            }
+        }
+    }
     public static class Store
-        //For storing values that are updated from the Ribbon
+    //For storing values that are updated from the Ribbon
     {
         public static Double menu_1 = 1;
         public static TextBox menu_1_Box = null;
@@ -53,6 +93,49 @@ namespace MultiDWG
         public static TextBox menu_B_Box = null;
         public static Double menu_C = 1;
         public static TextBox menu_C_Box = null;
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ToggleRed : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            GUI.togglebutton(uiapp, "Universal Modifiers", "Universal Toggle Red OFF", "Universal Toggle Red ON");
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ToggleGreen : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            GUI.togglebutton(uiapp, "Universal Modifiers", "Universal Toggle Green OFF", "Universal Toggle Green ON");
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ToggleBlue : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            GUI.togglebutton(uiapp, "Universal Modifiers", "Universal Toggle Blue OFF", "Universal Toggle Blue ON");
+            return Result.Succeeded;
+        }
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -118,40 +201,6 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class ConduitAngle : IExternalCommand
-    {
-        // Adding up angles of conduits and checking if against value
-        public Result Execute(
-            ExternalCommandData commandData,
-            ref string message,
-            ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
-            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            Double TotalAngle = 0;
-            foreach (ElementId eid in ids)
-            { Element elem = doc.GetElement(eid);
-                if (elem.Category.Name == "Conduit Fittings")
-                {
-                    string anglestring = elem.LookupParameter("Angle").AsValueString();
-                    string formatted = anglestring.Remove(anglestring.Length-4, 4);
-                    Double.TryParse(formatted,out double AddAngle);
-                    TotalAngle += AddAngle;
-                    }
-            } 
-            if ( TotalAngle > 360) { TaskDialog.Show("Check Total Angle:", "Total Angle: "
-                + TotalAngle + Environment.NewLine + "Needs Junction Box!"); }
-            else { TaskDialog.Show("Check Total Angle:", "Total Angle: " 
-                + TotalAngle + Environment.NewLine + "Fine!"); }
-            return Result.Succeeded;
-        }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
     public class DuctSurfaceArea : IExternalCommand
     {
         //Calculates Duct surface area, substracts connection surfaces
@@ -182,11 +231,11 @@ namespace MultiDWG
                     foreach (Connector connector in mepModel.ConnectorManager.Connectors)
                     {
                         ConnectorCount += 1;
-                        try { 
+                        try {
                             connectorAreas += (Math.Pow(connector.Radius, 2) * Math.PI);
-                            
+
                         }
-                        catch ( Autodesk.Revit.Exceptions.InvalidOperationException)
+                        catch (Autodesk.Revit.Exceptions.InvalidOperationException)
                         {
                             connectorAreas += (connector.Width * connector.Height);
                         }
@@ -210,12 +259,12 @@ namespace MultiDWG
                             { continue; }
                         }
                     }
-                    double total = surfaceAreas - connectorAreas *  parts ;
+                    double total = surfaceAreas - connectorAreas * parts;
                     elem.LookupParameter("Duct Surface Area").Set(total);
                     // CHECK NUMBER OF PARTS
                     if (Store.menu_A_Box.Value.ToString() != "") { TaskDialog.Show("Report", "Parts counted: " + parts); }
                     // TO ONLY INCLUDE CONNECTOR SIZE ON ENDCAPS
-                    if (ConnectorCount == 1 ) { elem.LookupParameter("Duct Surface Area").Set(connectorAreas); }
+                    if (ConnectorCount == 1) { elem.LookupParameter("Duct Surface Area").Set(connectorAreas); }
                     // TO USE BUILT-IN AREA FOR ROUND REDUCERS
                     if (parts == 5 || Store.menu_B_Box.Value.ToString() != "")
                     {
@@ -249,8 +298,8 @@ namespace MultiDWG
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Load Multiple DWGs");
-                    Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-                    Nullable<bool> result = dlg.ShowDialog();
+                Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+                Nullable<bool> result = dlg.ShowDialog();
                 if (result == true)
                 {
                     DWGImportOptions ImportOptions = new DWGImportOptions
@@ -318,7 +367,7 @@ namespace MultiDWG
                     {
                         newsel.Add(eid);
                     }
-                    catch {}
+                    catch { }
                 }
                 _ExpApps.StoreExp.SelectionMemory = newsel;
                 trans.Commit();
@@ -389,32 +438,32 @@ namespace MultiDWG
                 double c = 0;
                 double x = 0;
                 foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid) as Element;
+                    Parameter para;
+                    try
                     {
-                        Element elem = doc.GetElement(eid) as Element;
-                        Parameter para;
-                        try
-                        {
-                            para = elem.LookupParameter(Store.menu_A_Box.Value.ToString()) as Parameter;
-                            string original = para.AsString();
+                        para = elem.LookupParameter(Store.menu_A_Box.Value.ToString()) as Parameter;
+                        string original = para.AsString();
                         if (Store.menu_B_Box.Value.ToString() == "*add")
-                            {
+                        {
                             original += Store.menu_C_Box.Value.ToString();
                             para.Set(original); }
-                            else if (Store.menu_B_Box.Value.ToString() == "add*")
-                            { para.Set(Store.menu_C_Box.Value.ToString() + original); }
+                        else if (Store.menu_B_Box.Value.ToString() == "add*")
+                        { para.Set(Store.menu_C_Box.Value.ToString() + original); }
                         else
-                            {para.Set(original.Replace(Store.menu_B_Box.Value.ToString(), Store.menu_C_Box.Value.ToString()));}
-                            if (para.AsString() != original)
-                            {
-                                c += 1; newsel.Add(eid);
-                            }
+                        { para.Set(original.Replace(Store.menu_B_Box.Value.ToString(), Store.menu_C_Box.Value.ToString())); }
+                        if (para.AsString() != original)
+                        {
+                            c += 1; newsel.Add(eid);
                         }
-                        catch { x += 1; }
                     }
+                    catch { x += 1; }
+                }
                 trans.Commit();
                 uidoc.Selection.SetElementIds(newsel);
-                string text = "Replaced '" +  Store.menu_B_Box.Value.ToString() 
-                              + "' to '" + Store.menu_C_Box.Value.ToString() 
+                string text = "Replaced '" + Store.menu_B_Box.Value.ToString()
+                              + "' to '" + Store.menu_C_Box.Value.ToString()
                               + "' in " + c.ToString() + " elements";
                 if (c == 0) { text = "No replacement occurred"; }
                 if (x > 0) { text += Environment.NewLine + "No such parameter: " + x.ToString(); }
@@ -464,6 +513,13 @@ namespace MultiDWG
                         else if (Store.menu_C_Box.Value.ToString() == "VS")
                         {
                             targetPara.Set(sourcePara.AsValueString());
+                        }
+                        else if (Store.menu_C_Box.Value.ToString() == "Num")
+                        {
+                            double orig;
+                            Double.TryParse(sourcePara.AsValueString(), out orig);
+                            orig = UnitUtils.Convert(orig, DisplayUnitType.DUT_MILLIMETERS, DisplayUnitType.DUT_DECIMAL_FEET);
+                            targetPara.Set(orig);
                         }
                         else if (Store.menu_C_Box.Value.ToString() != "")
                         {
@@ -515,13 +571,14 @@ namespace MultiDWG
                 double r = 0;
                 double x = 0;
                 Level HostLevel = null;
+                bool setLevel = true;
                 double HostLevelElevation = 0;
                 FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
                 ICollection<Element> lvlCollection = lvlCollector.OfClass(typeof(Level)).ToElements();
 
                 if (Store.menu_1_Box.Value.ToString() != "")
                 {
-                    
+                    setLevel = false;
                     foreach (Element level in lvlCollection)
                     {
                         Level lvl = level as Level;
@@ -540,8 +597,8 @@ namespace MultiDWG
                     Double Resultelevation;
                     Element elem = doc.GetElement(eid);
                     //Get host Level's elevation
-                    if (HostLevel == null)
-                    { 
+                    if (setLevel)
+                    {
                         FamilyInstance fami = elem as FamilyInstance;
                         ElementId HostLevelId = fami.get_Parameter(BuiltInParameter.INSTANCE_SCHEDULE_ONLY_LEVEL_PARAM).AsElementId();
                         HostLevel = doc.GetElement(HostLevelId) as Level;
@@ -551,11 +608,9 @@ namespace MultiDWG
                     LocationPoint ElemLocation = elem.Location as LocationPoint;
                     Double ElemCenterElevation = ElemLocation.Point.Z;
                     //Determine Center Elevation
-                    Resultelevation = ElemCenterElevation - HostLevelElevation ;
-                    Resultelevation = UnitUtils.ConvertFromInternalUnits(Resultelevation, DisplayUnitType.DUT_MILLIMETERS);
-                    Resultelevation = Math.Round(Resultelevation, 0);
+                    Resultelevation = ElemCenterElevation - HostLevelElevation;
                     string familyName = elem.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM).AsValueString();
-                    
+
                     // Custom Inject Parameter
 
                     //if (Store.menu_3_Box.Value.ToString() != "")
@@ -566,20 +621,24 @@ namespace MultiDWG
                     {
                         Parameter para_inject;
                         //para_inject = elem.LookupParameter(TargetParaString) as Parameter;
-                   
+
                         if (familyName.Contains("Circ"))
                         {
-                            para_inject = elem.LookupParameter("Ass.Level Elevation Center") as Parameter;
-                            para_inject.Set(Resultelevation.ToString());
+                            para_inject = elem.LookupParameter("Ass. Level Elevation Center") as Parameter;
+                            para_inject.Set(Resultelevation);
+                            double recess_height = elem.LookupParameter("Recess Diameter").AsDouble();
+                            double BottomResultelevation = Resultelevation - (recess_height / 2);
+                            elem.LookupParameter("Ass. Level Elevation Bottom").Set(BottomResultelevation);
                             c += 1;
                         }
-                        if (familyName.Contains("Rect"))
+                        else if (familyName.Contains("Rect"))
                         {
-                            double recess_height = UnitUtils.ConvertFromInternalUnits(elem.LookupParameter("Recess Height").AsDouble(), DisplayUnitType.DUT_MILLIMETERS);
-                            recess_height = Math.Round(recess_height, 0);
-                            Resultelevation -= (recess_height / 2);
-                            para_inject = elem.LookupParameter("Ass.Level Elevation Bottom") as Parameter;
-                            para_inject.Set(Resultelevation.ToString());
+                            double recess_height = elem.LookupParameter("Recess Height").AsDouble();
+                            //recess_height = Math.Round(recess_height, 0);
+                            elem.LookupParameter("Ass. Level Elevation Center").Set(Resultelevation);
+                            double BottomResultelevation = Resultelevation - (recess_height / 2);
+                            para_inject = elem.LookupParameter("Ass. Level Elevation Bottom") as Parameter;
+                            para_inject.Set(BottomResultelevation);
                             r += 1;
                         }
                     }
@@ -588,7 +647,7 @@ namespace MultiDWG
                 trans.Commit();
                 uidoc.Selection.SetElementIds(newsel);
                 string text = "Circular Recess updated: " + c.ToString()
-                              + Environment.NewLine +  "Rectangular Recess updated: " + r.ToString()
+                              + Environment.NewLine + "Rectangular Recess updated: " + r.ToString()
                               + Environment.NewLine + "Invalid Elements (selected) :" + x.ToString();
                 TaskDialog.Show("Result", text);
             }
@@ -611,7 +670,7 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            
+
             FindVert.GetMenuValue(uiapp);
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
             FamilySymbol fs = new FilteredElementCollector(doc)
@@ -647,31 +706,31 @@ namespace MultiDWG
                             { break; }
                             else { count++; }
                         }
-                    Level level = allLevels[count];
-                        
+                        Level level = allLevels[count];
+
                         View newview = ViewPlan.Create(doc, FamType.Id, level.Id);
-                        
+
                         newview.Name = view.Name.ToString() + " FP";
-                        
-                    ViewPlan newViewPlan = newview as ViewPlan;
-                    ViewPlan oldViewPlan = view as ViewPlan;
-                    newview.LookupParameter("Title on Sheet").Set(view.LookupParameter("Title on Sheet").AsString());
-                    newViewPlan.SetUnderlayOrientation(UnderlayOrientation.LookingDown);
-                    Level genlevel = newViewPlan.GenLevel;
-                    PlanViewRange oldVR = oldViewPlan.GetViewRange();
-                    PlanViewRange newVR = newViewPlan.GetViewRange();
-                    newVR.SetLevelId(PlanViewPlane.TopClipPlane, oldVR.GetLevelId(PlanViewPlane.ViewDepthPlane));
-                    newVR.SetLevelId(PlanViewPlane.CutPlane, oldVR.GetLevelId(PlanViewPlane.TopClipPlane));
-                    newVR.SetLevelId(PlanViewPlane.BottomClipPlane, oldVR.GetLevelId(PlanViewPlane.CutPlane));
-                    newVR.SetLevelId(PlanViewPlane.ViewDepthPlane, oldVR.GetLevelId(PlanViewPlane.CutPlane));
-                    newVR.SetOffset(PlanViewPlane.TopClipPlane, oldVR.GetOffset(PlanViewPlane.ViewDepthPlane));
-                    newVR.SetOffset(PlanViewPlane.CutPlane, oldVR.GetOffset(PlanViewPlane.TopClipPlane));
-                    newVR.SetOffset(PlanViewPlane.BottomClipPlane, oldVR.GetOffset(PlanViewPlane.CutPlane));
-                    newVR.SetOffset(PlanViewPlane.ViewDepthPlane, oldVR.GetOffset(PlanViewPlane.CutPlane));
-                    newViewPlan.SetViewRange(newVR);
-                    newview.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).Set(view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId());
-                    newview.ViewTemplateId = view.ViewTemplateId;
-                    CopyAnnot(doc, view, newview);
+
+                        ViewPlan newViewPlan = newview as ViewPlan;
+                        ViewPlan oldViewPlan = view as ViewPlan;
+                        newview.LookupParameter("Title on Sheet").Set(view.LookupParameter("Title on Sheet").AsString());
+                        newViewPlan.SetUnderlayOrientation(UnderlayOrientation.LookingDown);
+                        Level genlevel = newViewPlan.GenLevel;
+                        PlanViewRange oldVR = oldViewPlan.GetViewRange();
+                        PlanViewRange newVR = newViewPlan.GetViewRange();
+                        newVR.SetLevelId(PlanViewPlane.TopClipPlane, oldVR.GetLevelId(PlanViewPlane.ViewDepthPlane));
+                        newVR.SetLevelId(PlanViewPlane.CutPlane, oldVR.GetLevelId(PlanViewPlane.TopClipPlane));
+                        newVR.SetLevelId(PlanViewPlane.BottomClipPlane, oldVR.GetLevelId(PlanViewPlane.CutPlane));
+                        newVR.SetLevelId(PlanViewPlane.ViewDepthPlane, oldVR.GetLevelId(PlanViewPlane.CutPlane));
+                        newVR.SetOffset(PlanViewPlane.TopClipPlane, oldVR.GetOffset(PlanViewPlane.ViewDepthPlane));
+                        newVR.SetOffset(PlanViewPlane.CutPlane, oldVR.GetOffset(PlanViewPlane.TopClipPlane));
+                        newVR.SetOffset(PlanViewPlane.BottomClipPlane, oldVR.GetOffset(PlanViewPlane.CutPlane));
+                        newVR.SetOffset(PlanViewPlane.ViewDepthPlane, oldVR.GetOffset(PlanViewPlane.CutPlane));
+                        newViewPlan.SetViewRange(newVR);
+                        newview.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).Set(view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId());
+                        newview.ViewTemplateId = view.ViewTemplateId;
+                        CopyAnnot(doc, view, newview);
                     }
                 }
                 trans.Commit();
@@ -754,7 +813,7 @@ namespace MultiDWG
                     {
                         if (Store.menu_A_Box.Value.ToString() != "*auto*")
                         {
-                            newsheet.SheetNumber = sheet.SheetNumber + num_suffix; 
+                            newsheet.SheetNumber = sheet.SheetNumber + num_suffix;
                         }
                     }
                     catch
@@ -771,7 +830,7 @@ namespace MultiDWG
                             trans.Commit();
                             return Result.Succeeded;
                         }
-                    } 
+                    }
 
                     // //Copy custom parameters from sheet to duplicate Specific to project
 
@@ -794,7 +853,7 @@ namespace MultiDWG
                     }
                     foreach (Element el in ElementsOnSheet)
                     {
-                       if (el is FamilyInstance)
+                        if (el is FamilyInstance)
                         {
                             copy.Add(el.Id);
                         }
@@ -813,7 +872,7 @@ namespace MultiDWG
                                 d_Option = ViewDuplicateOption.Duplicate;
                             }
                         }
-                            Viewport vp = doc.GetElement(portid) as Viewport;
+                        Viewport vp = doc.GetElement(portid) as Viewport;
                         List<ElementId> newlist = new List<ElementId>();
                         Element viewelem = doc.GetElement(vp.ViewId);
                         View view = viewelem as View;
@@ -823,7 +882,7 @@ namespace MultiDWG
                         }
                         else
                         { View dview = doc.GetElement(view.Duplicate(d_Option)) as View;
-                          newlist.Add(dview.Id);
+                            newlist.Add(dview.Id);
                         }
                         newlist.Add(vp.Id);
                         newlist.Add(newsheet.Id);
@@ -832,17 +891,17 @@ namespace MultiDWG
                     View from = sheet as View;
                     View to = newsheet as View;
                     CopyPasteOptions cp = new CopyPasteOptions();
-                    ElementTransformUtils.CopyElements(from,copy,to,null,cp);
+                    ElementTransformUtils.CopyElements(from, copy, to, null, cp);
                 }
                 trans.Commit();
             }
             using (Transaction trans2 = new Transaction(doc))
             {
                 trans2.Start("place view");
-                    foreach (List<ElementId> list in sheetsandview)
-                    {
+                foreach (List<ElementId> list in sheetsandview)
+                {
                     Viewport vp = doc.GetElement(list[1]) as Viewport;
-                    Viewport newvp = Viewport.Create(doc,list[2],list[0], vp.GetBoxCenter());
+                    Viewport newvp = Viewport.Create(doc, list[2], list[0], vp.GetBoxCenter());
                     newvp.Rotation = vp.Rotation;
                     newvp.SetBoxCenter(vp.GetBoxCenter());
                     newvp.ChangeTypeId(vp.GetTypeId());
@@ -1087,7 +1146,7 @@ namespace MultiDWG
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             //FindVert.GetMenuValue(uiapp);
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
-            
+
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Rotate Sheets");
@@ -1113,7 +1172,7 @@ namespace MultiDWG
                     }
                     foreach (ElementId portid in sheet.GetAllViewports())
                     {
-                       
+
                         Viewport vp = doc.GetElement(portid) as Viewport;
                         XYZ center = vp.GetBoxCenter();
                         XYZ newcenter = new XYZ(center.Y, center.X * (-1), center.Z);
@@ -1180,7 +1239,7 @@ namespace MultiDWG
            ref string message,
            ElementSet elements)
         {
-            
+
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
@@ -1205,7 +1264,7 @@ namespace MultiDWG
                     break;
                 }
                 trans.Commit();
-                TaskDialog.Show("Info","Switched routing to: "+ RouteType);
+                TaskDialog.Show("Info", "Switched routing to: " + RouteType);
             }
             return Result.Succeeded;
         }
@@ -1356,15 +1415,15 @@ namespace MultiDWG
                 string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
                 foreach (Element e in elems)
                 {
-                    try { 
-                    string check = "Y";
-                    if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
-                    else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
+                    try {
+                        string check = "Y";
+                        if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
+                        else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
 
-                    if (check == LevelName)
-                        newsel.Add(e.Id);
-                        }
-                    
+                        if (check == LevelName)
+                            newsel.Add(e.Id);
+                    }
+
                     catch { }
                 }
             }
@@ -1378,8 +1437,8 @@ namespace MultiDWG
                         string check = "Y";
                         if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
                         else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
-                        
-                        if ( check == LevelName )
+
+                        if (check == LevelName)
                         {
                             newsel.Add(e.Id);
                         }
@@ -1387,15 +1446,133 @@ namespace MultiDWG
                     catch { }
                 }
             }
-                using (Transaction trans = new Transaction(doc))
-                {
-                    trans.Start("Select all annotation in view");
-                    uidoc.Selection.SetElementIds(newsel);
-                    trans.Commit();
-                }
-            
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select all annotation in view");
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+            }
+
             return Result.Succeeded;
         }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ClearOverrides : IExternalCommand
+    {
+        //Clears all overrides in view
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> newsel = new List<ElementId>();
+            OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
+            if (uidoc.Selection.GetElementIds().Count == 0)
+            {
+                FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                ICollection<Element> elems = elementsInView.ToElements();
+                foreach (Element e in elems)
+                {
+                    try
+                    {
+                    newsel.Add(e.Id); 
+                    }
+                    catch { }
+                }
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Remove overrides in view");
+                foreach (ElementId eid in newsel)
+                { doc.ActiveView.SetElementOverrides(eid, newOverride); }
+                newsel = new List<ElementId>();
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class HighlightIds : IExternalCommand
+    {
+        //Overrides graphics of elements grouped by level on active view
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> newsel = new List<ElementId>();
+            FilteredElementCollector elementsInView = null;
+            Random rnd = new Random();
+            List<string> Ids = new List<string>();
+            using (TextReader fileids = File.OpenText(@"C:\pROJEKT\POM\IDS.txt"))
+            {
+                string ID;
+                while ((ID = fileids.ReadLine()) != null)
+                { Ids.Add(ID); }
+            }
+
+            FillPatternElement SolidPattern = null;
+            FilteredElementCollector allpatterns = new FilteredElementCollector(doc).OfClass(typeof(FillPatternElement));
+            FilteredElementCollector alllevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
+            OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
+            OverrideGraphicSettings transparent = new OverrideGraphicSettings();
+            foreach (FillPatternElement pattern in allpatterns)
+            {
+                if (pattern.GetFillPattern().IsSolidFill)
+                { SolidPattern = pattern; }
+            }
+            newOverride.SetSurfaceBackgroundPatternId(SolidPattern.Id);
+            newOverride.SetSurfaceForegroundPatternId(SolidPattern.Id);
+
+            Byte R = (byte)rnd.Next(0, 255);
+            Byte G = (byte)rnd.Next(0, 255);
+            Byte B = (byte)rnd.Next(0, 255);
+            newOverride.SetSurfaceBackgroundPatternColor(new Color(R, G, B));
+            newOverride.SetSurfaceForegroundPatternColor(new Color(R, G, B));
+            newOverride.SetProjectionLineColor(new Color(R, G, B));
+            newOverride.SetSurfaceTransparency(0);
+            transparent.SetSurfaceTransparency(100);
+            if (uidoc.Selection.GetElementIds().Count == 0)
+            {
+                elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                ICollection<Element> elems = elementsInView.ToElements();
+                foreach (Element e in elems)
+                {
+                    try
+                    {
+                        foreach (string id in Ids)
+                        {
+                            if (e.Id.ToString() == id)
+                            { newsel.Add(e.Id); }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Highlight IDs in view");
+                foreach (Element elem in elementsInView)
+                { doc.ActiveView.SetElementOverrides(elem.Id, transparent); }
+                foreach (ElementId eid in newsel)
+                { doc.ActiveView.SetElementOverrides(eid, newOverride); }
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        } 
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -1572,25 +1749,24 @@ namespace MultiDWG
                         try
                         {
                             if (e.LookupParameter(parameterName) != null)
-                        {
-                                string value;
-                                if (ValueStringSwitch) { value = e.LookupParameter(parameterName).AsValueString(); }
-                                else { value = e.LookupParameter(parameterName).AsString();}
-                                UniqueValue checkedUV = checkUV(uniqueValues, value);
+                            {
+                                    string value;
+                                    if (ValueStringSwitch) { value = e.LookupParameter(parameterName).AsValueString(); }
+                                    else { value = e.LookupParameter(parameterName).AsString();}
+                                    UniqueValue checkedUV = checkUV(uniqueValues, value);
                                 
-                            if (checkedUV != null)
-                            { 
-                                doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
-                            }
-                            else {
-                                    UniqueValue newUV = new UniqueValue(value,
-                             (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
-                                    uniqueValues.Add(newUV);
-                                    doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                                if (checkedUV != null)
+                                { 
+                                    doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
                                 }
-                        }
-                            else
-                            { }     
+                                else
+                                {
+                                UniqueValue newUV = new UniqueValue(value, 
+                                    (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
+                                uniqueValues.Add(newUV);
+                                doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                                }
+                            } 
                         }
                         catch { }
                     }
@@ -1617,9 +1793,6 @@ namespace MultiDWG
                                     uniqueValues.Add(newUV);
                                     doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
                                 }
-                            }
-                            else
-                            {
                             }
                         }
                         catch { }
@@ -1714,14 +1887,33 @@ namespace MultiDWG
                     }
                 }
             }
-                
                 using (Transaction trans = new Transaction(doc))
                 {
                     trans.Start("Select all annotation in view");
                     uidoc.Selection.SetElementIds(newsel);
                     trans.Commit();
                 }
-            
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class IdofLinkedElement : IExternalCommand
+    {
+        //Returns Id of selected elements in link.
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObj = uidoc.Selection;
+            string linkedid = SelectedObj.PickObject(ObjectType.LinkedElement).LinkedElementId.ToString();
+            TaskDialog.Show("Id of selected object","Copied to Clipboard: "+ linkedid);
+            System.Windows.Forms.Clipboard.SetText(linkedid);
             return Result.Succeeded;
         }
     }
@@ -1748,7 +1940,6 @@ namespace MultiDWG
                 Dimension dimension = doc.GetElement(eid) as Dimension;
                 foreach (Reference reference in dimension.References)
                 {
-
                     if ((doc.GetElement(reference.ElementId) is ImportInstance) || (doc.GetElement(reference.ElementId) is RevitLinkInstance))
                     {
                         newsel.Add(eid);
@@ -1789,7 +1980,6 @@ namespace MultiDWG
                 Dimension dimension = doc.GetElement(eid) as Dimension;
                 foreach (Reference reference in dimension.References)
                 {
-
                     if ((doc.GetElement(reference.ElementId) is ImportInstance) || (doc.GetElement(reference.ElementId) is RevitLinkInstance))
                     {
                         newsel.Add(eid);
@@ -1807,34 +1997,6 @@ namespace MultiDWG
             return Result.Succeeded;
             }
         }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class SetInsWorkset : IExternalCommand
-    {
-        //Returns elements that are referred to a link/import
-        public Result Execute(
-           ExternalCommandData commandData,
-           ref string message,
-           ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
-            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            foreach (ElementId eid in ids)
-            {
-            }
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Set Ins to host ");
-
-                trans.Commit();
-            }
-            return Result.Succeeded;
-        }
-    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class BkFlowCheck : IExternalCommand
@@ -1881,9 +2043,6 @@ namespace MultiDWG
                     }
                     TaskDialog.Show("Wrong","BMC: "+Bmcflow + Environment.NewLine + "Real: " + Realflow); }
             }
-            
-
-            
                 uidoc.Selection.SetElementIds(newsel);
                 trans.Commit();
             }
@@ -1892,8 +2051,54 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class DisconnectMEP : IExternalCommand
+    public class ExplodeMEP : IExternalCommand
     {
+        public List<ElementId> findconnected (List<Connector> connectors)
+        {
+            List<ElementId> connectedelements = new List<ElementId>();
+            foreach (Connector connector in connectors)
+            {
+                if (connector.IsConnected)
+                {
+                    foreach (Connector connected in connector.AllRefs)
+                    {
+                        if (connector.IsConnected)
+                        { connectedelements.Add(connected.Owner.Id); }
+                    }
+                }
+            }
+            return connectedelements;
+        }
+        public List<Connector> findconnectors (Document doc, ICollection<ElementId> ids)
+        {
+            
+            List<Connector> outerconnectors = new List<Connector>();
+            foreach (ElementId eid in ids)
+            {
+                ConnectorSet connectors;
+                Element elem = doc.GetElement(eid);
+                if (elem.Category.Name == "Ducts" || elem.Category.Name == "Pipes")
+                {
+                    MEPCurve mepcurve = elem as MEPCurve;
+                    connectors = mepcurve.ConnectorManager.Connectors;
+                }
+                else
+                {
+                    FamilyInstance faminst = elem as FamilyInstance;
+                    MEPModel mepmod = faminst.MEPModel;
+                    connectors = mepmod.ConnectorManager.Connectors;
+                }
+                foreach (Connector connector in connectors)
+                {
+                    if (connector.IsConnected)
+                    {
+                        TaskDialog.Show("x", connector.Angle.ToString());
+                        outerconnectors.Add(connector);
+                    }
+                }
+            }
+            return outerconnectors;
+        }
         public Result Execute(
            ExternalCommandData commandData,
            ref string message,
@@ -1905,20 +2110,27 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            
+            List<Connector> outerconnectors = findconnectors(doc, ids);
+            List<ElementId> connectedelements = findconnected(outerconnectors);
+            List<ElementId> uniqueelements = connectedelements.Distinct().ToList();
+            List<Connector> uniqueconnectors = findconnectors(doc, uniqueelements);
+            TaskDialog.Show("x", connectedelements.Count.ToString() + "ALL");
+            TaskDialog.Show("x", uniqueelements.Count.ToString() + "UE");
+            TaskDialog.Show("x", uniqueconnectors.Count.ToString() + "UC");
+
             using (Transaction trans = new Transaction(doc))
             {
-                trans.Start("Disconnect MEP");
-                foreach (ElementId eid in ids)
+                trans.Start("Explode MEP");
+                foreach (Connector connector in uniqueconnectors)
                 {
-                    Element elem = doc.GetElement(eid);
-                    FamilyInstance faminst = elem as FamilyInstance;
-                    MEPModel mepmod = faminst.MEPModel;
-                    foreach (Connector connector in mepmod.ConnectorManager.Connectors)
+                    foreach (Connector connected in connector.AllRefs)
                     {
-                        foreach (Connector connected in connector.AllRefs)
-                        {connector.DisconnectFrom(connected);}
+                        if (!ids.Contains(connector.Owner.Id))
+                        { connector.DisconnectFrom(connected); }
                     }
                 }
+                uidoc.Selection.SetElementIds(uniqueelements);
                 trans.Commit();
             }
             return Result.Succeeded;
@@ -1936,7 +2148,7 @@ namespace MultiDWG
             RibbonPanel inputpanel = null;
             foreach (RibbonPanel panel in uiapp.GetRibbonPanels("Exp. Add-Ins"))
             {
-                if (panel.Name == "Annotation")
+                if (panel.Name == "Universal Modifiers")
                 { inputpanel = panel; }
             }
             foreach (RibbonItem item in inputpanel.GetItems())
@@ -2092,4 +2304,38 @@ namespace MultiDWG
             catch (System.NullReferenceException) { TaskDialog.Show("Cannot create Ref.Plane", "Select 3 Valid Items for creating the Ref.Plane."); }
         } 
     }
+    //[Transaction(TransactionMode.Manual)]
+    //[Regeneration(RegenerationOption.Manual)]
+    //public class ConduitAngle : IExternalCommand
+    //{
+    //    // Adding up angles of conduits and checking if against value
+    //    public Result Execute(
+    //        ExternalCommandData commandData,
+    //        ref string message,
+    //        ElementSet elements)
+    //    {
+    //        UIApplication uiapp = commandData.Application;
+    //        UIDocument uidoc = uiapp.ActiveUIDocument;
+    //        Application app = uiapp.Application;
+    //        Document doc = uidoc.Document;
+    //        Selection SelectedObjs = uidoc.Selection;
+    //        ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+    //        Double TotalAngle = 0;
+    //        foreach (ElementId eid in ids)
+    //        { Element elem = doc.GetElement(eid);
+    //            if (elem.Category.Name == "Conduit Fittings")
+    //            {
+    //                string anglestring = elem.LookupParameter("Angle").AsValueString();
+    //                string formatted = anglestring.Remove(anglestring.Length - 4, 4);
+    //                Double.TryParse(formatted, out double AddAngle);
+    //                TotalAngle += AddAngle;
+    //            }
+    //        }
+    //        if (TotalAngle > 360) { TaskDialog.Show("Check Total Angle:", "Total Angle: "
+    //           + TotalAngle + Environment.NewLine + "Needs Junction Box!"); }
+    //        else { TaskDialog.Show("Check Total Angle:", "Total Angle: "
+    //            + TotalAngle + Environment.NewLine + "Fine!"); }
+    //        return Result.Succeeded;
+    //    }
+    //}
 }

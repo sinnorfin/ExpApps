@@ -36,16 +36,71 @@ namespace _ExpApps
     public class StoreExp
     {
         public static List<View> quickViews = new List<View> { null, null, null, null, null, null };
-        public static string level = "Active PlanView" ; public static string ThreeDview = "Same Name";
+        public static string level = "Active PlanView"; public static string ThreeDview = "Same Name";
         public static Double vrOpt1; public static Double vrOpt2; public static Double vrOpt3;
         public static Double vrOpt4; public static Double vrOpt5; public static Double vrOpt6;
         public static ICollection<ElementId> SelectionMemory = new List<ElementId> { };
+        public static Level GetLevel(FilteredElementCollector allLevels, string levelName)
+        {
+            Level selectedLevel = null;
+            foreach (Level level in allLevels)
+            {
+                if (level.Name == levelName)
+                    selectedLevel = level;
+            }
+            return selectedLevel;
+        }
+        public static ComboBox GetComboBox(List<RibbonPanel> ribbonPanels, string panelName, string ribbonItemName )
+        {
+            RibbonPanel inputpanel = null;
+            ComboBox inputbox = null;
+            foreach (RibbonPanel panel in ribbonPanels)
+            {
+                if (panel.Name == panelName)
+                { inputpanel = panel; }
+            }
+            foreach (RibbonItem item in inputpanel.GetItems())
+            {
+                if (item.Name == ribbonItemName)
+                { inputbox = (ComboBox)item; }
+            }
+            return inputbox;
+        }
     }
     class App : IExternalApplication
     {
         public static UIControlledApplication UiCtrApp;
         public static Document doc;
         public static RibbonPanel panel_ViewSetup;
+        public static string thisAssemblyPath = Assembly.GetExecutingAssembly().Location;
+        public static string root = thisAssemblyPath.Remove(thisAssemblyPath.Length - 11);
+        public enum IconImageType
+        { None = 0, Largeimage, Noimage }
+        public static string IconsPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Icons\\");
+        
+        public PushButtonData CreateButton(string name, string assembly, string classname, IconImageType type = IconImageType.None, bool off = false)
+        {
+            PushButtonData pushButtonData = new PushButtonData(name, name, root + assembly, classname);
+            if (type != IconImageType.Noimage)
+            {
+                string path = IconsPath + name + ".png";
+                Uri uriImage = new Uri(path);
+                BitmapImage image = new BitmapImage(uriImage);
+                if (type == IconImageType.Largeimage) {
+                    string pathlarge = IconsPath + name + "_L.png";
+                    Uri uriImagelarge = new Uri(pathlarge);
+                    BitmapImage imagelarge = new BitmapImage(uriImagelarge);
+                    pushButtonData.Image = image;
+                    pushButtonData.LargeImage = imagelarge;
+                }
+                else if (type == IconImageType.None) { pushButtonData.Image = image; }
+            }
+            if (off)
+            {
+                pushButtonData.Text = "OFF";
+            }
+            return pushButtonData;
+        }
         public void SetTextBox(RibbonItem item,string name, string prompt,string tooltip,double width)
         {
             if (item.Name == name)
@@ -55,27 +110,11 @@ namespace _ExpApps
                 textBox.PromptText = prompt; textBox.ToolTip = tooltip;
             }
         }
-        public BitmapImage SetImage(string path)
-        {
-            Uri uriImage = new Uri(path);
-            BitmapImage Image = new BitmapImage(uriImage);
-            return Image;
-        }
-        public void CreatePanels(UIControlledApplication a,string ribbon,IList<string> panels)
-        {
-            foreach (string Panel in panels)
-            {
-                RibbonPanel NewPanel = a.CreateRibbonPanel(ribbon,Panel);
-            }
-        }
         public Result OnStartup(UIControlledApplication a)
         {
             UiCtrApp = a;
             try
             {
-                // Register event for Syncronization 
-               // a.ControlledApplication.DocumentSynchronizingWithCentral += new EventHandler
-               //     <Autodesk.Revit.DB.Events.DocumentSynchronizingWithCentralEventArgs>(application_Sync);
                 UiCtrApp.ViewActivated += new EventHandler<Autodesk.Revit.UI.Events.ViewActivatedEventArgs>(getdoc);
             }
             catch (Exception)
@@ -87,204 +126,146 @@ namespace _ExpApps
             panel_ViewSetup = a.CreateRibbonPanel("Exp. Add-Ins", "View Tools");
             RibbonPanel panel_Reelevate = a.CreateRibbonPanel("Exp. Add-Ins", "Re-Elevate");
             RibbonPanel panel_Annot = a.CreateRibbonPanel("Exp. Add-Ins", "Annotation");
+            RibbonPanel panel_Modifiers = a.CreateRibbonPanel("Exp. Add-Ins", "Universal Modifiers");
             RibbonPanel panel_Managers = a.CreateRibbonPanel("Exp. Add-Ins", "Managers");
-            RibbonPanel panel_Spec = a.CreateRibbonPanel("Exp. Add-Ins", "Specific");
+            RibbonPanel panel_Selections = a.CreateRibbonPanel("Exp. Add-Ins", "Selections");
             RibbonPanel panel_Qt = a.CreateRibbonPanel("Exp. Add-Ins", "Quick Tools");
+            ComboBoxData CB_ShiftRange = new ComboBoxData("ShiftRange");
+            ComboBoxData CBD_ExpLevel = new ComboBoxData("ExpLevel");
 
-            string thisAssemblyPath = Assembly.GetExecutingAssembly().Location;
-            string root = thisAssemblyPath.Remove(thisAssemblyPath.Length - 11);
+            PushButtonData PBD_printrevision = CreateButton("Print Revision", "DWGExport.dll", "PrintRevision.PrintRevision",
+                IconImageType.Largeimage);
+            PBD_printrevision.ToolTip = "Select and Print a certain Revision using the current print settings.";
 
-            PushButtonData button_DWGExport = new PushButtonData("Button_DWGExport", "Export DWG", root + "DWGExport.dll", "DWGExport.DWGExport");
-            PushButtonData button_NavisExport = new PushButtonData("button_NavisExport", "Export NWC", root + "DWGExport.dll", "NavisExport.NavisExport");
-            PushButtonData button_AllExport = new PushButtonData("Button_Navis_DWGExport", "Export All", root + "DWGExport.dll", "ExportAll.ExportAll");
-            PushButton button_RevPrint = panel_Export.AddItem(new PushButtonData("Button_RevPrint", "Print Revision", root + "DWGExport.dll", "PrintRevision.PrintRevision")) as PushButton;
+            PushButtonData PBD_shiftbu = CreateButton("B+", "SetViewRange.dll", "SetViewRange.Shift_BU");
+            PBD_shiftbu.ToolTip = "Shifts Bottom of View Range by set value -Up.";
 
-            button_DWGExport.ToolTip = "Selected Views/Sheets will be exported to .DWG. Tip: use Manage Save/Load selection for sets.";
-            button_NavisExport.ToolTip = "Views with 'Export' as Title on Sheet will be exported to .NWC";
-            button_AllExport.ToolTip = "Views with 'Export' as Title on Sheet will be exported to .DWG and .NWC";
-            button_RevPrint.ToolTip = "Select and Print a certain Revision using the current print settings.";
+            PushButtonData PBD_shiftbd = CreateButton("B-",  "SetViewRange.dll", "SetViewRange.Shift_BD");
+            PBD_shiftbd.ToolTip = "Shifts Bottom of View Range by set value - Down.";
 
-            PushButtonData button_ShiftViewRange_Top_Up = new PushButtonData("Button_ShiftViewRange_Top_Up", "T+", root + "SetViewRange.dll",
-                "SetViewRange.Shift_TU");
-            PushButtonData button_ShiftViewRange_Top_Down = new PushButtonData("Button_ShiftViewRange_Top_Down", "T-", root + "SetViewRange.dll",
-                "SetViewRange.Shift_TD");         
-            PushButtonData button_ShiftViewRange_Bottom_Up = new PushButtonData("Button_ShiftViewRange_Bottom_Up", "B+", root + "SetViewRange.dll",
-                "SetViewRange.Shift_BU");
-            PushButtonData button_ShiftViewRange_Bottom_Down = new PushButtonData("Button_ShiftViewRange_Bottom_Down", "B-", root + "SetViewRange.dll",
-                "SetViewRange.Shift_BD");
-            PushButtonData button_SetViewRange = new PushButtonData("Button_SetViewRange", "Set View Range per 3D", root + "SetViewRange.dll",
-                "SetViewRange.SetPer3D");
+            PushButtonData PBD_shifttu = CreateButton("T+", "SetViewRange.dll", "SetViewRange.Shift_TU");
+            PBD_shiftbu.ToolTip = "Shifts Top of View Range by set value - Up.";
 
-            button_ShiftViewRange_Top_Up.ToolTip = "Shifts Top of View Range by set value - Up.";
-            button_ShiftViewRange_Top_Down.ToolTip = "Shifts Top of View Range by set value - Down.";
-            button_ShiftViewRange_Bottom_Up.ToolTip = "Shifts Bottom of View Range by set value - Up.";
-            button_ShiftViewRange_Bottom_Down.ToolTip = "Shifts Bottom of View Range by set value - Down.";
-            button_SetViewRange.ToolTip = "Sets View Range of active Plan View to Top and Bottom planes of the Section Box used on identically named 3d View.";
+            PushButtonData PBD_shifttd = CreateButton("T-", "SetViewRange.dll", "SetViewRange.Shift_TD");
+            PBD_shiftbd.ToolTip = "Shifts Top of View Range by set value - Down.";
 
-            PushButtonData button_TL = new PushButtonData("ToggleLink", "Toggle Links", root + "MultiDWG.dll",
-                "MultiDWG.ToggleLink");
-            PushButtonData button_TPC = new PushButtonData("TogglePC", "Toggle PCs", root + "MultiDWG.dll",
-                "MultiDWG.TogglePC");
-            button_TL.ToolTip = "Toggles visibility of all Links in the active view";
-            button_TPC.ToolTip = "Toggles visibility of all Point Clouds in the active view";
+            PushButtonData PBD_tl = CreateButton("Toggle Links", "MultiDWG.dll", "MultiDWG.ToggleLink",
+                IconImageType.Noimage);
+            PBD_tl.ToolTip = "Toggles visibility of all Links in the active view";
 
-            PushButton button_RehostElements = panel_Reelevate.AddItem(new PushButtonData("Button_RehostElements", "Rehost Elements", root + "Rehost Elements.dll",
-                "RehostElements.RehostElements")) as PushButton;
-            PushButtonData button_AlignToBottom = new PushButtonData("Button_AlignToBottom", "MEP to Bottom", root + "AlignToBottom.dll",
-                "AlignToBottom.AlignToBottom");
-            PushButtonData button_AlignToTop = new PushButtonData("Button_AlignToTop", "MEP to Top", root + "AlignToBottom.dll",
-                "AlignToBottom.AlignToTop");
+            PushButtonData PBD_tpc = CreateButton("Toggle PCs", "MultiDWG.dll", "MultiDWG.TogglePC",
+                IconImageType.Noimage);
+            PBD_tpc.ToolTip = "Toggles visibility of all Point Clouds in the active view";
 
-            button_RehostElements.ToolTip = "Sets the Reference Level of selected elements to the active Plan View's Associated Level";
-            button_AlignToBottom.ToolTip = "Aligns Bottom of MEP elements to the bottom of selected MEP element";
-            button_AlignToTop.ToolTip = "Aligns Top of MEP elements to the top of selected MEP element";
+            PushButtonData PBD_setviewrange = CreateButton("Set View Range per 3D", "SetViewRange.dll", "SetViewRange.SetPer3D", 
+                IconImageType.Noimage);
+            PBD_tpc.ToolTip = "Sets View Range of active Plan View to Top and Bottom planes of the Section Box used on identically named 3d View.";
 
-            PushButtonData button_MultiDWG =new PushButtonData("Button_MultiDWG", "MultiDWG", root + "MultiDWG.dll",
-               "MultiDWG.MultiDWG");
-            PushButtonData button_DuctSurfaceArea = new PushButtonData("Button_DSA", "Duct F. Unfolded", root + "MultiDWG.dll",
-               "MultiDWG.DuctSurfaceArea");
-            PushButtonData button_ConduitAngle = new PushButtonData("Button_CA", "Conduit Angles", root + "MultiDWG.dll",
-               "MultiDWG.ConduitAngle");
+            string versioned = "RehostElements";
+            if (a.ControlledApplication.VersionName.Contains("201"))
+            { versioned = "Exp_apps_R17"; }
+            PushButtonData PBD_rehostelements = CreateButton("RehostElements", versioned + ".dll", versioned + ".RehostElements", 
+                IconImageType.Largeimage);
+            PBD_tpc.ToolTip = "Sets the Reference Level of selected elements to the active Plan View's Associated Level";
 
-            button_MultiDWG.ToolTip = "Specific: Loads all .DWG-s from selected folder. Sets LOD according to filename, temporarily hides medium and high LOD-s.";
-            button_DuctSurfaceArea.ToolTip = "Specific: Inserts total surface area without connections into \"Duct Surface Area\" Project Parameter.";
-            button_ConduitAngle.ToolTip = "Specific: Sums the angles of selected Conduit turns";
+            PushButtonData PBD_dim2grid = CreateButton("Dim2Grid", "AnnoTools.dll", "AnnoTools.RackDim");
+            PBD_dim2grid.ToolTip = "Create Dimension referring the selected element's centerlines and Grids.";
+           
+            PushButtonData PBD_rack = CreateButton("Rack", "AnnoTools.dll", "AnnoTools.Rack");
+            PBD_rack.ToolTip = "Create tag for Conduit Rack, listing conduits: left to right \\ top to bottom";
 
-            panel_Spec.AddStackedItems(button_MultiDWG, button_DuctSurfaceArea, button_ConduitAngle);
+            PushButtonData PBD_lin = CreateButton("Linear", "AnnoTools.dll", "AnnoTools.LinearAnnotation");
+            PBD_lin.ToolTip = "Create Dimension for objects with more distance in-between";
 
-            PushButtonData toggle_Insulation = new PushButtonData("Toggle_Insulation", "Align to INS", root + "AlignToBottom.dll",
-              "Toggle.Toggle");
-            toggle_Insulation.ToolTip =
-              "Aligns to Insulation surfaces, when present";
+            PushButtonData PBD_setupqv = CreateButton("Options", "SetViewRange.dll", "QuickViews.QuickViews",
+                IconImageType.Noimage);
+            PBD_setupqv.ToolTip = "Set quick access to views and more.";
 
-            PushButtonData button_Qv1 = new PushButtonData("Qv1",  "1", root + "SetViewRange.dll",
-               "QuickViews.QuickView1");         
-            PushButtonData button_Qv2 = new PushButtonData("Qv2", "2", root + "SetViewRange.dll",
-               "QuickViews.QuickView2");
-            PushButtonData button_Qv3 = new PushButtonData("Qv3", "3", root + "SetViewRange.dll",
-               "QuickViews.QuickView3");
-            PushButtonData button_Qv4 = new PushButtonData("Qv4", "4", root + "SetViewRange.dll",
-               "QuickViews.QuickView4");
-            PushButtonData button_Qv5 = new PushButtonData("Qv5", "5", root + "SetViewRange.dll",
-               "QuickViews.QuickView5");
-            PushButtonData button_Qv6 = new PushButtonData("Qv6", "6", root + "SetViewRange.dll",
-               "QuickViews.QuickView6");
-
-            button_Qv1.ToolTip = "Switch View to 'QuickView 1'"; button_Qv2.ToolTip = "Switch View to 'QuickView 2'";
-            button_Qv3.ToolTip = "Switch View to 'QuickView 3'"; button_Qv4.ToolTip = "Switch View to 'QuickView 4'";
-            button_Qv5.ToolTip = "Switch View to 'QuickView 5'"; button_Qv6.ToolTip = "Switch View to 'QuickView 6'";
-
-            panel_ViewSetup.AddStackedItems(button_Qv1, button_Qv2, button_Qv3);
-            panel_ViewSetup.AddStackedItems(button_Qv4, button_Qv5, button_Qv6);
-
-            PushButton button_SetupQV = panel_ViewSetup.AddItem(new PushButtonData("Button_SetupQV", "Options",
-                                        root + "SetViewRange.dll", "QuickViews.QuickViews")) as PushButton;
-            PushButtonData button_Dim2Grid = new PushButtonData("Dimtogrid", "RackDim", root + "AnnoTools.dll",
-              "AnnoTools.RackDim");        
-            PushButtonData button_Rack = new PushButtonData("Rack", "Rack", root + "AnnoTools.dll",
-              "AnnoTools.Rack");     
-            PushButtonData button_Lin = new PushButtonData("Lin", "Linear", root + "AnnoTools.dll",
-             "AnnoTools.LinearAnnotation");
-            string versioned = "AnnoTools";
+            versioned = "AnnoTools";
             if (a.ControlledApplication.VersionName.Contains("2017"))
-                { versioned = "Exp_apps_R17"; }
-            PushButtonData button_MTag = new PushButtonData("MTag", "MultiTag", root + versioned + ".dll",
-             versioned + ".MultiTag");
-            PushButtonData button_ManageRefs = new PushButtonData("Button_ManageRefs", "Mng. Ref.Planes", root + "MultiDWG.dll",
-             "MultiDWG.ManageRefPlanes");
-            PushButtonData button_ManageRevs = new PushButtonData("Button_ManageRevs", "Mng. Revisions", root + "Revision_Editor.dll",
-             "Revision_Editor.Revision_Editor");
-
-            button_SetupQV.ToolTip = "Set quick access to views and more.";
-            button_Dim2Grid.ToolTip = "Create Dimension referring the selected element's centerlines and Grids.";
-            button_Rack.ToolTip = "Create tag for Conduit Rack, listing conduits: left to right \\ top to bottom";
-            button_Lin.ToolTip = "Create Dimension for objects with more distance in-between";
-            button_MTag.ToolTip = "Create Tags by Category for multiple selected elements at once";
-            button_ManageRefs.ToolTip = "Create Reference Planes from at the origins of 3 selected items, or Delete Ref.Planes";
-            button_ManageRevs.ToolTip = "Manage Revisions";
-
-            TextBoxData leftSpaceData = new TextBoxData("A");
-            TextBoxData rightSpaceData = new TextBoxData("B");
-            TextBoxData firstYData = new TextBoxData("C");
-            TextBoxData stepYData = new TextBoxData("1");
-            TextBoxData splitPointData = new TextBoxData("2");
-            TextBoxData placementData = new TextBoxData("3");
-
-            panel_Annot.AddStackedItems(leftSpaceData, rightSpaceData, firstYData);
-            panel_Annot.AddStackedItems(stepYData, splitPointData,placementData);
+            { versioned = "Exp_apps_R17"; }
+            PushButtonData PBD_mtag = CreateButton("MultiTag", versioned + ".dll", versioned + ".MultiTag", 
+                IconImageType.Largeimage);
+            PBD_mtag.ToolTip = "Create Tags by Category for multiple selected elements at once";
             
-            foreach (RibbonItem item in panel_Annot.GetItems())
-            {
-                SetTextBox(item, "A", ":A:", "Distance of TextBoxes on Left", 60);
-                SetTextBox(item, "B", ":B:", "Distance of TextBoxes on Right", 60);
-                SetTextBox(item, "C", ":C:", "Height offset of TextBoxes", 60);
-                SetTextBox(item, "1", ":1:", "Gap between TextBoxes", 60);
-                SetTextBox(item, "2", ":2:", "Controls directional switch, and linebreaks of TextBoxes", 60);
-                SetTextBox(item, "3", ":3:", "Placement of annotation along the reference line", 60);
-            }
+            PushButtonData PBD_managerefs = CreateButton("Mng. Ref.Planes", "MultiDWG.dll","MultiDWG.ManageRefPlanes", 
+                IconImageType.Largeimage);
+            PBD_managerefs.ToolTip = "Create Reference Planes from at the origins of 3 selected items, or Delete Ref.Planes";
 
-            PulldownButtonData QtData = new PulldownButtonData("Quicktools","QuickTools");
-            PulldownButton QtButtonGroup = panel_Qt.AddItem(QtData) as PulldownButton;
+            PushButtonData PBD_managerevs = CreateButton("Mng. Revisions", "Revision_Editor.dll","Revision_Editor.Revision_Editor", 
+                IconImageType.Largeimage);
+            PBD_managerevs.ToolTip = "Manage Revisions";
 
-            PushButtonData qt1 = new PushButtonData("Filter Verticals", "Filter Vert", root + "MultiDWG.dll","MultiDWG.FindVert");
-            PushButtonData qt2 = new PushButtonData("Filter Round Hosted", "Filter Round Hosted",root + "AnnoTools.dll", "AnnoTools.CheckTag");
-            PushButtonData qt3 = new PushButtonData("Align Identicals", "Align Identicals", root + "AnnoTools.dll", "AnnoTools.Cleansheet");
-            PushButtonData qt4 = new PushButtonData("Replace in Parameter", "Replace in Parameter", root + "MultiDWG.dll", "MultiDWG.ReplaceInParam");
-            PushButtonData qt5 = new PushButtonData("Duplicate Sheets", "Duplicate Sheets", root + "MultiDWG.dll", "MultiDWG.DuplicateSheets");
+            PushButtonData PBD_memadd = CreateButton("Mem Add", "MultiDWG.dll", "MultiDWG.MemoryAdd");
+            PBD_managerevs.ToolTip = "Add selected to stored selection";
 
-            qt1.ToolTip = "Filters Vertical elements from selection " + Environment.NewLine + ":1: controls vertical sensitivity";
-            qt2.ToolTip = "Filter the selected tags that are hosted to Round duct " + Environment.NewLine + ":3: Type for 'Rectangular' filter";
+            PushButtonData PBD_memdel = CreateButton("Mem Del", "MultiDWG.dll", "MultiDWG.MemoryDel");
+            PBD_managerevs.ToolTip = "Clear stored selection";
+
+            PushButtonData PBD_memsel = CreateButton("Mem Sel", "MultiDWG.dll", "MultiDWG.MemorySel");
+            PBD_managerevs.ToolTip = "Select stored";
+
+            PushButtonData PBD_qv1 = CreateButton("1", "SetViewRange.dll", "QuickViews.QuickView1",
+                IconImageType.Noimage);
+            PushButtonData PBD_qv2 = CreateButton("2", "SetViewRange.dll", "QuickViews.QuickView2",
+                IconImageType.Noimage);
+            PushButtonData PBD_qv3 = CreateButton("3", "SetViewRange.dll", "QuickViews.QuickView3",
+                IconImageType.Noimage);
+            PushButtonData PBD_qv4 = CreateButton("4", "SetViewRange.dll", "QuickViews.QuickView4",
+                IconImageType.Noimage);
+            PushButtonData PBD_qv5 = CreateButton("5", "SetViewRange.dll", "QuickViews.QuickView5",
+                IconImageType.Noimage);
+            PushButtonData PBD_qv6 = CreateButton("6", "SetViewRange.dll", "QuickViews.QuickView6",
+                IconImageType.Noimage);
+
+            PBD_qv1.ToolTip = "Switch View to 'QuickView 1'"; PBD_qv2.ToolTip = "Switch View to 'QuickView 2'";
+            PBD_qv3.ToolTip = "Switch View to 'QuickView 3'"; PBD_qv4.ToolTip = "Switch View to 'QuickView 4'";
+            PBD_qv5.ToolTip = "Switch View to 'QuickView 5'"; PBD_qv6.ToolTip = "Switch View to 'QuickView 6'";
+
+            PushButtonData qt1 = CreateButton("Filter Vert", "MultiDWG.dll", "MultiDWG.FindVert",
+                IconImageType.Largeimage);
+            PushButtonData qt2 = CreateButton("Filter Round Hosted", "AnnoTools.dll", "AnnoTools.CheckTag",
+                IconImageType.Largeimage);
+            PushButtonData qt3 = CreateButton("Align Identicals", "AnnoTools.dll", "AnnoTools.Cleansheet",
+                IconImageType.Largeimage);
+            PushButtonData qt4 = CreateButton("Replace in Parameter", "MultiDWG.dll", "MultiDWG.ReplaceInParam",
+                IconImageType.Largeimage);
+            PushButtonData qt5 = CreateButton("Duplicate Sheets", "MultiDWG.dll", "MultiDWG.DuplicateSheets",
+                IconImageType.Largeimage);
+
+            qt1.ToolTip = "Filters Vertical elements from selection" + Environment.NewLine + ":1: controls vertical sensitivity";
+            qt2.ToolTip = "Filter the selected tags that are hosted to Round duct" + Environment.NewLine + ":3: Type for 'Rectangular' filter";
             qt3.ToolTip = "Merges selected tags with same content." + Environment.NewLine + ":A: and :B: controls sensitivity";
-            qt4.ToolTip = "Replaces text in parameter of selection." + Environment.NewLine + ":A: - Parameter name" + Environment.NewLine 
+            qt4.ToolTip = "Replaces text in parameter of selection." + Environment.NewLine + ":A: - Parameter name" + Environment.NewLine
                         + ":B: - Original" + Environment.NewLine + ":C: - Replace";
             qt5.ToolTip = "Duplicates the selected sheets." + Environment.NewLine + ":A: - Suffix - Sheet Number" + Environment.NewLine
                         + ":B: - Suffix - Sheet Name" + Environment.NewLine + ":C: - Type for Dependent view duplicates";
+            panel_Export.AddItem(PBD_printrevision);
+            panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);
+            panel_ViewSetup.AddStackedItems(PBD_shifttu, PBD_shifttd);
+            panel_ViewSetup.AddStackedItems(PBD_tl, PBD_tpc);
+            IList<RibbonItem> ribbonItemsStacked = panel_ViewSetup.AddStackedItems(PBD_setviewrange, CB_ShiftRange, CBD_ExpLevel);
+            ComboBox CB_ExpLevel = (Autodesk.Revit.UI.ComboBox)(ribbonItemsStacked[2]);
+            IList<ComboBoxMember> members = CB_ExpLevel.GetItems();
+            for (int i = 0; i < 50; i++)
+            {
+                CB_ExpLevel.AddItem(new ComboBoxMemberData("Level_"+i, "x"));
+            }
+            foreach (ComboBoxMember member in members)
+            { member.Visible = false; }
+            CB_ExpLevel.DropDownOpened += cb_Opened;
+            panel_ViewSetup.AddStackedItems(PBD_qv1, PBD_qv2, PBD_qv3);
+            panel_ViewSetup.AddStackedItems(PBD_qv4, PBD_qv5, PBD_qv6);
+            panel_ViewSetup.AddItem(PBD_setupqv);
+            panel_Reelevate.AddItem(PBD_rehostelements);
+            panel_Annot.AddStackedItems(PBD_dim2grid, PBD_lin, PBD_rack);
+            panel_Managers.AddItem(PBD_managerefs);
+            panel_Managers.AddItem(PBD_managerevs);
+            panel_Selections.AddStackedItems(PBD_memadd, PBD_memdel, PBD_memsel);
+            panel_Annot.AddItem(PBD_mtag);
 
-            string IconsPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Icons\\");
-            string[] files = Directory.GetFiles(IconsPath);
-
-            string im_dwg = IconsPath + "Button_DWGExport.png"; string im_nwc = IconsPath + "Button_NavisExport.png";
-            string im_all = IconsPath + "Button_AllExport.png"; string im_reh = IconsPath + "Button_RehostElements.png";
-            string im_tup = IconsPath + "Button_T_UP.png"; string im_tdn = IconsPath + "Button_T_DN.png";
-            string im_bup = IconsPath + "Button_B_UP.png"; string im_bdn = IconsPath + "Button_B_DN.png";
-            string im_ins = IconsPath + "Button_Ins.png"; string im_pre = IconsPath + "Button_PrintRev.png";
-            string im_pre_sm = IconsPath + "Button_PrintRev_sm.png"; string im_rak = IconsPath + "Button_Rack.png";
-            string im_d2g_sm = IconsPath + "Button_Dim2Grid_sm.png"; string im_ref = IconsPath + "Button_Ref.png";
-            string im_lin_sm = IconsPath + "Button_Lin_sm.png"; string im_mtag = IconsPath + "Button_MTag.png";
-            string im_tl_sm = IconsPath + "Button_TL_sm.png"; string im_tpc_sm = IconsPath + "Button_TPC_sm.png";
-            string im_qt1 = IconsPath + "Button_qt1.png"; string im_qt2 = IconsPath + "Button_qt2.png";
-            string im_qt3 = IconsPath + "Button_qt3.png"; string im_qt4 = IconsPath + "Button_qt4.png";
-            string im_qt5 = IconsPath + "Button_qt5.png";
-            string im_rev = IconsPath + "Button_Rev.png";
-
-            button_DWGExport.Image = SetImage(im_dwg);
-            button_NavisExport.Image = SetImage(im_nwc);
-            button_AllExport.Image = SetImage(im_all);
-            button_ShiftViewRange_Top_Up.Image = SetImage(im_tup);
-            button_ShiftViewRange_Top_Down.Image = SetImage(im_tdn);
-            button_ShiftViewRange_Bottom_Up.Image = SetImage(im_bup);
-            button_ShiftViewRange_Bottom_Down.Image = SetImage(im_bdn);
-            button_RehostElements.Image = SetImage(im_reh);
-            button_RehostElements.LargeImage = SetImage(im_reh);
-            toggle_Insulation.Image = SetImage(im_ins);
-            button_RevPrint.LargeImage = SetImage(im_pre);
-            button_RevPrint.Image = SetImage(im_pre_sm);
-            button_Rack.Image = SetImage(im_rak);
-            button_Dim2Grid.Image = SetImage(im_d2g_sm);
-            button_Lin.Image = SetImage(im_lin_sm);
-            button_MTag.LargeImage = SetImage(im_mtag);
-            button_ManageRefs.LargeImage = SetImage(im_ref);
-            button_ManageRefs.Image = SetImage(im_ref);
-            button_ManageRevs.LargeImage = SetImage(im_rev);
-            button_ManageRevs.Image = SetImage(im_rev);
-            button_TL.Image = SetImage(im_tl_sm);
-            button_TPC.Image = SetImage(im_tpc_sm);
-
-            qt1.LargeImage = SetImage(im_qt1);
-            qt2.LargeImage = SetImage(im_qt2);
-            qt3.LargeImage = SetImage(im_qt3);
-            qt4.LargeImage = SetImage(im_qt4);
-            qt5.LargeImage = SetImage(im_qt5);
+            PulldownButtonData QtData = new PulldownButtonData("Quicktools", "QuickTools");
+            PulldownButton QtButtonGroup = panel_Qt.AddItem(QtData) as PulldownButton;
 
             QtButtonGroup.AddPushButton(qt1);
             QtButtonGroup.AddPushButton(qt2);
@@ -292,17 +273,35 @@ namespace _ExpApps
             QtButtonGroup.AddPushButton(qt4);
             QtButtonGroup.AddPushButton(qt5);
 
-            ComboBoxData ShiftRange = new ComboBoxData("ShiftRange");
+            PushButtonData PBD_unitogglered = CreateButton("Universal Toggle Red OFF", "MultiDWG.dll",
+              "MultiDWG.ToggleRed",off : true);
+            PBD_unitogglered.ToolTip = "Universal Toggle Red OFF";
+            PushButtonData PBD_unitogglegreen = CreateButton("Universal Toggle Green OFF", "MultiDWG.dll",
+             "MultiDWG.ToggleGreen", off: true);
+            PBD_unitogglegreen.ToolTip = "Universal Toggle Green OFF";
+            PushButtonData PBD_unitoggleblue = CreateButton("Universal Toggle Blue OFF", "MultiDWG.dll",
+             "MultiDWG.ToggleBlue", off: true);
+            PBD_unitoggleblue.ToolTip = "Universal Toggle Blue OFF";
 
-            panel_ViewSetup.AddStackedItems(button_ShiftViewRange_Bottom_Up, button_ShiftViewRange_Bottom_Down);
-            panel_ViewSetup.AddStackedItems(button_ShiftViewRange_Top_Up, button_ShiftViewRange_Top_Down);
-            panel_ViewSetup.AddStackedItems(button_TL, button_TPC);
-            panel_Export.AddStackedItems(button_DWGExport, button_NavisExport, button_AllExport);
-            panel_ViewSetup.AddStackedItems(button_SetViewRange,ShiftRange);
-            panel_Reelevate.AddStackedItems(button_AlignToTop, button_AlignToBottom,toggle_Insulation);
-            panel_Managers.AddItem(button_ManageRefs); panel_Managers.AddItem(button_ManageRevs);
-            panel_Annot.AddStackedItems(button_Dim2Grid,button_Lin, button_Rack);
-            panel_Annot.AddItem(button_MTag);
+            TextBoxData Uni_A = new TextBoxData("A");
+            TextBoxData Uni_B = new TextBoxData("B");
+            TextBoxData Uni_C = new TextBoxData("C");
+            TextBoxData Uni_1 = new TextBoxData("1");
+            TextBoxData Uni_2 = new TextBoxData("2");
+            TextBoxData Uni_3 = new TextBoxData("3");
+
+            panel_Modifiers.AddStackedItems(Uni_A, Uni_B, Uni_C);
+            panel_Modifiers.AddStackedItems(Uni_1, Uni_2, Uni_3);
+            panel_Modifiers.AddStackedItems(PBD_unitogglered, PBD_unitogglegreen, PBD_unitoggleblue);
+            foreach (RibbonItem item in panel_Modifiers.GetItems())
+            {
+                SetTextBox(item, "A", ":A:", "Universal Modifier - A", 60);
+                SetTextBox(item, "B", ":B:", "Universal Modifier - B", 60);
+                SetTextBox(item, "C", ":C:", "Universal Modifier - C", 60);
+                SetTextBox(item, "1", ":1:", "Universal Modifier - 1", 60);
+                SetTextBox(item, "2", ":2:", "Universal Modifier - 2", 60);
+                SetTextBox(item, "3", ":3:", "Universal Modifier - 3", 60);
+            }
 
             a.ApplicationClosing += a_ApplicationClosing;
 
@@ -310,6 +309,25 @@ namespace _ExpApps
             a.Idling += a_Idling;
 
             return Result.Succeeded;
+        }
+        void cb_Opened(object sender, Autodesk.Revit.UI.Events.ComboBoxDropDownOpenedEventArgs e)
+        {
+            int c = 0;
+            ComboBox cb = sender as ComboBox;
+            IList<ComboBoxMember> members = cb.GetItems();
+            foreach(ComboBoxMember member in members)
+            { 
+                member.Visible = false;
+            }
+            //{ comboBoxMember.Visible = false; }
+            FilteredElementCollector allLevels = new FilteredElementCollector(e.Application.ActiveUIDocument.Document).OfClass(typeof(Level));
+            //TaskDialog.Show("count_levels", allLevels.GetElementCount().ToString());
+            foreach (Level level in allLevels)
+            {
+                members[c].Visible = true;
+                members[c].ItemText = level.Name;
+                c += 1;
+            }
         }
         //*****************************a_Idling()*****************************
         void a_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
@@ -325,11 +343,7 @@ namespace _ExpApps
             // a.ControlledApplication.DocumentSynchronizingWithCentral -= application_Sync;
             return Result.Succeeded;
         }
-        //public void application_Sync(object sender, DocumentSynchronizingWithCentralEventArgs args)
-        //{
-        //    Document doc = args.Document;
-            //progress.Report(doc);
-        //}
+
         public void getdoc(object sender, ViewActivatedEventArgs args)
         {
             doc = args.Document;

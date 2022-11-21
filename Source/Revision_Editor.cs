@@ -42,6 +42,10 @@ namespace Revision_Editor
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
+            if (Autodesk.Revit.DB.RevisionSettings.GetRevisionSettings(doc).RevisionNumbering.ToString() == "PerProject")
+            { TaskDialog.Show("Revision Manager", " Revision numbering is Per Project, Application designed for Per Sheet option.");
+                return Result.Succeeded;
+            }
             List<ViewSheet> allSheets = new List<ViewSheet>();
             List<Revision> allRevs = new List<Revision>();
             //Get All Sheets and Revisions

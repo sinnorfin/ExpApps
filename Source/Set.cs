@@ -262,16 +262,6 @@ namespace SetViewRange
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
 
-            if (!(doc.ActiveView is ViewPlan viewPlan))
-            {
-                TaskDialog.Show("Please select Plan view", "Select Plan view to change it's View Range");
-                return Result.Succeeded;
-            }
-            PlanViewRange viewRange = viewPlan.GetViewRange();
-            double CCut = viewRange.GetOffset(PlanViewPlane.CutPlane);
-            double CBot = viewRange.GetOffset(PlanViewPlane.BottomClipPlane);
-            double CTop = viewRange.GetOffset(PlanViewPlane.TopClipPlane);
-
             RibbonPanel inputpanel = null;
             ComboBox inputbox = null;
             foreach (RibbonPanel panel in uiapp.GetRibbonPanels("Exp. Add-Ins"))
@@ -287,33 +277,62 @@ namespace SetViewRange
             List<Double> vrOpts = new List<Double> { StoreExp.vrOpt1, StoreExp.vrOpt2, StoreExp.vrOpt3,
                 StoreExp.vrOpt4, StoreExp.vrOpt5, StoreExp.vrOpt6 };
             double mod = vrOpts[Int32.Parse(inputbox.Current.Name)];
-            double rangedepth = CBot + mod + 0.999999999999962;
-            if (viewPlan.ViewType != ViewType.CeilingPlan)
-            {
-                if (CBot + mod + 0.04 >= CCut)
-                {
-                    viewRange.SetOffset(PlanViewPlane.TopClipPlane, rangedepth);
-                    viewRange.SetOffset(PlanViewPlane.CutPlane, rangedepth);
-                }
-                viewRange.SetOffset(PlanViewPlane.BottomClipPlane, CBot + mod);
-                viewRange.SetOffset(PlanViewPlane.ViewDepthPlane, CBot + mod);
+            
 
-            }
-            if (viewPlan.ViewType == ViewType.CeilingPlan)
+            if (doc.ActiveView is View3D)
             {
-                if (CCut + mod + 0.04 >= CTop)
+                View3D this3d = doc.ActiveView as View3D;
+
+                BoundingBoxXYZ sectionbox = this3d.GetSectionBox();
+                XYZ scropmin = sectionbox.Min;
+                XYZ sdiff = new XYZ(0, 0, mod);
+                XYZ newscropmin = scropmin.Add(sdiff);
+                sectionbox.Min = newscropmin;
+                using (Transaction t = new Transaction(doc, "Set Section box"))
                 {
-                    viewRange.SetOffset(PlanViewPlane.ViewDepthPlane, rangedepth);
-                    viewRange.SetOffset(PlanViewPlane.TopClipPlane, rangedepth);
+                    t.Start();
+                    this3d.SetSectionBox(sectionbox);
+                    t.Commit();
                 }
-                viewRange.SetOffset(PlanViewPlane.CutPlane, CCut + mod);
-                viewRange.SetOffset(PlanViewPlane.BottomClipPlane, CCut + mod);
             }
-            using (Transaction t = new Transaction(doc, "Set View Range"))
+            ViewPlan viewPlan = null;
+            PlanViewRange viewRange = null;
+            double CCut = 0; double CBot = 0;double CTop = 0;double rangedepth =0 ;
+            if (doc.ActiveView is ViewPlan)
             {
-                t.Start();
-                viewPlan.SetViewRange(viewRange);
-                t.Commit();
+                viewPlan = doc.ActiveView as ViewPlan;
+                viewRange = viewPlan.GetViewRange();
+                CCut = viewRange.GetOffset(PlanViewPlane.CutPlane);
+                CBot = viewRange.GetOffset(PlanViewPlane.BottomClipPlane);
+                CTop = viewRange.GetOffset(PlanViewPlane.TopClipPlane);
+                rangedepth = CBot + mod + 0.999999999999962;
+                if (viewPlan.ViewType != ViewType.CeilingPlan)
+                {
+                    if (CBot + mod + 0.04 >= CCut)
+                    {
+                        viewRange.SetOffset(PlanViewPlane.TopClipPlane, rangedepth);
+                        viewRange.SetOffset(PlanViewPlane.CutPlane, rangedepth);
+                    }
+                    viewRange.SetOffset(PlanViewPlane.BottomClipPlane, CBot + mod);
+                    viewRange.SetOffset(PlanViewPlane.ViewDepthPlane, CBot + mod);
+
+                }
+                if (viewPlan.ViewType == ViewType.CeilingPlan)
+                {
+                    if (CCut + mod + 0.04 >= CTop)
+                    {
+                        viewRange.SetOffset(PlanViewPlane.ViewDepthPlane, rangedepth);
+                        viewRange.SetOffset(PlanViewPlane.TopClipPlane, rangedepth);
+                    }
+                    viewRange.SetOffset(PlanViewPlane.CutPlane, CCut + mod);
+                    viewRange.SetOffset(PlanViewPlane.BottomClipPlane, CCut + mod);
+                }
+                using (Transaction t = new Transaction(doc, "Set View Range"))
+                {
+                    t.Start();
+                    viewPlan.SetViewRange(viewRange);
+                    t.Commit();
+                }
             }
             return Result.Succeeded;
         }

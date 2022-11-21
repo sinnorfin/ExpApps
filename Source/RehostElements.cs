@@ -48,27 +48,19 @@ namespace RehostElements
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            ElementId targetLevel = null;
+            Level targetLevel = null;
             Double targetLevelElev =  0;
             Double ElemLevelElev = 0;
             int FaceHosted = 0;
+            ComboBox selectedlevel = _ExpApps.StoreExp.GetComboBox(uiapp.GetRibbonPanels("Exp. Add-Ins"), "View Tools", "ExpLevel");
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Re-Host Elements");
-                FilteredElementCollector lvlCollector = new FilteredElementCollector(doc);
-                ICollection<Element> lvlCollection = lvlCollector.OfClass(typeof(Level)).ToElements();
-                foreach (Element level in lvlCollection)
+                FilteredElementCollector lvlCollector = new FilteredElementCollector(doc).OfClass(typeof(Level));
+                targetLevel = _ExpApps.StoreExp.GetLevel(lvlCollector, selectedlevel.Current.ItemText);
+                if (targetLevel != null)
                 {
-                    Level lvl = level as Level;
-                    if (level.Name == StoreExp.level)
-                    {
-                        targetLevel = lvl.Id;
-                        targetLevelElev = lvl.Elevation;
-                    }
-                    else if (StoreExp.level == "Active PlanView")
-                    {
-                        targetLevel = null;
-                    }
+                    targetLevelElev = targetLevel.Elevation;
                 }
                 if (targetLevel == null)
                 {
@@ -79,15 +71,9 @@ namespace RehostElements
                         return Result.Succeeded;
                     }
                     Parameter associated = doc.ActiveView.LookupParameter("Associated Level");
-                    foreach (Element level in lvlCollection)
-                    {
-                        Level lvl = level as Level;
-                        if (lvl.Name == associated.AsString())
-                        {
-                            targetLevel = lvl.Id;
-                            targetLevelElev = lvl.Elevation;
-                        }
-                    }
+                    targetLevel = _ExpApps.StoreExp.GetLevel(lvlCollector, "Associated");
+                    targetLevelElev = targetLevel.Elevation;
+
                 }
                 if (SelectedObjs != null)
                 {
@@ -95,24 +81,20 @@ namespace RehostElements
                 {Element e = doc.GetElement(eid);
                         try
                         {
-                            foreach (Element level in lvlCollection)
-                            {
-                                Level lvl = level as Level;
-                                if (lvl.Id == e.LevelId)
-                                {
-                                    ElemLevelElev = lvl.Elevation;
-                                }
-                            }
+                            Level elemLvl = doc.GetElement(e.LevelId) as Level;
+                            if (elemLvl == null)
+                            { elemLvl = doc.GetElement(e.get_Parameter(BuiltInParameter.RBS_START_LEVEL_PARAM).AsElementId()) as Level; }
+                            ElemLevelElev = elemLvl.Elevation;
                             if (e.GetType() == typeof(Ceiling))
                             {
-                                e.get_Parameter(BuiltInParameter.LEVEL_PARAM).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.LEVEL_PARAM).Set(targetLevel.Id);
                                 Double currentoffset = e.get_Parameter(BuiltInParameter.CEILING_HEIGHTABOVELEVEL_PARAM).AsDouble();
                                 Double fulloffset = ElemLevelElev - targetLevelElev + currentoffset;
                                 e.get_Parameter(BuiltInParameter.CEILING_HEIGHTABOVELEVEL_PARAM).Set(fulloffset);
                             }
                             else if (e.GetType() == typeof(Floor))
                             {
-                                e.get_Parameter(BuiltInParameter.LEVEL_PARAM).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.LEVEL_PARAM).Set(targetLevel.Id);
                                 Double currentoffset = e.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM).AsDouble();
                                 Double fulloffset = ElemLevelElev - targetLevelElev + currentoffset;
                                 e.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM).Set(fulloffset);
@@ -123,13 +105,13 @@ namespace RehostElements
                                 Double dehostoffsetStart = currentoffsetStart + 1.0;
                                 e.get_Parameter(BuiltInParameter.STRUCTURAL_BEAM_END0_ELEVATION).Set(dehostoffsetStart);
                                 e.get_Parameter(BuiltInParameter.STRUCTURAL_BEAM_END0_ELEVATION).Set(currentoffsetStart);
-                                e.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM).Set(targetLevel.Id);
                             }
                             else if (e.LookupParameter("Category").AsValueString() == "Columns")
                             {
                                 Double currentoffset = e.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM).AsDouble();
                                 Double fulloffset = ElemLevelElev - targetLevelElev + currentoffset;
-                                e.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_PARAM).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_PARAM).Set(targetLevel.Id);
                                 e.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM).Set(fulloffset);
                             }
                             else if (e.LookupParameter("Category").AsValueString() == "Walls")
@@ -137,21 +119,26 @@ namespace RehostElements
                                 Double currentoffset = e.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET).AsDouble();
                                 Double fulloffset = ElemLevelElev - targetLevelElev + currentoffset;
                                 e.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET).Set(fulloffset);
-                                e.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT).Set(targetLevel.Id);
                             }
                             else if (e.LookupParameter("Category").AsValueString() == "Roofs")
                             {
                                 Double currentoffset = e.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM).AsDouble();
                                 Double fulloffset = ElemLevelElev - targetLevelElev + currentoffset;
                                 e.get_Parameter(BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM).Set(fulloffset);
-                                e.get_Parameter(BuiltInParameter.ROOF_BASE_LEVEL_PARAM).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.ROOF_BASE_LEVEL_PARAM).Set(targetLevel.Id);
                             }
                             else if ((e.LookupParameter("Category").AsValueString() == "Doors") || (e.LookupParameter("Category").AsValueString() == "Windows"))
                             {
                                 Double currentoffset = e.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM).AsDouble();
                                 Double fulloffset = ElemLevelElev - targetLevelElev + currentoffset;
                                 e.get_Parameter(BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM).Set(fulloffset);
-                                e.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM).Set(targetLevel.Id);
+                            }
+                            else if (e.LookupParameter("Category").AsValueString().Contains("Fittings") ||
+                                e.LookupParameter("Category").AsValueString().Contains("Accessories"))
+                            {
+                                e.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM).Set(targetLevel.Id);
                             }
                             else if (e.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM) != null)
                             {
@@ -159,19 +146,10 @@ namespace RehostElements
                                 if ((family.HostFace != null) || (e.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_PARAM).AsString() == "Orphaned") ||
                                     (e.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_PARAM).AsString() == "<not associated>"))
                                 { FaceHosted = FaceHosted + 1; }
-                                else if (e.Name.Contains("YeahSo"))
-                                {
-                                    e.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM).Set(targetLevel);
-                                    Double currentoffset = e.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble();
-                                    Double Old_AnchorElevation = e.LookupParameter("AnchorElevation").AsDouble();
-                                    Double Old_CenterElevation = e.LookupParameter("CenterElevation").AsDouble();
-                                    e.LookupParameter("AnchorElevation").Set(ElemLevelElev - targetLevelElev + currentoffset + Old_AnchorElevation);
-                                    e.LookupParameter("CenterElevation").Set(ElemLevelElev - targetLevelElev + currentoffset + Old_CenterElevation);
-                                    e.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).Set(0);
-                                }
+
                                 else
                                 {
-                                    e.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM).Set(targetLevel);
+                                    e.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM).Set(targetLevel.Id);
                                     Double currentoffset = e.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).AsDouble();
                                     Double fulloffset = ElemLevelElev - targetLevelElev + currentoffset;
                                     e.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM).Set(fulloffset);
@@ -179,7 +157,7 @@ namespace RehostElements
                             }
                             else
                             {
-                                e.get_Parameter(BuiltInParameter.RBS_START_LEVEL_PARAM).Set(targetLevel);
+                                e.get_Parameter(BuiltInParameter.RBS_START_LEVEL_PARAM).Set(targetLevel.Id);
                             }
                         }
                         catch (Autodesk.Revit.Exceptions.InvalidOperationException) { FaceHosted += 1; }
