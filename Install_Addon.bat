@@ -1,5 +1,5 @@
 @echo off
-
+setlocal enabledelayedexpansion
 REM Get the current user's AppData\Roaming folder path
 set "appDataPath=%APPDATA%"
 
@@ -31,13 +31,13 @@ for /D %%V in ("%destinationBaseFolder%\*") do (
         set /a "dllCount+=1"
     )
     popd
-    echo Number of DLL files found and unblocked: !dllCount!
+    echo Number of DLL files found and unblocked: %dllCount%
 
     REM Step 3: Copy the .addin file to the destination folder
     for %%A in ("%sourcePath%\*.addin") do (
-        set "addinFilePath=%%~fA"
-        set "destinationAddinPath=%%V\%%~nxA"
-        copy /Y "%addinFilePath%" "%%V" >nul 2>&1
+    set "addinFilePath=%%~fA"
+    set "destinationAddinPath=%%V\%%~nxA"
+    robocopy "%sourcePath%" "%%V" "%%~nxA" /NP >nul 2>&1
     )
 
     REM Step 4: Unblock the .addin file if needed
