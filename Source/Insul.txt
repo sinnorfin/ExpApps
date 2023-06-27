@@ -1,4 +1,4 @@
- [Transaction(TransactionMode.Manual)]
+    [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class ApplyInsulations : IExternalCommand
     {
@@ -14,9 +14,21 @@
             }
             return null;
         }
+        static void RemoveInsulations(MEPSystem system, Document doc)
+        {
+            if (system is PipingSystem pipes)
+            { foreach(Element elem in pipes.PipingNetwork)
+                { if(elem is PipeInsulation) doc.Delete(elem.Id); }
+            }
+            if (system is MechanicalSystem ducts)
+            {
+                foreach (Element elem in ducts.DuctNetwork)
+                { if (elem is DuctInsulation) doc.Delete(elem.Id); }
+            }
+        }
         static ICollection<ElementId> RemoveElementsfromList(MEPSystem system, ICollection<ElementId> ids, Document doc)
         {
-            ICollection<ElementId> newList = ids;
+            ICollection<ElementId> newList = new List<ElementId>(ids);
             foreach (ElementId eid in ids)
             {
                 Element element = doc.GetElement(eid);
@@ -31,7 +43,7 @@
                     { newList.Remove(eid); }
                 }
             }
-                    return newList;
+            return newList;
         }
         //Applies insulations to pipe/fitting/accessory based on rules regarding
         //System, Min/max sizes
@@ -48,18 +60,55 @@
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<MEPSystem> systems = new List<MEPSystem>();
             MEPSystem nextSystem;
+            double insulationThickness;
+            UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "20",out insulationThickness);
             while ((nextSystem = GetNextSystem(ids, doc)) != null)
             {
                 systems.Add(nextSystem);
-                ids = RemoveElementsfromList(nextSystem, ids,doc);
+                ids = RemoveElementsfromList(nextSystem, ids, doc);
             }
             using (Transaction trans = new Transaction(doc))
             {
+                trans.Start("Remove Insulations");
+                foreach (MEPSystem system in systems)
+                {
+                RemoveInsulations(system, doc);
+                }
+                trans.Commit();
                 trans.Start("Auto-Apply Insulations");
                 foreach (MEPSystem system in systems)
-                {system.Elements }
+                { if (system is PipingSystem pipingSystem) 
+                    { foreach (Element elem in pipingSystem.PipingNetwork)
+                        {
+                            if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeCurves
+                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeFitting
+                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeAccessory
+                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_FlexPipeCurves)
+                            { try
+                                { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, insulationThickness); }
+                                catch (Autodesk.Revit.Exceptions.InvalidOperationException e)
+                                {
+                                    RemoveInsulations(system,doc);
+                                    PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, insulationThickness);
+                                }
+                            }
+                        }
+                    }
+                else if (system is MechanicalSystem mechanicalSystem )
+                    {
+                        foreach (Element elem in mechanicalSystem.DuctNetwork)
+                        {
+                            if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_DuctCurves
+                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_DuctFitting
+                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_DuctAccessory
+                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_FlexDuctCurves)
+                            { DuctInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, insulationThickness); }
+                        }
+                    }
+                }
                 trans.Commit();
             }
+
             return Result.Succeeded;
         }
     }
