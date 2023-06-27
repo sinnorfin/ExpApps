@@ -1,0 +1,65 @@
+ [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ApplyInsulations : IExternalCommand
+    {
+        static MEPSystem GetNextSystem(ICollection<ElementId> ids, Document doc)
+        {
+            foreach (ElementId eid in ids)
+            {
+                Element elem = doc.GetElement(eid);
+                if (elem is MEPCurve mepCurve)
+                {
+                    return mepCurve.MEPSystem;
+                }
+            }
+            return null;
+        }
+        static ICollection<ElementId> RemoveElementsfromList(MEPSystem system, ICollection<ElementId> ids, Document doc)
+        {
+            ICollection<ElementId> newList = ids;
+            foreach (ElementId eid in ids)
+            {
+                Element element = doc.GetElement(eid);
+                if (element is MEPCurve mepCurve)
+                {
+                    if (mepCurve.MEPSystem.Name == system.Name)
+                    { newList.Remove(eid); }
+                }
+                else if (element is FamilyInstance faminst)
+                {
+                    if (faminst.LookupParameter("System Name").AsString() == system.Name)
+                    { newList.Remove(eid); }
+                }
+            }
+                    return newList;
+        }
+        //Applies insulations to pipe/fitting/accessory based on rules regarding
+        //System, Min/max sizes
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            List<MEPSystem> systems = new List<MEPSystem>();
+            MEPSystem nextSystem;
+            while ((nextSystem = GetNextSystem(ids, doc)) != null)
+            {
+                systems.Add(nextSystem);
+                ids = RemoveElementsfromList(nextSystem, ids,doc);
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Auto-Apply Insulations");
+                foreach (MEPSystem system in systems)
+                {system.Elements }
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
