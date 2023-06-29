@@ -2,6 +2,21 @@
     [Regeneration(RegenerationOption.Manual)]
     public class ApplyInsulations : IExternalCommand
     {
+        class Rule
+        {
+            public string Name { get; set; }
+            public double MinS { get; set; }
+            public double MaxS { get; set; }
+            public double Thickness { get; set; }
+
+            public Rule(string name, double minS, double maxS, double thickness)
+            {
+                Name = name;
+                MinS = minS;
+                MaxS = maxS;
+                Thickness = thickness;
+            }
+        }
         static MEPSystem GetNextSystem(ICollection<ElementId> ids, Document doc)
         {
             foreach (ElementId eid in ids)
@@ -17,8 +32,9 @@
         static void RemoveInsulations(MEPSystem system, Document doc)
         {
             if (system is PipingSystem pipes)
-            { foreach(Element elem in pipes.PipingNetwork)
-                { if(elem is PipeInsulation) doc.Delete(elem.Id); }
+            {
+                foreach (Element elem in pipes.PipingNetwork)
+                { if (elem is PipeInsulation) doc.Delete(elem.Id); }
             }
             if (system is MechanicalSystem ducts)
             {
@@ -60,8 +76,43 @@
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<MEPSystem> systems = new List<MEPSystem>();
             MEPSystem nextSystem;
+            string pattern = @"\d+";
+            Regex regex = new Regex(pattern);
+            List<Rule> rules = new List<Rule>()
+            {
+                //new Rule("WW", 20, 25, 20),
+                //new Rule("WW", 32, 50, 25),
+                //new Rule("KW", 20, 25, 15),
+                //new Rule("KW", 32, 40, 30),
+                //new Rule("KW", 50, 60, 35)
+                new Rule("ECD", 15, 25, 19),
+                new Rule("ECD", 32, 40, 25),
+                new Rule("ECD", 50, 65, 32),
+                new Rule("ECR", 15, 25, 19),
+                new Rule("ECR", 32, 40, 25),
+                new Rule("ECR", 50, 65, 32),
+                new Rule("EGD", 15, 25, 19),
+                new Rule("EGD", 32, 40, 25),
+                new Rule("EGD", 50, 65, 32),
+                new Rule("EGR", 15, 25, 19),
+                new Rule("EGR", 32, 40, 25),
+                new Rule("EGR", 50, 65, 32),
+
+            };
+            foreach (Rule rule in rules)
+            { rule.Thickness = UnitUtils.ConvertToInternalUnits(rule.Thickness, UnitTypeId.Millimeters); }
+            Rule selectedRule = null;
+
+            Dictionary<string, List<Rule>> ruleDictionary = rules.GroupBy(r => r.Name)
+            .ToDictionary(g => g.Key, g => g.ToList());
+            //if (ruleDictionary.TryGetValue(externalName, out List<Rule> selectedList))
+            //{
+            //    selectedRule = selectedList.FirstOrDefault(r => externalValue >= r.MinS && externalValue <= r.MaxS);
+            //}
+            //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
+
             double insulationThickness;
-            UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "20",out insulationThickness);
+            UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "20", out insulationThickness);
             while ((nextSystem = GetNextSystem(ids, doc)) != null)
             {
                 systems.Add(nextSystem);
@@ -72,29 +123,61 @@
                 trans.Start("Remove Insulations");
                 foreach (MEPSystem system in systems)
                 {
-                RemoveInsulations(system, doc);
+                    RemoveInsulations(system, doc);
                 }
                 trans.Commit();
                 trans.Start("Auto-Apply Insulations");
+          
                 foreach (MEPSystem system in systems)
-                { if (system is PipingSystem pipingSystem) 
-                    { foreach (Element elem in pipingSystem.PipingNetwork)
+                {
+                    if (system is PipingSystem pipingSystem)
+                    {
+                        foreach (Element elem in pipingSystem.PipingNetwork)
                         {
                             if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeCurves
-                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeFitting
-                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeAccessory
                                 || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_FlexPipeCurves)
-                            { try
-                                { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, insulationThickness); }
-                                catch (Autodesk.Revit.Exceptions.InvalidOperationException e)
+                            {
+                                Parameter diameterParam = elem.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM);
+                                double convertedDiameter = UnitUtils.ConvertFromInternalUnits(diameterParam.AsDouble(), UnitTypeId.Millimeters);
+                                Element systemtype = doc.GetElement(system.GetTypeId());
+                                Match match = regex.Match(elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString());
+                                //string[] parts = elem.LookupParameter("Size").AsString().Split(' ');
+                                
+                                double.TryParse(match.Value, out double number);
+                                if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsValueString(), out List<Rule> selectedList))
                                 {
-                                    RemoveInsulations(system,doc);
-                                    PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, insulationThickness);
+                                    selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
                                 }
+                                //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
+                                try
+                                {
+                                    PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness);
+                                }
+                                catch {  }
+                            }
+                            else if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeFitting
+                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeAccessory)
+                            {
+                               
+
+                                // Find the first match in the input string
+                                Match match = regex.Match(elem.LookupParameter("Size").AsString());
+                                //string[] parts = elem.LookupParameter("Size").AsString().Split(' ');
+                                double.TryParse(match.Value, out double number);
+                                
+
+                                Element systemtype = doc.GetElement(system.GetTypeId());
+                                if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsValueString(), out List<Rule> selectedList))
+                                {
+                                    selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                }
+                                //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
+                                try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
+                                catch { }
                             }
                         }
                     }
-                else if (system is MechanicalSystem mechanicalSystem )
+                    else if (system is MechanicalSystem mechanicalSystem)
                     {
                         foreach (Element elem in mechanicalSystem.DuctNetwork)
                         {
