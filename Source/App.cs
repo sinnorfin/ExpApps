@@ -66,6 +66,28 @@ namespace _ExpApps
             }
             return inputbox;
         }
+        public static bool GetSwitchStance(UIApplication uiapp, string SwitchName)
+        {
+            //Gets stance of switches on of Ribbon
+
+            RibbonPanel inputpanel = null;
+            foreach (RibbonPanel panel in uiapp.GetRibbonPanels("Exp. Add-Ins"))
+            {
+                if (panel.Name == "Universal Modifiers")
+                { inputpanel = panel; }
+            }
+            foreach (RibbonItem item in inputpanel.GetItems())
+            {
+                if (item.Name.ToString().Contains(SwitchName))
+                {
+                    if (item.ItemText == "ON")
+                    { return true; }
+                    else
+                    { return false; }
+                }
+            }
+            return false;
+        }
     }
     class App : IExternalApplication
     {
@@ -168,15 +190,6 @@ namespace _ExpApps
                 IconImageType.Largeimage);
             PBD_tpc.ToolTip = "Sets the Reference Level of selected elements to the active Plan View's Associated Level";
 
-            PushButtonData PBD_dim2grid = CreateButton("Dim2Grid", "AnnoTools.dll", "AnnoTools.RackDim");
-            PBD_dim2grid.ToolTip = "Create Dimension referring the selected element's centerlines and Grids.";
-           
-            PushButtonData PBD_rack = CreateButton("Rack", "AnnoTools.dll", "AnnoTools.Rack");
-            PBD_rack.ToolTip = "Create tag for Conduit Rack, listing conduits: left to right \\ top to bottom";
-
-            PushButtonData PBD_lin = CreateButton("Linear", "AnnoTools.dll", "AnnoTools.LinearAnnotation");
-            PBD_lin.ToolTip = "Create Dimension for objects with more distance in-between";
-
             PushButtonData PBD_setupqv = CreateButton("Options", "SetViewRange.dll", "QuickViews.QuickViews",
                 IconImageType.Noimage);
             PBD_setupqv.ToolTip = "Set quick access to views and more.";
@@ -197,13 +210,22 @@ namespace _ExpApps
             PBD_managerevs.ToolTip = "Manage Revisions";
 
             PushButtonData PBD_memadd = CreateButton("Mem Add", "MultiDWG.dll", "MultiDWG.MemoryAdd");
-            PBD_managerevs.ToolTip = "Add selected to stored selection";
+            PBD_memadd.ToolTip = "Add selected to stored selection";
 
             PushButtonData PBD_memdel = CreateButton("Mem Del", "MultiDWG.dll", "MultiDWG.MemoryDel");
-            PBD_managerevs.ToolTip = "Clear stored selection";
+            PBD_memdel.ToolTip = "Clear stored selection";
 
             PushButtonData PBD_memsel = CreateButton("Mem Sel", "MultiDWG.dll", "MultiDWG.MemorySel");
-            PBD_managerevs.ToolTip = "Select stored";
+            PBD_memsel.ToolTip = "Select stored";
+
+            PushButtonData PBD_linkedId = CreateButton("Link-ID", "MultiDWG.dll", "MultiDWG.IdofLinkedElement", IconImageType.Noimage);
+            PBD_linkedId.ToolTip = "Get ID of element in linked model";
+
+            PushButtonData PBD_selanno = CreateButton("Anno", "MultiDWG.dll", "MultiDWG.OnlyAnnotation", IconImageType.Noimage);
+            PBD_selanno.ToolTip = "Return all annotation elements - 'Red' - Return model elements instead";
+
+            PushButtonData PBD_allonlevel = CreateButton("Level", "MultiDWG.dll", "MultiDWG.SelectAllOnLevel",IconImageType.Noimage);
+            PBD_allonlevel.ToolTip = "Return elements on level specified in dropdown list - 'Red'+'A': Override level by name - 'Green': Invert";
 
             PushButtonData PBD_qv1 = CreateButton("1", "SetViewRange.dll", "QuickViews.QuickView1",
                 IconImageType.Noimage);
@@ -258,10 +280,10 @@ namespace _ExpApps
             panel_ViewSetup.AddStackedItems(PBD_qv4, PBD_qv5, PBD_qv6);
             panel_ViewSetup.AddItem(PBD_setupqv);
             panel_Reelevate.AddItem(PBD_rehostelements);
-            panel_Annot.AddStackedItems(PBD_dim2grid, PBD_lin, PBD_rack);
             panel_Managers.AddItem(PBD_managerefs);
             panel_Managers.AddItem(PBD_managerevs);
             panel_Selections.AddStackedItems(PBD_memadd, PBD_memdel, PBD_memsel);
+            panel_Selections.AddStackedItems(PBD_linkedId, PBD_allonlevel, PBD_selanno);
             panel_Annot.AddItem(PBD_mtag);
 
             PulldownButtonData QtData = new PulldownButtonData("Quicktools", "QuickTools");
@@ -272,7 +294,7 @@ namespace _ExpApps
             QtButtonGroup.AddPushButton(qt3);
             QtButtonGroup.AddPushButton(qt4);
             QtButtonGroup.AddPushButton(qt5);
-
+            //Remove stance name from button name//
             PushButtonData PBD_unitogglered = CreateButton("Universal Toggle Red OFF", "MultiDWG.dll",
               "MultiDWG.ToggleRed",off : true);
             PBD_unitogglered.ToolTip = "Universal Toggle Red OFF";
@@ -310,6 +332,7 @@ namespace _ExpApps
 
             return Result.Succeeded;
         }
+        
         void cb_Opened(object sender, Autodesk.Revit.UI.Events.ComboBoxDropDownOpenedEventArgs e)
         {
             int c = 0;
