@@ -1923,6 +1923,7 @@ namespace MultiDWG
             if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Green OFF") || StoreExp.Path_Insulation == null)
             {
                 Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+                dlg.Filter = "Text files(*.txt) | *.txt";
                 Nullable<bool> result = dlg.ShowDialog();
                 if (result == true)
                 {
@@ -1930,17 +1931,26 @@ namespace MultiDWG
                 }
             }
             List<Rule> rules = new List<Rule>();
-            using (TextReader fileids = File.OpenText(@"D:\IDS.txt"))
+            using (TextReader fileids = File.OpenText(StoreExp.Path_Insulation))
             {
                 string Line;
                 while ((Line = fileids.ReadLine()) != null)
                 {
                     if (!Line.StartsWith("#"))
-                    { string[] RuleParameters = Line.Split(',');
-                        Int32 min; Int32.TryParse(RuleParameters[1], out min);
-                        Int32 max; Int32.TryParse(RuleParameters[2], out max);
-                        Int32 ins; Int32.TryParse(RuleParameters[3], out ins);
-                        rules.Add(new Rule(RuleParameters[0], min, max, ins));
+                    { try
+                        {
+                            string[] RuleParameters = Line.Split(',');
+                            Int32 min; Int32.TryParse(RuleParameters[1], out min);
+                            Int32 max; Int32.TryParse(RuleParameters[2], out max);
+                            Int32 ins; Int32.TryParse(RuleParameters[3], out ins);
+                            rules.Add(new Rule(RuleParameters[0], min, max, ins));
+                        }
+                        catch {
+                            TaskDialog.Show("Error", "Error reading Insulation Rules, follow syntax of: "
+                        + Environment.NewLine
+                        + "System_Abbreviation,Min,Max,Ins"
+                        + Environment.NewLine
+                        + "No spaces, no empty lines, lines starting with # - are ignored");}
                     }
                 }
             }
