@@ -127,7 +127,6 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             Options geOpt = new Options();
-            //FindVert.GetMenuValue(uiapp);
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Calculate Duct Surface Area");
@@ -345,7 +344,7 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Replace in Parameter");
@@ -412,7 +411,7 @@ namespace MultiDWG
                 ids = elementsinview.ToElementIds();
             }
             else { ids = uidoc.Selection.GetElementIds(); }
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Select all Not containing");
@@ -527,7 +526,7 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Inject Parameter");
@@ -605,7 +604,7 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Recess Heights");
@@ -713,7 +712,7 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
 
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
             FamilySymbol fs = new FilteredElementCollector(doc)
            .OfClass(typeof(FamilySymbol))
@@ -1123,7 +1122,7 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
             FamilySymbol fs = new FilteredElementCollector(doc)
            .OfClass(typeof(FamilySymbol))
@@ -1137,7 +1136,6 @@ namespace MultiDWG
                     ViewSheet sheet = doc.GetElement(eid) as ViewSheet;
                     ViewSheet newsheet = ViewSheet.Create(doc, fs.Id);
                     string num_suffix = "-New";
-                    string name_suffix = " - Duplication";
                     if (StoreExp.Store.menu_A_Box.Value != null)
                     {
                         if (StoreExp.Store.menu_A_Box.Value.ToString() != "")
@@ -1150,7 +1148,6 @@ namespace MultiDWG
                             newsheet.Name = sheet.Name + StoreExp.Store.menu_B_Box.Value.ToString();
                         }
                     }
-                    //FindVert.GetMenuValue(uiapp);
                     try
                     {
                         if (StoreExp.Store.menu_A_Box.Value.ToString() != "*auto*")
@@ -1269,7 +1266,7 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
             FamilySymbol fs = new FilteredElementCollector(doc)
            .OfClass(typeof(FamilySymbol))
@@ -1296,7 +1293,6 @@ namespace MultiDWG
                     ViewSheet sheet = doc.GetElement(eid) as ViewSheet;
                     ViewSheet newsheet = ViewSheet.Create(doc, fs.Id);
                     string num_suffix = "-New";
-                    string name_suffix = " - Duplication";
                     if (StoreExp.Store.menu_A_Box.Value != null)
                     {
                         if (StoreExp.Store.menu_A_Box.Value.ToString() != "")
@@ -1486,7 +1482,6 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            //FindVert.GetMenuValue(uiapp);
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
 
             using (Transaction trans = new Transaction(doc))
@@ -1661,7 +1656,7 @@ namespace MultiDWG
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             string parametername = StoreExp.Store.menu_A_Box.Value.ToString();
             IEnumerable<ParameterElement> _params = new FilteredElementCollector(doc)
                     .WhereElementIsNotElementType()
@@ -1702,7 +1697,7 @@ namespace MultiDWG
             //UIDocument uidoc = uiapp.ActiveUIDocument;
             //Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             //Document doc = uidoc.Document;
-            //FindVert.GetMenuValue(uiapp);
+            //StoreExp.GetMenuValue(uiapp);
             //string parametername = Store.menu_A_Box.Value.ToString();
             //IEnumerable<ParameterElement> _params = new FilteredElementCollector(doc)
             //        .WhereElementIsNotElementType()
@@ -1745,7 +1740,7 @@ namespace MultiDWG
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             ComboBox selectedlevel = StoreExp.GetComboBox(uiapp.GetRibbonPanels("Exp. Add-Ins"), "View Tools", "ExpLevel");
             string LevelName = StoreExp.GetLevel(doc, selectedlevel.Current.ItemText).Name;
             //string LevelName = "X";
@@ -1874,17 +1869,46 @@ namespace MultiDWG
             }
             return null;
         }
-        static void RemoveInsulations(MEPSystem system, Document doc)
+        static bool FilterbyParameter(Element elem)
+        {
+            
+            return true;
+        }
+        static void RemoveInsulations(MEPSystem system, Document doc,int Exclude,
+                    string parametername, string parameterstring)
         {
             if (system is PipingSystem pipes)
             {
-                foreach (Element elem in pipes.PipingNetwork)
-                { if (elem is PipeInsulation) doc.Delete(elem.Id); }
+                if (Exclude == 0)
+                {
+                    foreach (Element elem in pipes.PipingNetwork)
+                    {
+                        if (elem is PipeInsulation) doc.Delete(elem.Id);
+                    }
+                }
+                else if (Exclude == 1)
+                {
+                    foreach (Element elem in pipes.PipingNetwork)
+                    {
+                        if (elem is PipeInsulation Insulation &&
+                            doc.GetElement(Insulation.HostElementId).LookupParameter(parametername).AsString() == parameterstring)
+                            { doc.Delete(elem.Id); }
+                    }
+                }
+                else
+                {
+                    foreach (Element elem in pipes.PipingNetwork)
+                    {
+                        if (elem is PipeInsulation Insulation && 
+                            doc.GetElement(Insulation.HostElementId).LookupParameter(parametername).AsString() != parameterstring)
+                            { doc.Delete(elem.Id); }
+                    }
+                }
             }
             if (system is MechanicalSystem ducts)
             {
                 foreach (Element elem in ducts.DuctNetwork)
-                { if (elem is DuctInsulation) doc.Delete(elem.Id); }
+                { if (elem is DuctInsulation && Exclude == 0) doc.Delete(elem.Id); }
             }
         }
         static ICollection<ElementId> RemoveElementsfromList(MEPSystem system, ICollection<ElementId> ids, Document doc)
@@ -1915,13 +1939,29 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Application app = uiapp.Application;
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            StoreExp.GetMenuValue(uiapp);
+            string parametername = "";
+            string parameterstring = "";
+            int Exclude = 0;
+            if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Red OFF"))
+            { Exclude = 1;
+               parametername = StoreExp.Store.menu_1_Box.Value.ToString();
+               parameterstring = StoreExp.Store.menu_2_Box.Value.ToString();
+            }
+            if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Red OFF") && 
+                StoreExp.GetSwitchStance(uiapp, "Universal Toggle Blue OFF"))
+            { Exclude = 2;
+                parametername = StoreExp.Store.menu_1_Box.Value.ToString();
+                parameterstring = StoreExp.Store.menu_2_Box.Value.ToString();
+            }
             
             if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Green OFF") || StoreExp.Path_Insulation == null)
             {
+                //GUI.togglebutton(uiapp, "Universal Modifiers", "Universal Toggle Green OFF", "Universal Toggle Green ON");
                 Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
                 dlg.Filter = "Text files(*.txt) | *.txt";
                 Nullable<bool> result = dlg.ShowDialog();
@@ -1958,9 +1998,6 @@ namespace MultiDWG
             MEPSystem nextSystem;
             string pattern = @"\d+";
             Regex regex = new Regex(pattern);
-            //List<Rule> rules = new List<Rule>()
-            //{
-              
 
             ////LUXIA HVAC SHAFT RULES
             //new Rule("M561F", 15, 25, 20),
@@ -2042,7 +2079,6 @@ namespace MultiDWG
                 //new Rule("EGR", 50, 100, 32),
                 //AG RULES//
 
-            //};
             foreach (Rule rule in rules)
             { rule.Thickness = UnitUtils.ConvertToInternalUnits(rule.Thickness, UnitTypeId.Millimeters); }
             Rule selectedRule = null;
@@ -2067,60 +2103,144 @@ namespace MultiDWG
                 trans.Start("Remove Insulations");
                 foreach (MEPSystem system in systems)
                 {
-                    RemoveInsulations(system, doc);
+                    RemoveInsulations(system, doc, Exclude,
+                    parametername, parameterstring);
                 }
                 trans.Commit();
                 trans.Start("Auto-Apply Insulations");
-          
+
                 foreach (MEPSystem system in systems)
                 {
                     if (system is PipingSystem pipingSystem)
                     {
-                        foreach (Element elem in pipingSystem.PipingNetwork)
+                        if (Exclude == 0)
                         {
-                            if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeCurves
-                                || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_FlexPipeCurves)
+                            foreach (Element elem in pipingSystem.PipingNetwork)
                             {
-                                //Parameter diameterParam = elem.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM);
-                                //double convertedDiameter = UnitUtils.ConvertFromInternalUnits(diameterParam.AsDouble(), UnitTypeId.Millimeters);
-                                Element systemtype = doc.GetElement(system.GetTypeId());
-                                Match match = regex.Match(elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString());
-                                //string[] parts = elem.LookupParameter("Size").AsString().Split(' ');
-                                
-                                double.TryParse(match.Value, out double number);
-                                if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
+                                if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeCurves
+                                    || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_FlexPipeCurves)
                                 {
-                                    selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    //double convertedDiameter = UnitUtils.ConvertFromInternalUnits(diameterParam.AsDouble(), UnitTypeId.Millimeters);
+                                    Element systemtype = doc.GetElement(system.GetTypeId());
+                                    Match match = regex.Match(elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString());
+
+                                    double.TryParse(match.Value, out double number);
+                                    if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
+                                    {
+                                        selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    }
+                                    //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
+                                    try
+                                    {
+                                        PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness);
+                                    }
+                                    catch { }
                                 }
-                                //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
-                                try
-                                {
-                                    PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness);
-                                }
-                                catch {  }
-                            }
-                            else if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeFitting)
+                                else if ((BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeFitting)
                                 //|| (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeAccessory)
-                            {
-                               
-
-                                // Find the first match in the input string
-                                Match match = regex.Match(elem.LookupParameter("Size").AsString());
-                                //string[] parts = elem.LookupParameter("Size").AsString().Split(' ');
-                                double.TryParse(match.Value, out double number);
-                                
-
-                                Element systemtype = doc.GetElement(system.GetTypeId());
-                                if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
                                 {
-                                    selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    Match match = regex.Match(elem.LookupParameter("Size").AsString());
+
+                                    double.TryParse(match.Value, out double number);
+
+
+                                    Element systemtype = doc.GetElement(system.GetTypeId());
+                                    if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
+                                    {
+                                        selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    }
+                                    //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
+                                    try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
+                                    catch { }
                                 }
-                                //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
-                                try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
-                                catch { }
+                            }
+                        }
+                        else if (Exclude == 1)
+                        {
+                            foreach (Element elem in pipingSystem.PipingNetwork)
+                            {
+                                if (elem.LookupParameter(parametername).AsString() == parameterstring &&
+                                    (BuiltInCategory) elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeCurves
+                                     || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_FlexPipeCurves)
+                                {
+                                    //double convertedDiameter = UnitUtils.ConvertFromInternalUnits(diameterParam.AsDouble(), UnitTypeId.Millimeters);
+                                    Element systemtype = doc.GetElement(system.GetTypeId());
+                                    Match match = regex.Match(elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString());
+
+                                    double.TryParse(match.Value, out double number);
+                                    if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
+                                    {
+                                        selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    }
+                                    try
+                                    {
+                                        PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness);
+                                    }
+                                    catch { }
+                                }
+                                else if (elem.LookupParameter(parametername).AsString() == parameterstring && 
+                                    (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeFitting)
+                                //|| (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeAccessory)
+                                {
+                                    Match match = regex.Match(elem.LookupParameter("Size").AsString());
+
+                                    double.TryParse(match.Value, out double number);
+
+
+                                    Element systemtype = doc.GetElement(system.GetTypeId());
+                                    if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
+                                    {
+                                        selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    }
+                                    try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
+                                    catch { }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (Element elem in pipingSystem.PipingNetwork)
+                            {
+                                if (elem.LookupParameter(parametername).AsString() != parameterstring &&
+                                    (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeCurves
+                                     || (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_FlexPipeCurves)
+                                {
+                                    //double convertedDiameter = UnitUtils.ConvertFromInternalUnits(diameterParam.AsDouble(), UnitTypeId.Millimeters);
+                                    Element systemtype = doc.GetElement(system.GetTypeId());
+                                    Match match = regex.Match(elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString());
+
+                                    double.TryParse(match.Value, out double number);
+                                    if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
+                                    {
+                                        selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    }
+                                    try
+                                    {
+                                        PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness);
+                                    }
+                                    catch { }
+                                }
+                                else if (elem.LookupParameter(parametername).AsString() != parameterstring && 
+                                    (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeFitting)
+                                //|| (BuiltInCategory)elem.Category.Id.IntegerValue == BuiltInCategory.OST_PipeAccessory)
+                                {
+                                    Match match = regex.Match(elem.LookupParameter("Size").AsString());
+
+                                    double.TryParse(match.Value, out double number);
+
+
+                                    Element systemtype = doc.GetElement(system.GetTypeId());
+                                    if (ruleDictionary.TryGetValue(systemtype.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).AsString(), out List<Rule> selectedList))
+                                    {
+                                        selectedRule = selectedList.FirstOrDefault(r => number >= r.MinS && number <= r.MaxS);
+                                    }
+                                    try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
+                                    catch { }
+                                }
                             }
                         }
                     }
+
                     else if (system is MechanicalSystem mechanicalSystem)
                     {
                         foreach (Element elem in mechanicalSystem.DuctNetwork)
@@ -2232,7 +2352,7 @@ namespace MultiDWG
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
         
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
            
             using (Transaction trans = new Transaction(doc))
             {
@@ -2283,7 +2403,7 @@ namespace MultiDWG
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             Random rnd = new Random();
             
             FillPatternElement SolidPattern = null;
@@ -2406,7 +2526,7 @@ namespace MultiDWG
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
 
             string parameterName = null;
             string Menu_B = null;
@@ -2512,7 +2632,7 @@ namespace MultiDWG
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             string text1 = "annotation";
             string text2 = "view";
             if (uidoc.Selection.GetElementIds().Count == 0)
@@ -2765,7 +2885,7 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            FindVert.GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("BK Flow Check/Set");
@@ -2884,38 +3004,6 @@ namespace MultiDWG
     {
         //Filters out non-vertical elements from selection based on
         //Bounding box height, checks against value provided on Ribbon
-        public static void GetMenuValue(UIApplication uiapp)
-        {
-            //Gets values out of Ribbon
-            RibbonPanel inputpanel = null;
-            foreach (RibbonPanel panel in uiapp.GetRibbonPanels("Exp. Add-Ins"))
-            {
-                if (panel.Name == "Universal Modifiers")
-                { inputpanel = panel; }
-            }
-            foreach (RibbonItem item in inputpanel.GetItems())
-            {
-                switch (item.Name)
-                {
-                    case "1":
-                        StoreExp.Store.menu_1_Box = (TextBox)item; break;
-                    case "2":
-                        StoreExp.Store.menu_2_Box = (TextBox)item; break;
-                    case "3":
-                        StoreExp.Store.menu_3_Box = (TextBox)item; break;
-                    case "A":
-                        StoreExp.Store.menu_A_Box = (TextBox)item; break;
-                    case "B":
-                        StoreExp.Store.menu_B_Box = (TextBox)item; break;
-                    case "C":
-                        StoreExp.Store.menu_C_Box = (TextBox)item; break; 
-                }
-            }
-            Double.TryParse(StoreExp.Store.menu_1_Box.Value as string, out StoreExp.Store.menu_1);
-            if (StoreExp.Store.menu_1 == 0) { StoreExp.Store.menu_1 = 0.5; }
-            Double.TryParse(StoreExp.Store.menu_2_Box.Value as string, out StoreExp.Store.menu_2);
-            Double.TryParse(StoreExp.Store.menu_3_Box.Value as string, out StoreExp.Store.menu_3);
-        }
         public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -2928,12 +3016,14 @@ namespace MultiDWG
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            GetMenuValue(uiapp);
+            StoreExp.GetMenuValue(uiapp);
             foreach (ElementId eid in ids)
             {
                 Element fami = doc.GetElement(eid) as Element;
                 BoundingBoxXYZ BB = fami.get_BoundingBox(null);
-                if ((BB.Max.Z - BB.Min.Z) > StoreExp.Store.menu_1)
+                Double value;
+                Double.TryParse(StoreExp.Store.menu_1_Box.Value as string, out value);
+                if ((BB.Max.Z - BB.Min.Z) > (value))
                 { newsel.Add(eid); }
             }
             using (Transaction trans = new Transaction(doc))
