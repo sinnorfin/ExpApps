@@ -25,13 +25,6 @@ D:\Tools\Addin\Exp_Apps\Build\MultiDWG.dll
 D:\Tools\Addin\Exp_Apps\Build\MultiDWG.pdb
 D:\Tools\Addin\Exp_Apps\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.csproj.AssemblyReference.cache
 D:\Tools\Addin\Exp_Apps\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.csproj.CoreCompileInputs.cache
+D:\Tools\Addin\Exp_Apps\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.csproj.CopyComplete
 D:\Tools\Addin\Exp_Apps\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.dll
 D:\Tools\Addin\Exp_Apps\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.pdb
-D:\Tools\Addin\Exp_Apps\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.csproj.CopyComplete
-D:\Script\ExpApps-master\Build\MultiDWG.dll
-D:\Script\ExpApps-master\Build\MultiDWG.pdb
-D:\Script\ExpApps-master\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.csproj.AssemblyReference.cache
-D:\Script\ExpApps-master\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.csproj.CoreCompileInputs.cache
-D:\Script\ExpApps-master\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.csproj.CopyComplete
-D:\Script\ExpApps-master\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.dll
-D:\Script\ExpApps-master\Project\MultiDWG\MultiDWG\MultiDWG\obj\x64\Release\MultiDWG.pdb

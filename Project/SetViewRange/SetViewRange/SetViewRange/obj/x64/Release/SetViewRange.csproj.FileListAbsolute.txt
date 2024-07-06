@@ -27,13 +27,6 @@ D:\Tools\Addin\Exp_Apps\Build\SetViewRange.dll
 D:\Tools\Addin\Exp_Apps\Build\SetViewRange.pdb
 D:\Tools\Addin\Exp_Apps\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.csproj.AssemblyReference.cache
 D:\Tools\Addin\Exp_Apps\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.csproj.CoreCompileInputs.cache
+D:\Tools\Addin\Exp_Apps\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.csproj.CopyComplete
 D:\Tools\Addin\Exp_Apps\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.dll
 D:\Tools\Addin\Exp_Apps\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.pdb
-D:\Tools\Addin\Exp_Apps\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.csproj.CopyComplete
-D:\Script\ExpApps-master\Build\SetViewRange.dll
-D:\Script\ExpApps-master\Build\SetViewRange.pdb
-D:\Script\ExpApps-master\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.csproj.AssemblyReference.cache
-D:\Script\ExpApps-master\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.csproj.CoreCompileInputs.cache
-D:\Script\ExpApps-master\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.csproj.CopyComplete
-D:\Script\ExpApps-master\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.dll
-D:\Script\ExpApps-master\Project\SetViewRange\SetViewRange\SetViewRange\obj\x64\Release\SetViewRange.pdb

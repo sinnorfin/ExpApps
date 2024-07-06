@@ -27,9 +27,3 @@ D:\Tools\Addin\Exp_Apps\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.cs
 D:\Tools\Addin\Exp_Apps\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.csproj.CoreCompileInputs.cache
 D:\Tools\Addin\Exp_Apps\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.dll
 D:\Tools\Addin\Exp_Apps\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.pdb
-D:\Script\ExpApps-master\Build\DWGExport.dll
-D:\Script\ExpApps-master\Build\DWGExport.pdb
-D:\Script\ExpApps-master\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.csproj.AssemblyReference.cache
-D:\Script\ExpApps-master\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.csproj.CoreCompileInputs.cache
-D:\Script\ExpApps-master\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.dll
-D:\Script\ExpApps-master\Project\DWGExport\DWGExport\obj\x64\Release\DWGExport.pdb

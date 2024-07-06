@@ -17,9 +17,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RehostElements", "Rehost El
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SetViewRange", "SetViewRange\SetViewRange\SetViewRange\SetViewRange.csproj", "{F1DD32AE-701A-4158-A214-3C835DC6A3BB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exp_apps_R17", "ClassLibrary1\Exp_apps_R17.csproj", "{71ED188E-D2B8-4D12-A347-1893F0BB421C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exp_apps_R17", "Exp_Apps_Versioned\Exp_apps_R17.csproj", "{71ED188E-D2B8-4D12-A347-1893F0BB421C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Revision_Editor", "ClassLibrary2\Revision_Editor.csproj", "{22048422-DDD9-4A44-9D53-166F22603BC8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Revision_Editor", "RevisionEditor\Revision_Editor.csproj", "{22048422-DDD9-4A44-9D53-166F22603BC8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreExp", "StoreExp\StoreExp.csproj", "{2FE4880B-8F34-41ED-945A-514C1489572B}"
 EndProject

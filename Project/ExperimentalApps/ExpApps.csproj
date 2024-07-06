@@ -41,19 +41,14 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exp_apps_R17, Version=0.4.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Build\Exp_apps_R17.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Microsoft.VisualBasic.Compatibility" />
     <Reference Include="PresentationCore" />
     <Reference Include="RevitAPI">
-      <HintPath>H:\RVT\Revit 2022\RevitAPI.dll</HintPath>
+      <HintPath>C:\Program Files\Autodesk\Revit 2023\RevitAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RevitAPIUI">
-      <HintPath>H:\RVT\Revit 2022\RevitAPIUI.dll</HintPath>
+      <HintPath>C:\Program Files\Autodesk\Revit 2023\RevitAPIUI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -89,6 +84,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Exp_Apps_Versioned\Exp_apps_R17.csproj">
+      <Project>{71ed188e-d2b8-4d12-a347-1893f0bb421c}</Project>
+      <Name>Exp_apps_R17</Name>
+    </ProjectReference>
     <ProjectReference Include="..\StoreExp\StoreExp.csproj">
       <Project>{2fe4880b-8f34-41ed-945a-514c1489572b}</Project>
       <Name>StoreExp</Name>

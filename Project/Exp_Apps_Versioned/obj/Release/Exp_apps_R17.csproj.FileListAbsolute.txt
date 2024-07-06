@@ -1,0 +1,13 @@
+H:\Tools\Addin\Exp_Apps\Project\ClassLibrary1\obj\Release\Exp_apps_R17.csprojAssemblyReference.cache
+H:\Tools\Addin\Exp_Apps\Project\ClassLibrary1\obj\Release\Exp_apps_R17.csproj.CoreCompileInputs.cache
+H:\Tools\Addin\Exp_Apps\Build\Exp_apps_R17.dll
+H:\Tools\Addin\Exp_Apps\Build\Exp_apps_R17.pdb
+H:\Tools\Addin\Exp_Apps\Project\ClassLibrary1\obj\Release\Exp_apps_R17.dll
+H:\Tools\Addin\Exp_Apps\Project\ClassLibrary1\obj\Release\Exp_apps_R17.pdb
+D:\Tools\Addin\Exp_Apps\Build\Exp_apps_R17.dll
+D:\Tools\Addin\Exp_Apps\Build\Exp_apps_R17.pdb
+D:\Tools\Addin\Exp_Apps\Project\Exp_Apps_Versioned\obj\Release\Exp_apps_R17.csproj.AssemblyReference.cache
+D:\Tools\Addin\Exp_Apps\Project\Exp_Apps_Versioned\obj\Release\Exp_apps_R17.csproj.CoreCompileInputs.cache
+D:\Tools\Addin\Exp_Apps\Project\Exp_Apps_Versioned\obj\Release\Exp_apps_R17.csproj.CopyComplete
+D:\Tools\Addin\Exp_Apps\Project\Exp_Apps_Versioned\obj\Release\Exp_apps_R17.dll
+D:\Tools\Addin\Exp_Apps\Project\Exp_Apps_Versioned\obj\Release\Exp_apps_R17.pdb

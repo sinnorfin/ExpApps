@@ -42,6 +42,12 @@ using Autodesk.Revit.DB.Architecture;
 using static System.Windows.Forms.LinkLabel;
 using System.Collections;
 using System.Windows.Interop;
+using System.Windows.Forms;
+using View = Autodesk.Revit.DB.View;
+using Application = Autodesk.Revit.ApplicationServices.Application;
+using ComboBox = Autodesk.Revit.UI.ComboBox;
+using System.Windows.Controls;
+using Grid = Autodesk.Revit.DB.Grid;
 
 namespace MultiDWG
 {
@@ -828,6 +834,8 @@ namespace MultiDWG
             foreach (ViewSheet sheet in new FilteredElementCollector(doc).OfClass(typeof(ViewSheet)))
             { allSheets.Add(sheet); }
             List<View> selectedViews = new List<View>();
+            XYZ offset = null;
+            double length = 0;
             //categorize selection
             foreach (ElementId eid in ids)
             {
@@ -860,6 +868,11 @@ namespace MultiDWG
                                     {
                                         ViewportRotation vprot = vpview.Rotation;
                                         XYZ vppos = vpview.GetBoxCenter();
+                                        if (!app.VersionNumber.Contains("201"))
+                                        {
+                                            offset = vpview.LabelOffset;
+                                            length = vpview.LabelLineLength;
+                                        }
                                         ElementId vptype = vpview.GetTypeId();
                                         trans.Start("remove view");
                                         sheet.DeleteViewport(vpview);
@@ -868,6 +881,11 @@ namespace MultiDWG
                                         Viewport newvp = Viewport.Create(doc, targetsheet.Id, view.Id, vppos);
                                         newvp.Rotation = vprot;
                                         newvp.ChangeTypeId(vptype);
+                                        if (!app.VersionNumber.Contains("201"))
+                                        {
+                                            newvp.LabelOffset = offset;
+                                            newvp.LabelLineLength = length;
+                                        }
                                         trans.Commit();
                                     }
                                 }
@@ -1079,7 +1097,7 @@ namespace MultiDWG
 
                         trans.Start("add view");
                         Viewport newvp = Viewport.Create(doc, targetsheet.Id, view.Id, vppos);
-                        if (StoreExp.GetSwitchStance(uiapp, "RED"))
+                        if (StoreExp.GetSwitchStance(uiapp, "Red"))
                         { X += (view.Outline.Max.U - view.Outline.Min.U); }
                         else { Y += (view.Outline.Max.V - view.Outline.Min.V); }
                         vppos.Add(new XYZ(0, 0, 0));
@@ -1273,9 +1291,9 @@ namespace MultiDWG
                 allLevels.Add(level);
             }
             allLevels = allLevels.OrderBy(level => level.Elevation).ToList();
-            Double distance;
+            Double distance=0;
             if (StoreExp.Store.menu_1_Box.Value.ToString() == "")
-            { distance = allLevels[17].Elevation - allLevels[16].Elevation; }
+            { TaskDialog.Show("Missing Input", "Type count of levels between target and source in '1'"); }
             else
             {
                 distance = UnitUtils.ConvertToInternalUnits(Double.Parse(StoreExp.Store.menu_1_Box.Value.ToString()), UnitTypeId.Millimeters);
@@ -1516,6 +1534,24 @@ namespace MultiDWG
     //Transform the grid/level extents
     public class ShiftExtents : IExternalCommand
     {
+        public void resetDatumExtents(Document doc, List<ElementId> ids, double Shiftdistance,
+           View view)
+        {
+            foreach (ElementId eid in ids)
+            {
+                Element elem = doc.GetElement(eid);
+                if (elem is Level level)
+                {
+                    level.SetDatumExtentType(DatumEnds.End0, view, DatumExtentType.Model);
+                    level.SetDatumExtentType(DatumEnds.End1, view, DatumExtentType.Model);
+                }
+                else if (elem is Grid grid)
+                {
+                   grid.SetDatumExtentType(DatumEnds.End0, view, DatumExtentType.Model);
+                   grid.SetDatumExtentType(DatumEnds.End1, view, DatumExtentType.Model);
+                }
+            }
+        }
         public void SetDatumExtents(Document doc, List<ElementId> ids, double Shiftdistance,
             bool HideBubbles, bool SwitchBubbles, View view)
         {
@@ -1552,7 +1588,6 @@ namespace MultiDWG
                     else
                     {
                         Curve originalcurve = level.GetCurvesInView(DatumExtentType.ViewSpecific, view).First();
-
                         double startParam = originalcurve.GetEndParameter(0);
                         double endParam = originalcurve.GetEndParameter(1);
 
@@ -1659,10 +1694,11 @@ namespace MultiDWG
             bool HideBubbles = StoreExp.GetSwitchStance(uiapp, "Red");
             bool SwitchBubbles = StoreExp.GetSwitchStance(uiapp, "Red") && StoreExp.GetSwitchStance(uiapp, "Green");
             bool CloneExisting = StoreExp.GetSwitchStance(uiapp, "Blue") && !StoreExp.GetSwitchStance(uiapp, "Red");
+            bool Reset = StoreExp.GetSwitchStance(uiapp, "Blue") && !StoreExp.GetSwitchStance(uiapp, "Red") && !StoreExp.GetSwitchStance(uiapp, "Green");
 
             double Shiftdistance;
-            if (!double.TryParse(StoreExp.Store.menu_1_Box.Value.ToString(), out Shiftdistance))
-            {
+            try { double.TryParse(StoreExp.Store.menu_1_Box.Value.ToString(), out Shiftdistance); }
+            catch{
                 Shiftdistance = 1;
             }
             List<ElementId> ids = new List<ElementId>(uidoc.Selection.GetElementIds());
@@ -1680,7 +1716,15 @@ namespace MultiDWG
                         ICollection<ElementId> levels = new FilteredElementCollector(doc, selectedview.Id).OfClass(typeof(Level)).ToElementIds();
                         datumonViews.AddRange(grids);
                         datumonViews.AddRange(levels);
-                        SetDatumExtents(doc, datumonViews, Shiftdistance, HideBubbles, SwitchBubbles, selectedview);
+                        if (!Reset) 
+                        { SetDatumExtents(doc, datumonViews, Shiftdistance, 
+                            HideBubbles, SwitchBubbles, selectedview);
+                        }
+                        else {
+                            resetDatumExtents(doc, datumonViews, Shiftdistance,
+                             selectedview);
+                        }
+
                     }
                     trans.Commit();
                 }
@@ -1938,48 +1982,33 @@ namespace MultiDWG
         {
             // Kiválasztott sheetek minden nézetéről hideolja el azokat a metszeteket amik nem ezen a sheeten jelennek meg.
 
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
-            Document doc = uidoc.Document;
-            List<string> sheetsinvolved = new List<string>();
-            List<ElementId> sheetstohide = new List<ElementId>();
-            ICollection<ElementId> eids = uidoc.Selection.GetElementIds();
-            foreach (ElementId eid in eids)
-            { if (doc.GetElement(eid) is ViewSheet sheet)
-                {
-                    sheetsinvolved.Add(sheet.SheetNumber);
-                }
-            }
-           
-            FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
-            ICollection<Element> elems = elementsInView.ToElements();
-            foreach (Element elem in elems)
-            {
-                try
-                {
-                    if (elem.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM).AsValueString() == "Section")
-                   // { if (elem is View view)
-                   //     {
-                            //TaskDialog.Show("X", view.get_Parameter(BuiltInParameter.VIEWPORT_SHEET_NUMBER).AsString());
-                            
-                     //           if (!sheetsinvolved.Contains(view.get_Parameter(BuiltInParameter.VIEWPORT_SHEET_NUMBER).AsString()))
-                                 sheetstohide.Add(elem.Id); 
-                            
-                            
-                         //   } }
-                        
-                }
-                catch { }
-            }
-            using (Transaction t = new Transaction(doc, "Hide Sections not on Selected sheet"))
-            {
-                t.Start();
-                uidoc.Selection.SetElementIds(sheetstohide);
-                
-                //doc.ActiveView.HideElements(sheetstohide);
-                t.Commit();
-            }
+            //UIApplication uiapp = commandData.Application;
+            //UIDocument uidoc = uiapp.ActiveUIDocument;
+            //Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            //Document doc = uidoc.Document;
+            //StoreExp.GetMenuValue(uiapp);
+            //string parametername = Store.menu_A_Box.Value.ToString();
+            //IEnumerable<ParameterElement> _params = new FilteredElementCollector(doc)
+            //        .WhereElementIsNotElementType()
+            //        .OfClass(typeof(ParameterElement))
+            //        .Cast<ParameterElement>();
+            //List<ParameterElement> ProjectParameters = new List<ParameterElement>();
+            //foreach (ParameterElement pElem in _params)
+            //{
+            //    if (pElem.GetDefinition().Name.Contains(parametername))
+            //    {
+            //        ProjectParameters.Add(pElem);
+            //    }
+            //}
+            //using (Transaction t = new Transaction(doc, "remove projectparameter containing -A- "))
+            //{
+            //    t.Start();
+            //    foreach (ParameterElement parameterElement in ProjectParameters)
+            //    {
+            //        doc.Delete(parameterElement.Id);
+            //    }
+            //    t.Commit();
+            //}
             return Result.Succeeded;
         }
     }
@@ -2916,7 +2945,7 @@ namespace MultiDWG
                         text1 = "non-annotation";
                         try
                         {
-                            if (e.Category.CategoryType != CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                            if (e.Category.CategoryType != CategoryType.Annotation && e.Category.Name.ToString() != "Center Line" && e.Category.Name.ToString() != "Grids")
                             {
                                 newsel.Add(e.Id);
                             }
@@ -2928,41 +2957,107 @@ namespace MultiDWG
             else
             {
                 text2 = "selection";
-                foreach (ElementId eid in uidoc.Selection.GetElementIds())
-                    {
-                    if (!StoreExp.GetSwitchStance(uiapp, "Red"))
-                    {
-                        try
-                        {
-                            Element e = doc.GetElement(eid);
-                            if (e.Category.CategoryType == CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
-                            {
-                                newsel.Add(e.Id);
-                            }
-                        }
-                        catch { }
+                if (StoreExp.GetSwitchStance(uiapp, "Blue") && !StoreExp.GetSwitchStance(uiapp, "Red"))
+                {
+                    ICollection<ElementId> selection = uidoc.Selection.GetElementIds();
+                    ICollection<Element> tags = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(IndependentTag)).ToElements();
+                    foreach(IndependentTag tag in tags)
+                    { if (selection.Contains(tag.GetTaggedLocalElementIds().FirstOrDefault()))
+                         { newsel.Add(tag.Id); }
                     }
-                    else
+                }
+                else
+                {
+                    foreach (ElementId eid in uidoc.Selection.GetElementIds())
                     {
-                        text1 = "non-annotation";
-                        try
+                        if (!StoreExp.GetSwitchStance(uiapp, "Red"))
                         {
-                            Element e = doc.GetElement(eid);
-                            if (e.Category.CategoryType != CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                            try
                             {
-                                newsel.Add(e.Id);
+                                Element e = doc.GetElement(eid);
+                                if (e.Category.CategoryType == CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                                {
+                                    newsel.Add(e.Id);
+                                }
                             }
+                            catch { }
                         }
-                        catch { }
+                        else
+                        {
+                            text1 = "non-annotation";
+                            try
+                            {
+                                Element e = doc.GetElement(eid);
+                                if (e.Category.CategoryType != CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                                {
+                                    newsel.Add(e.Id);
+                                }
+                            }
+                            catch { }
+                        }
                     }
                 }
             }
+            
                 using (Transaction trans = new Transaction(doc))
                 {
                     trans.Start("Select all " + text1 + " in " + text2);
                     uidoc.Selection.SetElementIds(newsel);
                     trans.Commit();
                 }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class CopyAnnotation : IExternalCommand
+    {
+        //Returns elements that are referred to a link/import
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> annot = new List<ElementId>();
+            ElementId pickedid = uidoc.Selection.PickObject(ObjectType.Subelement).ElementId;
+            Viewport pickedVP = doc.GetElement(pickedid) as Viewport;
+            View sourceview = doc.GetElement(pickedVP.ViewId) as View;
+            IList<Reference> targetlist = uidoc.Selection.PickObjects(ObjectType.Subelement);
+            
+            FilteredElementCollector elementsInView = new FilteredElementCollector(doc, sourceview.Id);
+            ICollection<Element> elems = elementsInView.ToElements();
+            foreach (Element e in elems)
+            {
+            try
+            {
+                if (e.Category.CategoryType == CategoryType.Annotation && e.Category.Name.ToString() != "Grids" && e.Category.Name.ToString() != "Section Boxes" && e.Category.Name.ToString() != "Reference Planes" && e.Category.Name.ToString() != "Levels")
+                {
+                    annot.Add(e.Id);
+                }
+            }
+            catch { }
+            }
+            CopyPasteOptions cp = new CopyPasteOptions();
+            
+            
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Copy Annotation");
+                foreach (Reference refe in targetlist)
+                {
+                    Viewport targetVP = doc.GetElement(refe.ElementId) as Viewport;
+                    View targetview = doc.GetElement(targetVP.ViewId) as View;
+                    XYZ translation = targetview.CropBox.Min - sourceview.CropBox.Min;
+                    Transform transform = Transform.CreateTranslation(translation);
+                    ElementTransformUtils.CopyElements(sourceview, annot, targetview,transform, cp);
+                    
+                }
+                trans.Commit();
+            }
             return Result.Succeeded;
         }
     }
@@ -2984,6 +3079,124 @@ namespace MultiDWG
             string linkedid = SelectedObj.PickObject(ObjectType.LinkedElement).LinkedElementId.ToString();
             TaskDialog.Show("Id of selected object","Copied to Clipboard: "+ linkedid);
             System.Windows.Forms.Clipboard.SetText(linkedid);
+            return Result.Succeeded;
+        }
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+
+    public class ReStoreRevisions : IExternalCommand
+    {
+        public void WriteRevisions(Document doc,ICollection<ElementId> eids, FileInfo fi)
+        {
+            using (TextWriter tw = new StreamWriter(fi.Open(FileMode.Truncate)))
+            {
+                foreach (ElementId eid in eids)
+                {
+                    Element elem = doc.GetElement(eid);
+                    ViewSheet sheet = elem as ViewSheet;
+                    tw.Write(eid.ToString() + ":");
+                    foreach (ElementId revID in sheet.GetAllRevisionIds())
+                    {
+                        tw.Write(revID.ToString() + ",");
+                    }
+                    tw.Write(Environment.NewLine);
+                }
+            }
+            TaskDialog.Show("Note", "Revisions Written to file");
+        }
+        public void RestoreRevisions(Document doc, ICollection<ElementId> eids, string path)
+        {
+            string[] lines = File.ReadAllLines(path);
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Restoring Rev-File");
+                foreach (string line in lines)
+                {
+                    ICollection<ElementId> revstoadd= new List<ElementId>();
+                    string[] parts = line.Split(':');
+                    int idInt = Convert.ToInt32(parts[0]);
+                    ElementId sheetid = new ElementId(idInt);
+                    ViewSheet sheet = doc.GetElement(sheetid) as ViewSheet;
+                    if (eids.Contains(sheetid))
+                    {
+                        ICollection<ElementId> currentrevs = sheet.GetAdditionalRevisionIds();
+                        ICollection<ElementId> emptyRevisionIds = new List<ElementId>();
+                        sheet.SetAdditionalRevisionIds(emptyRevisionIds);
+                        string[] revisionIDs = parts[1].Split(',');
+                        foreach (string id in revisionIDs)
+                        {
+                            if (!string.IsNullOrEmpty(id)) // Check if string is not empty
+                            {
+                                revstoadd.Add(new ElementId(Convert.ToInt32(id)));
+                            }
+                        }
+                        sheet.SetAdditionalRevisionIds(revstoadd);
+                    }
+                }
+            tx.Commit();
+            TaskDialog.Show("Note", "Revisions Restored from file");
+            }
+        }
+        public void CleanRevisions(Document doc, ICollection<ElementId> eids, string path)
+        {
+            
+            string[] lines = File.ReadAllLines(path);
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Restoring Rev-File");
+                foreach (string line in lines)
+                {
+                    ICollection<ElementId> revstoadd = new List<ElementId>();
+                    string[] parts = line.Split(':');
+                    int idInt = Convert.ToInt32(parts[0]);
+                    ElementId sheetid = new ElementId(idInt);
+                    ViewSheet sheet = doc.GetElement(sheetid) as ViewSheet;
+                    if (eids.Contains(sheetid))
+                    {
+                        ICollection<ElementId> currentrevs = sheet.GetAdditionalRevisionIds();
+                        ICollection<ElementId> emptyRevisionIds = new List<ElementId>();
+                        sheet.SetAdditionalRevisionIds(emptyRevisionIds);
+                        string[] revisionIDs = parts[1].Split(',');
+                        foreach (string id in revisionIDs)
+                        {
+                            if (!string.IsNullOrEmpty(id)) // Check if string is not empty
+                            {
+                                revstoadd.Add(new ElementId(Convert.ToInt32(id)));
+                            }
+                        }
+                        sheet.SetAdditionalRevisionIds(revstoadd);
+                    }
+                }
+                tx.Commit();
+                TaskDialog.Show("Note", "Revisions Restored from file");
+            }
+        }
+        //Stores/Restores Revisions for a set of sheets.
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            string writepath = "";
+            dlg.Filter = "Text files(*.txt) | *.txt";
+            Nullable<bool> result = dlg.ShowDialog();
+            if (result == true)
+            {
+                writepath = dlg.FileName;
+            }
+            FileInfo fi = new FileInfo(writepath);
+            bool write = !StoreExp.GetSwitchStance(uiapp, "Red");
+            if (write)
+            { WriteRevisions(doc,ids, fi); }
+            else { RestoreRevisions(doc, ids, writepath); }
             return Result.Succeeded;
         }
     }
@@ -3211,8 +3424,6 @@ namespace MultiDWG
             UIDocument uiDoc = uiApp.ActiveUIDocument;
             Application app = uiApp.Application;
             Document doc = uiDoc.Document;
-
-
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Explode MEP");
@@ -3230,16 +3441,20 @@ namespace MultiDWG
                         // Disconnect all connectors at each end of the MEP element
                         foreach (Connector connector in mepCurve.ConnectorManager.Connectors)
                         {
-                            if (connector.IsConnected)
+                            if (connector.IsConnected )
                             {
                                 ConnectorSet connectedConnectors = connector.AllRefs;
 
                                 // Disconnect the connector from other elements
                                 foreach (Connector connectedConnector in connectedConnectors)
                                 {
-                                    connectedConnector.DisconnectFrom(connector);
+                                    if (connectedConnector.Domain != Domain.DomainUndefined)
+                                    {
+                                        connector.DisconnectFrom(connectedConnector);
+                                    }
                                 }
                             }
+
                         }
                     }
                     else if (element is FamilyInstance familyInstance)
@@ -3255,7 +3470,8 @@ namespace MultiDWG
                                     // Disconnect the connector from other elements
                                     foreach (Connector connectedConnector in connectedConnectors)
                                     {
-                                        connectedConnector.DisconnectFrom(connector);
+                                        if (connectedConnector.Domain != Domain.DomainUndefined)
+                                        { connectedConnector.DisconnectFrom(connector); }
                                     }
                                 }
                             }
@@ -3264,6 +3480,72 @@ namespace MultiDWG
                     }
                 }
 
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class WeldMEP : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiApp = commandData.Application;
+            UIDocument uiDoc = uiApp.ActiveUIDocument;
+            Application app = uiApp.Application;
+            Document doc = uiDoc.Document;
+            List <Connector> Check = new List<Connector>();
+            using (Transaction trans = new Transaction(doc))
+            {
+                
+                ICollection<ElementId> selectedIds = uiDoc.Selection.GetElementIds();
+                foreach (ElementId elementId in selectedIds)
+                {
+                    Element element = doc.GetElement(elementId);
+                    if (element is MEPCurve mepCurve)
+                    {
+                        // Find all connectors at each end of MEP elements
+                        foreach (Connector connector in mepCurve.ConnectorManager.Connectors)
+                        {
+                            if (!connector.IsConnected)
+                            {
+                                Check.Add(connector);
+                            }
+
+                        }
+                    }
+                    else if (element is FamilyInstance familyInstance)
+                    {
+                        // Find all connectors from familyinstaces
+                        try
+                        {
+                            foreach (Connector connector in familyInstance.MEPModel.ConnectorManager.Connectors)
+                            {
+                                if (!connector.IsConnected)
+                                {
+                                Check.Add(connector);
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                trans.Start("Weld MEP");
+                foreach (Connector connector in Check)
+                {
+                    // Find the pair based on the Origin
+                    Connector pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
+                        
+                    // If a pair is found, connect them
+                    if (pair != null && !connector.IsConnected)
+                    {
+                        connector.ConnectTo(pair);
+                    }
+                }
                 trans.Commit();
             }
             return Result.Succeeded;

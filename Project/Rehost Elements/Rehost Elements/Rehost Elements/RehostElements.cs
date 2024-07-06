@@ -90,9 +90,11 @@ namespace RehostElements
                                     {
                                         elemLvl = doc.GetElement(e.get_Parameter(BuiltInParameter.SCHEDULE_LEVEL_PARAM).AsElementId()) as Level;
                                     }
-                                    catch { elemLvl = doc.GetElement(e.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM).AsElementId()) as Level; }
+                                    catch { elemLvl = doc.GetElement(e.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM).AsElementId()) as Level;
+                                            }
                                 }
                             }
+                            ElemLevelElev = elemLvl.Elevation;
                             string categoryName = e.get_Parameter(BuiltInParameter.ELEM_CATEGORY_PARAM).AsValueString();
                             if (e.GetType() == typeof(Ceiling))
                             {
@@ -109,7 +111,7 @@ namespace RehostElements
                                 e.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM).Set(fulloffset);
                             }
                             
-                            else if (categoryName == "Structural Framing")
+                            else if (e.Category == Category.GetCategory(doc,BuiltInCategory.OST_StructuralFraming))
                             {
                                 e.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM).Set(targetLevel.Id);
                             }

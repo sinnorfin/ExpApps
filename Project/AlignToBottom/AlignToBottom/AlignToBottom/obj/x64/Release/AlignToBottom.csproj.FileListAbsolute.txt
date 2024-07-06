@@ -34,9 +34,3 @@ D:\Tools\Addin\Exp_Apps\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x6
 D:\Tools\Addin\Exp_Apps\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x64\Release\AlignToBottom.csproj.CoreCompileInputs.cache
 D:\Tools\Addin\Exp_Apps\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x64\Release\AlignToBottom.dll
 D:\Tools\Addin\Exp_Apps\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x64\Release\AlignToBottom.pdb
-D:\Script\ExpApps-master\Build\AlignToBottom.dll
-D:\Script\ExpApps-master\Build\AlignToBottom.pdb
-D:\Script\ExpApps-master\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x64\Release\AlignToBottom.csproj.AssemblyReference.cache
-D:\Script\ExpApps-master\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x64\Release\AlignToBottom.csproj.CoreCompileInputs.cache
-D:\Script\ExpApps-master\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x64\Release\AlignToBottom.dll
-D:\Script\ExpApps-master\Project\AlignToBottom\AlignToBottom\AlignToBottom\obj\x64\Release\AlignToBottom.pdb

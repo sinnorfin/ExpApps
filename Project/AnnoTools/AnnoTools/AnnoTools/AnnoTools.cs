@@ -203,8 +203,42 @@ namespace AnnoTools
             return Result.Succeeded;
         }
     }
-    
     [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class FixFreeLeaders : IExternalCommand
+    {
+        public Result Execute(
+        ExternalCommandData commandData,
+        ref string message,
+        ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
+            Selection SelectedObjs = uidoc.Selection;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Fix Free leader Tags");
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid);
+                    if (elem is IndependentTag tag)
+                    {
+                         Element firstreference = tag.GetTaggedLocalElements().First();
+                        LocationPoint locpoint = firstreference.Location as LocationPoint;
+                        
+                         tag.LeaderEndCondition = LeaderEndCondition.Free;
+                         tag.SetLeaderEnd(tag.GetTaggedReferences().First(), locpoint.Point);
+                    }
+                }
+                tx.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+[Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class MultiTag : IExternalCommand
     {
@@ -260,11 +294,11 @@ namespace AnnoTools
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> newSel = new List<ElementId>();
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            bool Mode_Ind = StoreExp.GetSwitchStance(uiapp, "Universal Toggle Red OFF");
-            if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Green OFF"))
+            bool Mode_Ind = StoreExp.GetSwitchStance(uiapp, "Red");
+            if (StoreExp.GetSwitchStance(uiapp, "Green"))
                 { ReadTag(doc, uidoc, uiapp);
                 return Result.Succeeded;}
-            bool Mode_Ind_Fixed = StoreExp.GetSwitchStance(uiapp, "Universal Toggle Blue OFF");
+            bool Mode_Ind_Fixed = StoreExp.GetSwitchStance(uiapp, "Blue");
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Create Tags");

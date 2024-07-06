@@ -143,10 +143,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\ClassLibrary1\Exp_apps_R17.csproj">
+    <ProjectReference Include="..\..\..\Exp_Apps_Versioned\Exp_apps_R17.csproj">
       <Project>{71ed188e-d2b8-4d12-a347-1893f0bb421c}</Project>
       <Name>Exp_apps_R17</Name>
-      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\..\..\MultiDWG\MultiDWG\MultiDWG\MultiDWG.csproj">
       <Project>{416b5141-68da-4396-a4fb-9cf24537cdfa}</Project>

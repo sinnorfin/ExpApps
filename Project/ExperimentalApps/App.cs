@@ -209,6 +209,8 @@ namespace _ExpApps
            IconImageType.Noimage);
             PushButtonData qt12 = CreateButton("Check Flow in Selected", "MultiDWG.dll", "MultiDWG.BKFlowCheck",
    IconImageType.Noimage);
+            PushButtonData qt13 = CreateButton("Weld MEP", "MultiDWG.dll", "MultiDWG.WeldMEP",
+   IconImageType.Noimage);
             //*** No need for R23+
             qt1.ToolTip = "Filters Vertical elements from selection" + Environment.NewLine + ":1: controls vertical sensitivity";
             qt2.ToolTip = "Filter the selected tags that are hosted by Round duct" + Environment.NewLine + "'Red' - hosted by Rectangular";
@@ -223,19 +225,19 @@ namespace _ExpApps
                         + ":B: - Suffix - Sheet Name" + Environment.NewLine + ":C: - Type for Dependent view duplicates";
             qt6.ToolTip = "Adjusts the routing prefence to use Tee/Taps.";
             qt7.ToolTip = "Disconnects the selected MEP element from its neighbours, retains tags.";
-            qt8.ToolTip = "Duplicates the selected sheets but for a different level, input negatives (-) for levels below" + Environment.NewLine + ":1: Number of levels to step the source and target level" + Environment.NewLine
-                       + ":2: Difference in mm, between the target and source level" + Environment.NewLine + ":A: - Suffix - Sheet Number" + Environment.NewLine
+            qt8.ToolTip = "Duplicates the selected sheets but for a different level, input negatives (-) for levels below" + Environment.NewLine + ":1: Difference in mm, between the target and source level" + Environment.NewLine
+                       + ":2: Number of levels to step the source and target level" + Environment.NewLine + ":A: - Suffix - Sheet Number" + Environment.NewLine
                         + ":B: - Suffix - Sheet Name" + Environment.NewLine + ":C: - Type for Dependent view duplicates";
             qt9.ToolTip = "Select Views and Sheet in Project Browser." + Environment.NewLine + 
                         ":RED: - ON: Horizontal placement - OFF: Vertical placement";
             qt10.ToolTip = "Select Grids/Levels to adjust" + Environment.NewLine + "If Views are selected instead, adjustments will be applied on all grids/levels in selected views"
                 + Environment.NewLine + ":RED: - Hide/Show bubbles" + Environment.NewLine + ":RED: + :GREEN: - Flip Bubbles" + Environment.NewLine +
-                ":BLUE: - Clone adjustment from picked grid/level" + Environment.NewLine + ":1: - Controls shrink distance";
+                ":BLUE: - Reset to default" + Environment.NewLine + ":1: - Controls shrink distance";
              qt11.ToolTip = "Pick a Viewport to take Title position/ line length from" + Environment.NewLine + "note: Reference is bottom left corner of Bounding box of Viewport"
                 + Environment.NewLine + "Bounds are affected by extensions of grids/levels, placed sections etc." + Environment.NewLine + " Works best if used on similar boundaries";
             qt12.ToolTip = "Check if Flow typed in parameter :A: equals the real flow from model." + Environment.NewLine + ":RED: - Copy 'Real' flow to 'Typed' Flow"
                + Environment.NewLine + ":GREEN: - Give Report of differences, copies involved ID-s to clipboard";
-
+            qt13.ToolTip = "Connects selected MEP element to its properly aligned neighbours.";
             panel_Export.AddItem(PBD_printrevision);
             panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);
             panel_ViewSetup.AddStackedItems(PBD_shifttu, PBD_shifttd);
@@ -287,6 +289,7 @@ namespace _ExpApps
             QtButtonGroup.AddPushButton(qt10);
             QtButtonGroup.AddPushButton(qt11);
             QtButtonGroup.AddPushButton(qt12);
+            QtButtonGroup.AddPushButton(qt13);
             //Remove stance name from button name//
             PushButtonData PBD_unitogglered = CreateButton("Universal Toggle Red OFF", "StoreExp.dll",
               "ToggleRed", off: true);
@@ -317,6 +320,12 @@ namespace _ExpApps
                 SetTextBox(item, "2", ":2:", "Universal Modifier - 2", 50);
                 SetTextBox(item, "3", ":3:", "Universal Modifier - 3", 50);
             }
+
+            a.ApplicationClosing += a_ApplicationClosing;
+
+            //Set Application to Idling
+            a.Idling += a_Idling;
+
             return Result.Succeeded;
         }
         public List<string> shiftdistances(Document doc)
@@ -394,7 +403,15 @@ namespace _ExpApps
                 c += 1;
             }
         }
-
+        //*****************************a_Idling()*****************************
+        void a_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
+        {
+        }
+        //*****************************a_ApplicationClosing()*****************************
+        void a_ApplicationClosing(object sender, Autodesk.Revit.UI.Events.ApplicationClosingEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
         public Result OnShutdown(UIControlledApplication a)
         {
             return Result.Succeeded;
