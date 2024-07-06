@@ -1,5 +1,0 @@
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Rehost Elements\Rehost Elements\Rehost Elements\bin\x64\Release\Rehost Elements.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Rehost Elements\Rehost Elements\Rehost Elements\bin\x64\Release\Rehost Elements.pdb
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\Rehost Elements.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\Rehost Elements.pdb
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\Rehost Elements.csprojResolveAssemblyReference.cache

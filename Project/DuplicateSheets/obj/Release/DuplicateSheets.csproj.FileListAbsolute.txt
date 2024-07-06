@@ -1,6 +1,0 @@
-H:\Tools\Addin\Exp_Apps\Project\DuplicateSheets\bin\Release\DuplicateSheets.dll
-H:\Tools\Addin\Exp_Apps\Project\DuplicateSheets\bin\Release\DuplicateSheets.pdb
-H:\Tools\Addin\Exp_Apps\Project\DuplicateSheets\obj\Release\DuplicateSheets.csprojAssemblyReference.cache
-H:\Tools\Addin\Exp_Apps\Project\DuplicateSheets\obj\Release\DuplicateSheets.csproj.CoreCompileInputs.cache
-H:\Tools\Addin\Exp_Apps\Project\DuplicateSheets\obj\Release\DuplicateSheets.dll
-H:\Tools\Addin\Exp_Apps\Project\DuplicateSheets\obj\Release\DuplicateSheets.pdb

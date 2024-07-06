@@ -1,5 +1,0 @@
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\ExperimentalApps\bin\x64\Testing\ExpApps.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\ExperimentalApps\bin\x64\Testing\ExpApps.pdb
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\ExperimentalApps\obj\x64\Testing\ExpApps.csprojResolveAssemblyReference.cache
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\ExperimentalApps\obj\x64\Testing\ExpApps.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\ExperimentalApps\obj\x64\Testing\ExpApps.pdb

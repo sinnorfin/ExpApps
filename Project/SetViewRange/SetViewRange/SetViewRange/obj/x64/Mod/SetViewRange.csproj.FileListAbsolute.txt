@@ -1,5 +1,0 @@
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\obj\x64\Mod\SetViewRange.csprojResolveAssemblyReference.cache
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\bin\x64\Mod\SetViewRange.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\bin\x64\Mod\SetViewRange.pdb
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\obj\x64\Mod\SetViewRange.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\obj\x64\Mod\SetViewRange.pdb

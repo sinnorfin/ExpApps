@@ -1,4 +1,0 @@
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\bin\x64\Release\AlignToBottom.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\bin\x64\Release\AlignToBottom.pdb
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\obj\x64\Release\AlignToBottom.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\obj\x64\Release\AlignToBottom.pdb

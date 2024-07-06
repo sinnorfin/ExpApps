@@ -1,2 +1,0 @@
-C:\Users\albertj\source\repos\225DApps\225DApps\obj\Debug\225DApps.csprojResolveAssemblyReference.cache
-C:\Users\albertj\source\repos\225DApps\225DApps\obj\Debug\225DApps.csproj.CoreCompileInputs.cache

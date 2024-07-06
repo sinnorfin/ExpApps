@@ -1,0 +1,6 @@
+D:\Script\ExpApps-master\ExpApps\Build\DWGExport.dll
+D:\Script\ExpApps-master\ExpApps\Build\DWGExport.pdb
+D:\Script\ExpApps-master\ExpApps\Project\DWGExport\obj\x64\Release\DWGExport.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\ExpApps\Project\DWGExport\obj\x64\Release\DWGExport.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Project\DWGExport\obj\x64\Release\DWGExport.dll
+D:\Script\ExpApps-master\ExpApps\Project\DWGExport\obj\x64\Release\DWGExport.pdb

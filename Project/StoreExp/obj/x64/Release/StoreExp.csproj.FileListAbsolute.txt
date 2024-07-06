@@ -1,0 +1,5 @@
+D:\Script\ExpApps-master\ExpApps\Build\StoreExp.dll
+D:\Script\ExpApps-master\ExpApps\Build\StoreExp.pdb
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\obj\x64\Release\StoreExp.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\obj\x64\Release\StoreExp.dll
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\obj\x64\Release\StoreExp.pdb

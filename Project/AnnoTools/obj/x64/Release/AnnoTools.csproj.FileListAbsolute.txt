@@ -1,0 +1,7 @@
+D:\Script\ExpApps-master\ExpApps\Build\AnnoTools.dll
+D:\Script\ExpApps-master\ExpApps\Build\AnnoTools.pdb
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\obj\x64\Release\AnnoTools.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\obj\x64\Release\AnnoTools.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\obj\x64\Release\AnnoTools.csproj.CopyComplete
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\obj\x64\Release\AnnoTools.dll
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\obj\x64\Release\AnnoTools.pdb

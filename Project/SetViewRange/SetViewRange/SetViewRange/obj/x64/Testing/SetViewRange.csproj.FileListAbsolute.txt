@@ -1,5 +1,0 @@
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\SetViewRange\SetViewRange\SetViewRange\obj\x64\Testing\SetViewRange.csprojResolveAssemblyReference.cache
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\SetViewRange\SetViewRange\SetViewRange\bin\x64\Testing\SetViewRange.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\SetViewRange\SetViewRange\SetViewRange\bin\x64\Testing\SetViewRange.pdb
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\SetViewRange\SetViewRange\SetViewRange\obj\x64\Testing\SetViewRange.dll
-C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\SetViewRange\SetViewRange\SetViewRange\obj\x64\Testing\SetViewRange.pdb

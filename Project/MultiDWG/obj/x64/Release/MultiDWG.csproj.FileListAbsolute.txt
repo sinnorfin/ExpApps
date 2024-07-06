@@ -1,0 +1,7 @@
+D:\Script\ExpApps-master\ExpApps\Build\MultiDWG.dll
+D:\Script\ExpApps-master\ExpApps\Build\MultiDWG.pdb
+D:\Script\ExpApps-master\ExpApps\Project\MultiDWG\obj\x64\Release\MultiDWG.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\ExpApps\Project\MultiDWG\obj\x64\Release\MultiDWG.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Project\MultiDWG\obj\x64\Release\MultiDWG.csproj.CopyComplete
+D:\Script\ExpApps-master\ExpApps\Project\MultiDWG\obj\x64\Release\MultiDWG.dll
+D:\Script\ExpApps-master\ExpApps\Project\MultiDWG\obj\x64\Release\MultiDWG.pdb
