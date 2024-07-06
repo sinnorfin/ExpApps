@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlignToBottom", "AlignToBottom.csproj", "{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Mod|Any CPU = Mod|Any CPU
+		Mod|x64 = Mod|x64
+		Mod|x86 = Mod|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+		V01|Any CPU = V01|Any CPU
+		V01|x64 = V01|x64
+		V01|x86 = V01|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Debug|x64.ActiveCfg = Debug|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Debug|x64.Build.0 = Debug|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Debug|x86.ActiveCfg = Debug|x86
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Debug|x86.Build.0 = Debug|x86
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Mod|Any CPU.ActiveCfg = Mod|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Mod|Any CPU.Build.0 = Mod|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Mod|x64.ActiveCfg = Mod|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Mod|x64.Build.0 = Mod|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Mod|x86.ActiveCfg = Mod|x86
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Mod|x86.Build.0 = Mod|x86
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Release|x64.ActiveCfg = Release|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Release|x64.Build.0 = Release|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Release|x86.ActiveCfg = Release|x86
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.Release|x86.Build.0 = Release|x86
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.V01|Any CPU.ActiveCfg = V01|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.V01|Any CPU.Build.0 = V01|Any CPU
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.V01|x64.ActiveCfg = V01|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.V01|x64.Build.0 = V01|x64
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.V01|x86.ActiveCfg = V01|x86
+		{77762FD9-8BAA-4A2C-8A45-CE2C99C2AF2D}.V01|x86.Build.0 = V01|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

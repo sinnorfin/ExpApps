@@ -1,0 +1,9 @@
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\ClassLibrary1\ClassLibrary1\bin\Release\SetViewRange.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\ClassLibrary1\ClassLibrary1\bin\Release\SetViewRange.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\ClassLibrary1\ClassLibrary1\obj\Release\SetViewRange.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\ClassLibrary1\ClassLibrary1\obj\Release\SetViewRange.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\bin\Release\SetViewRange.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\bin\Release\SetViewRange.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\obj\Release\SetViewRange.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\obj\Release\SetViewRange.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\SetViewRange\SetViewRange\SetViewRange\obj\Release\SetViewRange.csprojResolveAssemblyReference.cache

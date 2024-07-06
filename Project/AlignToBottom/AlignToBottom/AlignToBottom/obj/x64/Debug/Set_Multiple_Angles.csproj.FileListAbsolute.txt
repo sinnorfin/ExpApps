@@ -1,0 +1,5 @@
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\bin\x64\Debug\Set_Multiple_Angles.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\bin\x64\Debug\Set_Multiple_Angles.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\obj\x64\Debug\Set_Multiple_Angles.csprojResolveAssemblyReference.cache
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\obj\x64\Debug\Set_Multiple_Angles.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\Set_Multiple_Angles\Set_Multiple_Angles\Set_Multiple_Angles\obj\x64\Debug\Set_Multiple_Angles.pdb

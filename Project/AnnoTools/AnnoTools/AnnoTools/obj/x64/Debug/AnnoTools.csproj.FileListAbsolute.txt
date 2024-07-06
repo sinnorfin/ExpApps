@@ -1,0 +1,5 @@
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\AnnoTools\AnnoTools\AnnoTools\bin\x64\Debug\AnnoTools.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\AnnoTools\AnnoTools\AnnoTools\bin\x64\Debug\AnnoTools.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\AnnoTools\AnnoTools\AnnoTools\obj\x64\Debug\AnnoTools.csprojResolveAssemblyReference.cache
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\AnnoTools\AnnoTools\AnnoTools\obj\x64\Debug\AnnoTools.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\AnnoTools\AnnoTools\AnnoTools\obj\x64\Debug\AnnoTools.pdb

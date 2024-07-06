@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SetViewRange", "SetViewRange\SetViewRange.csproj", "{F1DD32AE-701A-4158-A214-3C835DC6A3BB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Mod|Any CPU = Mod|Any CPU
+		Mod|x64 = Mod|x64
+		Mod|x86 = Mod|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+		Testing|Any CPU = Testing|Any CPU
+		Testing|x64 = Testing|x64
+		Testing|x86 = Testing|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Debug|x64.ActiveCfg = Debug|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Debug|x64.Build.0 = Debug|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Debug|x86.ActiveCfg = Debug|x86
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Debug|x86.Build.0 = Debug|x86
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Mod|Any CPU.ActiveCfg = Mod|Any CPU
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Mod|Any CPU.Build.0 = Mod|Any CPU
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Mod|x64.ActiveCfg = Mod|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Mod|x64.Build.0 = Mod|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Mod|x86.ActiveCfg = Mod|x86
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Mod|x86.Build.0 = Mod|x86
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Release|x64.ActiveCfg = Release|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Release|x64.Build.0 = Release|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Release|x86.ActiveCfg = Release|x86
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Release|x86.Build.0 = Release|x86
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Testing|Any CPU.ActiveCfg = Testing|Any CPU
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Testing|Any CPU.Build.0 = Testing|Any CPU
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Testing|x64.ActiveCfg = Testing|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Testing|x64.Build.0 = Testing|x64
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Testing|x86.ActiveCfg = Testing|x86
+		{F1DD32AE-701A-4158-A214-3C835DC6A3BB}.Testing|x86.Build.0 = Testing|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

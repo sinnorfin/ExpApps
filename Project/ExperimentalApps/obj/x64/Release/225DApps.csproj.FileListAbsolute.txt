@@ -1,0 +1,5 @@
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\225DApps\225DApps\bin\x64\Release\225DApps.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\225DApps\225DApps\bin\x64\Release\225DApps.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\225DApps\225DApps\obj\x64\Release\225DApps.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\225DApps\225DApps\obj\x64\Release\225DApps.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\225DApps\225DApps\obj\x64\Release\225DApps.csprojResolveAssemblyReference.cache

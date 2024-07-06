@@ -1,0 +1,10 @@
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\MultiDWG\MultiDWG\MultiDWG\bin\x64\Debug\MultiDWG.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\MultiDWG\MultiDWG\MultiDWG\bin\x64\Debug\MultiDWG.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\MultiDWG\MultiDWG\MultiDWG\obj\x64\Debug\MultiDWG.csprojResolveAssemblyReference.cache
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\MultiDWG\MultiDWG\MultiDWG\obj\x64\Debug\MultiDWG.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\Revit\MultiDWG\MultiDWG\MultiDWG\obj\x64\Debug\MultiDWG.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\MultiDWG\MultiDWG\MultiDWG\bin\x64\Debug\MultiDWG.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\MultiDWG\MultiDWG\MultiDWG\bin\x64\Debug\MultiDWG.pdb
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\MultiDWG\MultiDWG\MultiDWG\obj\x64\Debug\MultiDWG.csprojResolveAssemblyReference.cache
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\MultiDWG\MultiDWG\MultiDWG\obj\x64\Debug\MultiDWG.dll
+C:\Users\kalinaattila\Documents\Visual Studio 2017\Projects\ExperimentalApps\MultiDWG\MultiDWG\MultiDWG\obj\x64\Debug\MultiDWG.pdb

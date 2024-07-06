@@ -1,0 +1,12 @@
+D:\Tools\Addin\Exp_Apps\Project\StoreExp\bin\Release\StoreExp.dll
+D:\Tools\Addin\Exp_Apps\Project\StoreExp\bin\Release\StoreExp.pdb
+D:\Tools\Addin\Exp_Apps\Project\StoreExp\obj\Release\StoreExp.csproj.AssemblyReference.cache
+D:\Tools\Addin\Exp_Apps\Project\StoreExp\obj\Release\StoreExp.csproj.CoreCompileInputs.cache
+D:\Tools\Addin\Exp_Apps\Project\StoreExp\obj\Release\StoreExp.dll
+D:\Tools\Addin\Exp_Apps\Project\StoreExp\obj\Release\StoreExp.pdb
+D:\Script\ExpApps-master\Project\StoreExp\bin\Release\StoreExp.dll
+D:\Script\ExpApps-master\Project\StoreExp\bin\Release\StoreExp.pdb
+D:\Script\ExpApps-master\Project\StoreExp\obj\Release\StoreExp.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\Project\StoreExp\obj\Release\StoreExp.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\Project\StoreExp\obj\Release\StoreExp.dll
+D:\Script\ExpApps-master\Project\StoreExp\obj\Release\StoreExp.pdb

@@ -1,0 +1,20 @@
+H:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csprojAssemblyReference.cache
+H:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csproj.CoreCompileInputs.cache
+H:\Tools\Addin\Exp_Apps\Build\RehostElements.dll
+H:\Tools\Addin\Exp_Apps\Build\RehostElements.pdb
+H:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.dll
+H:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.pdb
+D:\Tools\Addin\Exp_Apps\Build\RehostElements.dll
+D:\Tools\Addin\Exp_Apps\Build\RehostElements.pdb
+D:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csproj.AssemblyReference.cache
+D:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csproj.CoreCompileInputs.cache
+D:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.dll
+D:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.pdb
+D:\Tools\Addin\Exp_Apps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csproj.CopyComplete
+D:\Script\ExpApps-master\Build\RehostElements.dll
+D:\Script\ExpApps-master\Build\RehostElements.pdb
+D:\Script\ExpApps-master\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.csproj.CopyComplete
+D:\Script\ExpApps-master\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.dll
+D:\Script\ExpApps-master\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\x64\Release\RehostElements.pdb

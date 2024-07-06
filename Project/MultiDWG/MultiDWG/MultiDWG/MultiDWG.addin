@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Text>SetViewRange</Text>
+    <Description>Description</Description>
+    <Assembly>Rehost Elements.dll</Assembly>
+    <FullClassName>Rehost Elements.Command</FullClassName>
+    <ClientId>77ba9a12-e777-4cb8-9c66-80387f27f89d</ClientId>
+    <VendorId>Attila Kalina</VendorId>
+    <VendorDescription>Attila_Kalina@trimble.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>

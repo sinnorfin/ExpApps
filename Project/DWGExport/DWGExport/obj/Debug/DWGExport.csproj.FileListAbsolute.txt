@@ -1,0 +1,6 @@
+D:\Script\Exp_Apps\Project\DWGExport\DWGExport\obj\Debug\DWGExport.csprojAssemblyReference.cache
+D:\Script\Exp_Apps\Project\DWGExport\DWGExport\obj\Debug\DWGExport.csproj.CoreCompileInputs.cache
+D:\Script\Exp_Apps\Project\DWGExport\DWGExport\bin\Debug\DWGExport.dll
+D:\Script\Exp_Apps\Project\DWGExport\DWGExport\bin\Debug\DWGExport.pdb
+D:\Script\Exp_Apps\Project\DWGExport\DWGExport\obj\Debug\DWGExport.dll
+D:\Script\Exp_Apps\Project\DWGExport\DWGExport\obj\Debug\DWGExport.pdb

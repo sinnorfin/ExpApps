@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Text>Align To Bottom</Text>
+    <Description>Aligns MEP elements to the bottom of selected MEP element</Description>
+    <Assembly>AlignToBottom.dll</Assembly>
+    <FullClassName>AlignToBottom.Command</FullClassName>
+    <ClientId>125ec0eb-1d35-4e1d-8160-250611daff07</ClientId>
+    <VendorId>Attila Kalina</VendorId>
+    <VendorDescription>Attila_Kalina@trimble.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>
