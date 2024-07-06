@@ -1,0 +1,7 @@
+D:\Script\ExpApps-master\ExpApps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\Debug\RehostElements.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\ExpApps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\Debug\RehostElements.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Project\Rehost Elements\Build\RehostElements.dll
+D:\Script\ExpApps-master\ExpApps\Project\Rehost Elements\Build\RehostElements.pdb
+D:\Script\ExpApps-master\ExpApps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\Debug\RehostElements.csproj.CopyComplete
+D:\Script\ExpApps-master\ExpApps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\Debug\RehostElements.dll
+D:\Script\ExpApps-master\ExpApps\Project\Rehost Elements\Rehost Elements\Rehost Elements\obj\Debug\RehostElements.pdb

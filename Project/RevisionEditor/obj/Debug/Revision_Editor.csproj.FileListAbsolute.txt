@@ -1,0 +1,6 @@
+D:\Script\ExpApps-master\ExpApps\Project\RevisionEditor\obj\Debug\Revision_Editor.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\ExpApps\Project\RevisionEditor\obj\Debug\Revision_Editor.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Build\Revision_Editor.dll
+D:\Script\ExpApps-master\ExpApps\Build\Revision_Editor.pdb
+D:\Script\ExpApps-master\ExpApps\Project\RevisionEditor\obj\Debug\Revision_Editor.dll
+D:\Script\ExpApps-master\ExpApps\Project\RevisionEditor\obj\Debug\Revision_Editor.pdb

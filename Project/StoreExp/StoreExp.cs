@@ -1,6 +1,5 @@
 ﻿using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Visual;
 using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;

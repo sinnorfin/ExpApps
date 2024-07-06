@@ -1,0 +1,10 @@
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\obj\Debug\StoreExp.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\obj\Debug\StoreExp.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\$(SolutionDir)\Build\StoreExp.dll
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\$(SolutionDir)\Build\StoreExp.pdb
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\obj\Debug\StoreExp.dll
+D:\Script\ExpApps-master\ExpApps\Project\StoreExp\obj\Debug\StoreExp.pdb
+D:\Script\ExpApps-master\ExpApps\Project\Build\StoreExp.dll
+D:\Script\ExpApps-master\ExpApps\Project\Build\StoreExp.pdb
+D:\Script\ExpApps-master\ExpApps\Build\StoreExp.dll
+D:\Script\ExpApps-master\ExpApps\Build\StoreExp.pdb

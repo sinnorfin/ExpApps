@@ -4,3 +4,10 @@ D:\Script\Exp_Apps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.csp
 D:\Script\Exp_Apps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.csproj.CoreCompileInputs.cache
 D:\Script\Exp_Apps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.dll
 D:\Script\Exp_Apps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.pdb
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.csproj.AssemblyReference.cache
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.csproj.CoreCompileInputs.cache
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.dll
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.pdb
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\Build\AnnoTools.dll
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\Build\AnnoTools.pdb
+D:\Script\ExpApps-master\ExpApps\Project\AnnoTools\AnnoTools\AnnoTools\obj\Debug\AnnoTools.csproj.CopyComplete
