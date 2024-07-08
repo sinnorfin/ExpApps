@@ -1,5 +1,0 @@
-D:\Script\ExpApps-master\ExpApps\Build\AlignToBottom.dll
-D:\Script\ExpApps-master\ExpApps\Build\AlignToBottom.pdb
-D:\Script\ExpApps-master\ExpApps\Project\AlignToBottom\obj\x64\Release\AlignToBottom.csproj.CoreCompileInputs.cache
-D:\Script\ExpApps-master\ExpApps\Project\AlignToBottom\obj\x64\Release\AlignToBottom.dll
-D:\Script\ExpApps-master\ExpApps\Project\AlignToBottom\obj\x64\Release\AlignToBottom.pdb

@@ -1,9 +1,0 @@
-D:\Script\ExpApps-master\ExpApps\Build\ExpApps.dll
-D:\Script\ExpApps-master\ExpApps\Build\ExpApps.pdb
-D:\Script\ExpApps-master\ExpApps\Project\ExperimentalApps\obj\x64\Release\ExpApps.csproj.AssemblyReference.cache
-D:\Script\ExpApps-master\ExpApps\Project\ExperimentalApps\obj\x64\Release\_ExpApps.Properties.Resources.resources
-D:\Script\ExpApps-master\ExpApps\Project\ExperimentalApps\obj\x64\Release\ExpApps.csproj.GenerateResource.cache
-D:\Script\ExpApps-master\ExpApps\Project\ExperimentalApps\obj\x64\Release\ExpApps.csproj.CoreCompileInputs.cache
-D:\Script\ExpApps-master\ExpApps\Project\ExperimentalApps\obj\x64\Release\ExpApps.csproj.CopyComplete
-D:\Script\ExpApps-master\ExpApps\Project\ExperimentalApps\obj\x64\Release\ExpApps.dll
-D:\Script\ExpApps-master\ExpApps\Project\ExperimentalApps\obj\x64\Release\ExpApps.pdb
