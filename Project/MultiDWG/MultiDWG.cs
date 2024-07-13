@@ -24,34 +24,24 @@
 
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
-using Autodesk.Revit.ApplicationServices;
-using System.Collections.Generic;
 using System;
-using System.Windows.Media.Imaging;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Autodesk.Revit.DB.Structure;
-using Autodesk.Revit.DB.Plumbing;
 using System.Text.RegularExpressions;
-using System.Security.Cryptography;
-using System.Data.Common;
-using Autodesk.Revit.DB.Architecture;
-using static System.Windows.Forms.LinkLabel;
-using System.Collections;
-using System.Windows.Interop;
-using System.Windows.Forms;
-using View = Autodesk.Revit.DB.View;
 using Application = Autodesk.Revit.ApplicationServices.Application;
 using ComboBox = Autodesk.Revit.UI.ComboBox;
-using System.Windows.Controls;
 using Grid = Autodesk.Revit.DB.Grid;
+using View = Autodesk.Revit.DB.View;
 
 namespace MultiDWG
 {
-    
+
 
 
 
@@ -66,7 +56,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
             View acview = doc.ActiveView;
             foreach (Category cat in acview.Document.Settings.Categories)
@@ -97,7 +86,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
             View acview = doc.ActiveView;
             foreach (Category cat in acview.Document.Settings.Categories)
@@ -129,7 +117,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             Options geOpt = new Options();
@@ -211,7 +198,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
 
             using (Transaction tx = new Transaction(doc))
@@ -271,9 +257,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = StoreExp.SelectionMemory;
             using (Transaction trans = new Transaction(doc))
@@ -281,7 +265,6 @@ namespace MultiDWG
                 trans.Start("Store Selection in Memory");
                 foreach (ElementId eid in ids)
                 {
-                    Element elem = doc.GetElement(eid) as Element;
                     try
                     {
                         newsel.Add(eid);
@@ -307,8 +290,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
-            Document doc = uidoc.Document;
             uidoc.Selection.SetElementIds(StoreExp.SelectionMemory);
             return Result.Succeeded;
         }
@@ -324,10 +305,6 @@ namespace MultiDWG
             ref string message,
             ElementSet elements)
         {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
-            Document doc = uidoc.Document;
             StoreExp.SelectionMemory = new List<ElementId>();
             return Result.Succeeded;
         }
@@ -345,9 +322,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
@@ -405,12 +380,9 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> newsel = new List<ElementId>();
             ICollection<ElementId> ids;
-            string original = "?*?*?";
             if (uidoc.Selection.GetElementIds().Count == 0)
             {
                 FilteredElementCollector elementsinview = new FilteredElementCollector(doc, doc.ActiveView.Id);
@@ -423,6 +395,7 @@ namespace MultiDWG
                 trans.Start("Select all Not containing");
                 double c = 0;
                 double x = 0;
+                string original;
                 foreach (ElementId eid in ids)
                 {
                     Element elem = doc.GetElement(eid);
@@ -483,7 +456,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             IList<Element> SourceObjs = uidoc.Selection.PickElementsByRectangle("Select Source elements");
             IList<Element> TargetObjs = uidoc.Selection.PickElementsByRectangle("Select Target elements");
@@ -528,9 +500,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             StoreExp.GetMenuValue(uiapp);
             using (Transaction trans = new Transaction(doc))
@@ -563,17 +533,14 @@ namespace MultiDWG
                         }
                         else if (StoreExp.Store.menu_C_Box.Value.ToString() == "Num")
                         {
-                            double orig;
-                            Double.TryParse(sourcePara.AsValueString(), out orig);
+                            Double.TryParse(sourcePara.AsValueString(), out double orig);
                             orig = UnitUtils.Convert(orig, UnitTypeId.Millimeters, UnitTypeId.Feet);
                             targetPara.Set(orig);
                         }
                         else if (StoreExp.Store.menu_C_Box.Value.ToString() != "")
                         {
-                            double orig;
-                            double oper;
-                            Double.TryParse(sourcePara.AsString(), out orig);
-                            Double.TryParse(StoreExp.Store.menu_C_Box.Value.ToString(), out oper);
+                            Double.TryParse(sourcePara.AsString(), out double orig);
+                            Double.TryParse(StoreExp.Store.menu_C_Box.Value.ToString(), out double oper);
                             double sum = orig + oper;
                             targetPara.Set(sum.ToString());
                         }
@@ -605,9 +572,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
@@ -790,7 +755,6 @@ namespace MultiDWG
             ICollection<ElementId> newsel = new List<ElementId>();
             FilteredElementCollector elementsInView = new FilteredElementCollector(doc, from.Id);
             ICollection<Element> elems = elementsInView.ToElements();
-            string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
             foreach (Element e in elems)
             {
                 try
@@ -825,7 +789,6 @@ namespace MultiDWG
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
             ViewSheet targetsheet = null;
@@ -921,7 +884,6 @@ namespace MultiDWG
             UIApplication uiApp = commandData.Application;
             UIDocument uiDoc = uiApp.ActiveUIDocument;
             Document doc = uiDoc.Document;
-            Selection SelectedObjs = uiDoc.Selection;
             FilteredElementCollector alllevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
             ICollection<ElementId> ids = uiDoc.Selection.GetElementIds();
             ICollection<ElementId> rooms = null;
@@ -942,7 +904,7 @@ namespace MultiDWG
                 }
             }
             Document linkeddocument = link.GetLinkDocument();
-            ICollection<ElementId> roomseparators = new FilteredElementCollector(linkeddocument).WhereElementIsNotElementType().OfCategory(BuiltInCategory.OST_RoomSeparationLines).ToElementIds().ToList();
+            //ICollection<ElementId> roomseparators = new FilteredElementCollector(linkeddocument).WhereElementIsNotElementType().OfCategory(BuiltInCategory.OST_RoomSeparationLines).ToElementIds().ToList();
             using (Transaction trans1 = new Transaction(doc))
                 //{
                 //    trans1.Start("Copy Separators");
@@ -1062,11 +1024,8 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            List<Viewport> newviewports = new List<Viewport>();
             ViewSheet targetsheet = null;
             double X = 0;
             double Y = 0;
@@ -1125,9 +1084,7 @@ namespace MultiDWG
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
             List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
             FamilySymbol fs = new FilteredElementCollector(doc)
@@ -1163,11 +1120,13 @@ namespace MultiDWG
                     }
                     catch
                     {
-                        TaskDialog error = new TaskDialog("Error");
-                        error.MainInstruction = "Sheet Number already exists."
+                        TaskDialog error = new TaskDialog("Error")
+                        {
+                            MainInstruction = "Sheet Number already exists."
                             + Environment.NewLine + "Create as: " + Environment.NewLine
-                            + newsheet.SheetNumber + "-" + newsheet.Name + " ?";
-                        error.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
+                            + newsheet.SheetNumber + "-" + newsheet.Name + " ?",
+                            CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No
+                        };
                         TaskDialogResult response = error.Show();
                         if (response == TaskDialogResult.No)
                         {
@@ -1327,11 +1286,13 @@ namespace MultiDWG
                     }
                     catch
                     {
-                        TaskDialog error = new TaskDialog("Error");
-                        error.MainInstruction = "Sheet Number already exists."
+                        TaskDialog error = new TaskDialog("Error")
+                        {
+                            MainInstruction = "Sheet Number already exists."
                             + Environment.NewLine + "Create as: " + Environment.NewLine
-                            + newsheet.SheetNumber + "-" + newsheet.Name + " ?";
-                        error.CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No;
+                            + newsheet.SheetNumber + "-" + newsheet.Name + " ?",
+                            CommonButtons = TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.No
+                        };
                         TaskDialogResult response = error.Show();
                         if (response == TaskDialogResult.No)
                         {
@@ -1491,9 +1452,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ElementId pickedeid = uidoc.Selection.PickObject(ObjectType.Subelement).ElementId;
             Viewport pickedvp = doc.GetElement(pickedeid) as Viewport;
@@ -1534,7 +1493,7 @@ namespace MultiDWG
     //Transform the grid/level extents
     public class ShiftExtents : IExternalCommand
     {
-        public void resetDatumExtents(Document doc, List<ElementId> ids, double Shiftdistance,
+        public void ResetDatumExtents(Document doc, List<ElementId> ids,
            View view)
         {
             foreach (ElementId eid in ids)
@@ -1652,9 +1611,6 @@ namespace MultiDWG
                 {
                 Curve originalcurve = level.GetCurvesInView(DatumExtentType.ViewSpecific, view).First();
 
-                double startParam = originalcurve.GetEndParameter(0);
-                double endParam = originalcurve.GetEndParameter(1);
-
                 double newStartParam = sourcecurve.GetEndParameter(0);
                 double newEndParam = sourcecurve.GetEndParameter(1);
 
@@ -1666,9 +1622,6 @@ namespace MultiDWG
                 {
 
                     Curve originalcurve = grid.GetCurvesInView(DatumExtentType.ViewSpecific, view).First();
-
-                    double startParam = originalcurve.GetEndParameter(0);
-                    double endParam = originalcurve.GetEndParameter(1);
 
                     double newStartParam = sourcecurve.GetEndParameter(0);
                     double newEndParam = sourcecurve.GetEndParameter(1);
@@ -1686,11 +1639,9 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             View activeView = uidoc.ActiveView;
             StoreExp.GetMenuValue(uiapp);
-            List<ElementId> allinviews = new List<ElementId>();
             bool HideBubbles = StoreExp.GetSwitchStance(uiapp, "Red");
             bool SwitchBubbles = StoreExp.GetSwitchStance(uiapp, "Red") && StoreExp.GetSwitchStance(uiapp, "Green");
             bool CloneExisting = StoreExp.GetSwitchStance(uiapp, "Blue") && !StoreExp.GetSwitchStance(uiapp, "Red");
@@ -1702,7 +1653,7 @@ namespace MultiDWG
                 Shiftdistance = 1;
             }
             List<ElementId> ids = new List<ElementId>(uidoc.Selection.GetElementIds());
-            if (doc.GetElement(ids.First()) is View View)
+            if (doc.GetElement(ids.First()) is View)
             {
                 using (Transaction trans = new Transaction(doc))
                 {
@@ -1721,8 +1672,7 @@ namespace MultiDWG
                             HideBubbles, SwitchBubbles, selectedview);
                         }
                         else {
-                            resetDatumExtents(doc, datumonViews, Shiftdistance,
-                             selectedview);
+                            ResetDatumExtents(doc, datumonViews, selectedview);
                         }
 
                     }
@@ -1767,11 +1717,8 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            List<List<ElementId>> sheetsandview = new List<List<ElementId>>();
 
             using (Transaction trans = new Transaction(doc))
             {
@@ -1824,9 +1771,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
 
             using (Transaction trans = new Transaction(doc))
@@ -1868,11 +1813,8 @@ namespace MultiDWG
 
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            ICollection<ElementId> newsel = new List<ElementId>();
             string RouteType = "No Change";
             using (Transaction trans = new Transaction(doc))
             {
@@ -1906,9 +1848,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
@@ -1943,7 +1883,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             StoreExp.GetMenuValue(uiapp);
             string parametername = StoreExp.Store.menu_A_Box.Value.ToString();
@@ -2026,7 +1965,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
@@ -2099,7 +2037,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
@@ -2157,11 +2094,6 @@ namespace MultiDWG
                 }
             }
             return null;
-        }
-        static bool FilterbyParameter(Element elem)
-        {
-            
-            return true;
         }
         static void RemoveInsulations(MEPSystem system, Document doc,int Exclude,
                     string parametername, string parameterstring)
@@ -2251,8 +2183,10 @@ namespace MultiDWG
             if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Green OFF") || StoreExp.Path_Insulation == null)
             {
                 //GUI.togglebutton(uiapp, "Universal Modifiers", "Universal Toggle Green OFF", "Universal Toggle Green ON");
-                Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-                dlg.Filter = "Text files(*.txt) | *.txt";
+                Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Text files(*.txt) | *.txt"
+                };
                 Nullable<bool> result = dlg.ShowDialog();
                 if (result == true)
                 {
@@ -2269,9 +2203,9 @@ namespace MultiDWG
                     { try
                         {
                             string[] RuleParameters = Line.Split(',');
-                            Int32 min; Int32.TryParse(RuleParameters[1], out min);
-                            Int32 max; Int32.TryParse(RuleParameters[2], out max);
-                            Int32 ins; Int32.TryParse(RuleParameters[3], out ins);
+                            Int32.TryParse(RuleParameters[1], out Int32 min);
+                            Int32.TryParse(RuleParameters[2], out Int32 max);
+                            Int32.TryParse(RuleParameters[3], out Int32 ins);
                             rules.Add(new Rule(RuleParameters[0], min, max, ins));
                         }
                         catch {
@@ -2380,8 +2314,7 @@ namespace MultiDWG
             //}
             //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
 
-            double insulationThickness;
-            UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "20", out insulationThickness);
+            UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "20", out double insulationThickness);
             while ((nextSystem = GetNextSystem(ids, doc)) != null)
             {
                 systems.Add(nextSystem);
@@ -2560,7 +2493,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             FilteredElementCollector elementsInView = null;
@@ -2575,7 +2507,6 @@ namespace MultiDWG
 
             FillPatternElement SolidPattern = null;
             FilteredElementCollector allpatterns = new FilteredElementCollector(doc).OfClass(typeof(FillPatternElement));
-            FilteredElementCollector alllevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
             OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
             OverrideGraphicSettings transparent = new OverrideGraphicSettings();
             foreach (FillPatternElement pattern in allpatterns)
@@ -2638,7 +2569,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
         
             StoreExp.GetMenuValue(uiapp);
@@ -2689,7 +2619,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
@@ -2769,7 +2698,7 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class OverrideAllByParameter : IExternalCommand
     {
-        static UniqueValue checkUV(List<UniqueValue> uniqueValues, string name)
+        static UniqueValue CheckUV(List<UniqueValue> uniqueValues, string name)
         {
             foreach (UniqueValue UV in uniqueValues)
             {
@@ -2778,14 +2707,6 @@ namespace MultiDWG
             }
             return null;
         }
-    static List<Byte> Rndcolor()
-        {
-            List<Byte> colors = new List<byte>();
-            Random rnd = new Random();
-            colors.Add((byte)rnd.Next(0, 255));
-            colors.Add((byte)rnd.Next(0, 255));
-            colors.Add((byte)rnd.Next(0, 255));
-            return colors;  }
         class UniqueValue
         { public string name;
             public Byte r;
@@ -2812,9 +2733,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
 
             string parameterName = null;
@@ -2856,7 +2775,7 @@ namespace MultiDWG
                                     string value;
                                     if (ValueStringSwitch) { value = e.LookupParameter(parameterName).AsValueString(); }
                                     else { value = e.LookupParameter(parameterName).AsString();}
-                                    UniqueValue checkedUV = checkUV(uniqueValues, value);
+                                    UniqueValue checkedUV = CheckUV(uniqueValues, value);
                                 
                                 if (checkedUV != null)
                                 { 
@@ -2884,7 +2803,7 @@ namespace MultiDWG
                             
                             if (e.LookupParameter(parameterName) != null)
                             {
-                                UniqueValue checkedUV = checkUV(uniqueValues, e.LookupParameter(parameterName).AsString());
+                                UniqueValue checkedUV = CheckUV(uniqueValues, e.LookupParameter(parameterName).AsString());
                                 if (checkedUV != null)
                                 {
                                     doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
@@ -2918,7 +2837,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
@@ -3020,7 +2938,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> annot = new List<ElementId>();
             ElementId pickedid = uidoc.Selection.PickObject(ObjectType.Subelement).ElementId;
@@ -3073,8 +2990,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
-            Document doc = uidoc.Document;
+
             Selection SelectedObj = uidoc.Selection;
             string linkedid = SelectedObj.PickObject(ObjectType.LinkedElement).LinkedElementId.ToString();
             TaskDialog.Show("Id of selected object","Copied to Clipboard: "+ linkedid);
@@ -3121,7 +3037,6 @@ namespace MultiDWG
                     ViewSheet sheet = doc.GetElement(sheetid) as ViewSheet;
                     if (eids.Contains(sheetid))
                     {
-                        ICollection<ElementId> currentrevs = sheet.GetAdditionalRevisionIds();
                         ICollection<ElementId> emptyRevisionIds = new List<ElementId>();
                         sheet.SetAdditionalRevisionIds(emptyRevisionIds);
                         string[] revisionIDs = parts[1].Split(',');
@@ -3155,7 +3070,6 @@ namespace MultiDWG
                     ViewSheet sheet = doc.GetElement(sheetid) as ViewSheet;
                     if (eids.Contains(sheetid))
                     {
-                        ICollection<ElementId> currentrevs = sheet.GetAdditionalRevisionIds();
                         ICollection<ElementId> emptyRevisionIds = new List<ElementId>();
                         sheet.SetAdditionalRevisionIds(emptyRevisionIds);
                         string[] revisionIDs = parts[1].Split(',');
@@ -3181,7 +3095,6 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
@@ -3212,12 +3125,9 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
             foreach (ElementId eid in ids)
             {
                 Dimension dimension = doc.GetElement(eid) as Dimension;
@@ -3252,12 +3162,9 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
-            string ViewNames = "Views not on Sheet currently selected:" + Environment.NewLine;
             foreach (ElementId eid in ids)
             {
                 Element e = doc.GetElement(eid);
@@ -3271,14 +3178,6 @@ namespace MultiDWG
                             newsel.Add(eid);
                         }
                     }
-                }
-                else if ( e.Category.CategoryType == CategoryType.Annotation)
-                {
-                    IndependentTag itag = e as IndependentTag;
-                    //if ( itag.TaggedElementId.LinkInstanceId.IntegerValue != -1 )
-                    //{
-                    //    newsel.Add(eid);
-                    //}
                 }
             }
             using (Transaction trans = new Transaction(doc))
@@ -3304,9 +3203,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> familiesID = new List<ElementId>();
             ICollection<Element> tocut = new List<Element>();
@@ -3314,11 +3211,11 @@ namespace MultiDWG
             foreach (ElementId eid in ids)
             {
                 Element elem = doc.GetElement(eid);
-                if (elem is FamilyInstance faminst)
+                if (elem is FamilyInstance)
                 {
                     familiesID.Add(elem.Id);
                 }
-                else if (elem is Wall || elem is Floor cut)
+                else if (elem is Wall || elem is Floor)
                 {
                     tocut.Add(elem);
                 }
@@ -3353,9 +3250,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
@@ -3422,7 +3317,6 @@ namespace MultiDWG
         {
             UIApplication uiApp = commandData.Application;
             UIDocument uiDoc = uiApp.ActiveUIDocument;
-            Application app = uiApp.Application;
             Document doc = uiDoc.Document;
             using (Transaction trans = new Transaction(doc))
             {
@@ -3564,9 +3458,7 @@ namespace MultiDWG
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
@@ -3574,8 +3466,7 @@ namespace MultiDWG
             {
                 Element fami = doc.GetElement(eid) as Element;
                 BoundingBoxXYZ BB = fami.get_BoundingBox(null);
-                Double value;
-                Double.TryParse(StoreExp.Store.menu_1_Box.Value as string, out value);
+                Double.TryParse(StoreExp.Store.menu_1_Box.Value as string, out double value);
                 if ((BB.Max.Z - BB.Min.Z) > (value))
                 { newsel.Add(eid); }
             }
@@ -3595,8 +3486,8 @@ namespace MultiDWG
         UIDocument uidoc = null;
         Document doc = null;
         List<ReferencePlane> allRefs = null;
-        System.Windows.Forms.Form menu = new System.Windows.Forms.Form();
-        System.Windows.Forms.ComboBox selectRef = new System.Windows.Forms.ComboBox();
+        readonly System.Windows.Forms.Form menu = new System.Windows.Forms.Form();
+        readonly System.Windows.Forms.ComboBox selectRef = new System.Windows.Forms.ComboBox();
 
         public Result Execute(
             ExternalCommandData commandData,
@@ -3632,12 +3523,12 @@ namespace MultiDWG
             }
             menu.Controls.Add(selectRef);
             menu.Controls.Add(create_Button); menu.Controls.Add(delete_Button);
-            create_Button.Click += new EventHandler(create_Click); delete_Button.Click += new EventHandler(delete_Click);
+            create_Button.Click += new EventHandler(Create_Click); delete_Button.Click += new EventHandler(Delete_Click);
             menu.ShowDialog(); 
         
             return Result.Succeeded;
         }
-        private void delete_Click(object sender, System.EventArgs e)
+        private void Delete_Click(object sender, System.EventArgs e)
         {
             using (Transaction trans = new Transaction(doc))
             {
@@ -3652,9 +3543,8 @@ namespace MultiDWG
                 trans.Commit();
             }
         }
-        private void create_Click(object sender, System.EventArgs e)
+        private void Create_Click(object sender, System.EventArgs e)
         {
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<XYZ> points = new List<XYZ>();
             try

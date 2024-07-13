@@ -69,9 +69,7 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<IndependentTag> prevtags = new List<IndependentTag>();
 
@@ -130,9 +128,7 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             string contains = "Round";
@@ -166,17 +162,14 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> newSel = new List<ElementId>();
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<SpatialElementTag> tags = new List<SpatialElementTag>();
             foreach (ElementId eid in ids)
             {
                 Element elem = doc.GetElement(eid);
-                Reference tagref = new Reference(elem);
-                SpatialElementTag tag = null;
+                SpatialElementTag tag;
                 if (elem.Category.Name.Contains("Tags"))
                 {
                     tag = elem as SpatialElementTag;
@@ -214,9 +207,7 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             using (Transaction tx = new Transaction(doc))
             {
@@ -246,13 +237,11 @@ namespace AnnoTools
         { return tag.GetTaggedLocalElements().First(); }
         public void ReadTag(Document doc, UIDocument uidoc, UIApplication uiapp)
         {
-            
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             foreach (ElementId eid in ids)
             {
                 Element elem = doc.GetElement(eid);
-                IndependentTag tag = null;
+                IndependentTag tag;
                 XYZ shift = new XYZ(0, 0, 0);
                 if (elem.Category.Name.Contains("Tags"))
                 {
@@ -289,9 +278,7 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> newSel = new List<ElementId>();
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             bool Mode_Ind = StoreExp.GetSwitchStance(uiapp, "Red");
@@ -423,7 +410,7 @@ namespace AnnoTools
         }
         public static Curve GetRotatedToVert(ElementId original, Document doc, XYZ rot = null)
         {
-            Transform toVert = null; Line origLine = null;
+            Transform toVert; Line origLine;
             LocationCurve origCurve = doc.GetElement(original).Location as LocationCurve;
             XYZ startP = origCurve.Curve.GetEndPoint(0);
             XYZ endP = origCurve.Curve.GetEndPoint(1);
@@ -436,7 +423,7 @@ namespace AnnoTools
             else if (rot != null && Angle > Math.PI/2) { toVert = Transform.CreateRotationAtPoint(new XYZ(0, 0, 1), Angle,rot); }
             return origLine.CreateTransformed(toVert);
         }
-        public static void CreateLinearDim(Document doc, UIApplication uiapp, Line dimDir, Line dimDirCross, ReferenceArray dimto)
+        public static void CreateLinearDim(Document doc, Line dimDir, Line dimDirCross, ReferenceArray dimto)
         {
             using (Transaction tx = new Transaction(doc))
             {
@@ -480,7 +467,7 @@ namespace AnnoTools
                     count += 1;}
                 tx.Commit();}
         }
-        public static void CreateRackDim(Document doc,UIApplication uiapp,Line dimDir,Line dimDirCross, ReferenceArray dimto)
+        public static void CreateRackDim(Document doc,Line dimDir,Line dimDirCross, ReferenceArray dimto)
         {
             using (Transaction tx = new Transaction(doc))
             {
@@ -556,9 +543,7 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             Line dimDirCross = null; Line dimDir = null;
             int selectdim = 0;
@@ -617,7 +602,7 @@ namespace AnnoTools
                             updatedref.Append(refLine.Reference);
                         }
                     }
-                    RackDim.CreateRackDim(doc, uiapp, dimDir, dimDirCross,updatedref);
+                    RackDim.CreateRackDim(doc,dimDir, dimDirCross,updatedref);
                     using (Transaction deltrans = new Transaction(doc))
                     {
                         deltrans.Start("Update Dimension");
@@ -626,7 +611,7 @@ namespace AnnoTools
                     }
                 }
             }
-            else { RackDim.CreateRackDim(doc, uiapp, dimDir, dimDirCross, dimto); }
+            else { RackDim.CreateRackDim(doc, dimDir, dimDirCross, dimto); }
             return Result.Succeeded;
         }      
     }
@@ -641,9 +626,7 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             ElementId defTextType = doc.GetDefaultElementTypeId(ElementTypeGroup.TextNoteType);
             List<double> cDiams = new List<double>();
@@ -715,7 +698,6 @@ namespace AnnoTools
                 ElementId firstEid = lefts[leftXs.IndexOf(leftXs.Max())];
                 ElementId lastEid = rights[rightXs.IndexOf(rightXs.Min())];
                 LocationCurve firstP = doc.GetElement(firstEid).Location as LocationCurve;
-                LocationCurve lastP = doc.GetElement(lastEid).Location as LocationCurve;
                 XYZ rotP = firstP.Curve.GetEndPoint(0);
                 Distance = Math.Abs(RackDim.GetRotatedToVert(firstEid,doc,rotP).GetEndPoint(0).X - RackDim.GetRotatedToVert(lastEid,doc,rotP).GetEndPoint(0).X);
                 Line firstL = firstP.Curve as Line;
@@ -794,7 +776,7 @@ namespace AnnoTools
         }
         public List<int> SortRows(List<List<ElementId>> rows,Document doc)
         {
-            int countElem = rows.Count;
+            int countElem ;
             List<int> rowIndex = new List<int>();
             foreach (List<ElementId> row in rows)
             { countElem = rows.Count;
@@ -820,7 +802,7 @@ namespace AnnoTools
         {
             List<ElementId> xSorted = new List<ElementId>();
             int countElem = toSort.Count;
-            foreach (int count in Enumerable.Range(0, countElem))
+            foreach (int _ in Enumerable.Range(0, countElem))
             { xSorted.Add(null); }
             foreach (ElementId eid in toSort)
             {
@@ -965,9 +947,7 @@ namespace AnnoTools
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
-            Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             Line dimDirCross = null; Line dimDir = null;
             int selectdim = 0;
@@ -1027,7 +1007,7 @@ namespace AnnoTools
                             updatedref.Append(refLine.Reference);
                         }
                     }
-                    RackDim.CreateLinearDim(doc, uiapp, dimDir, dimDirCross, updatedref);
+                    RackDim.CreateLinearDim(doc, dimDir, dimDirCross, updatedref);
                     using (Transaction deltrans = new Transaction(doc))
                     {
                         deltrans.Start("Update Dimension");
@@ -1036,7 +1016,7 @@ namespace AnnoTools
                     }
                 }
             }
-            else { RackDim.CreateLinearDim(doc, uiapp, dimDir, dimDirCross, dimto); }
+            else { RackDim.CreateLinearDim(doc, dimDir, dimDirCross, dimto); }
             return Result.Succeeded;
         }
     }
