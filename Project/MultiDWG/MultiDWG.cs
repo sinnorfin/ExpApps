@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Windows.Controls;
 using Application = Autodesk.Revit.ApplicationServices.Application;
 using ComboBox = Autodesk.Revit.UI.ComboBox;
 using Grid = Autodesk.Revit.DB.Grid;
@@ -2998,7 +2999,56 @@ namespace MultiDWG
             return Result.Succeeded;
         }
     }
-
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class RemoveallRevisions : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> emptyRevisionIds = new List<ElementId>();
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Restoring Rev-File");
+                foreach (ElementId id in ids)
+                {
+                    ViewSheet sheet = doc.GetElement(id) as ViewSheet;
+                    sheet.SetAdditionalRevisionIds(emptyRevisionIds);
+                }
+                tx.Commit();
+                return Result.Succeeded;
+            }
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class RemoveallRevClouds : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> clouds = new FilteredElementCollector(doc).OfClass(typeof(RevisionCloud)).ToElementIds();
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Remove all Clouds");
+                doc.Delete(clouds);
+                tx.Commit();
+                
+            }
+            return Result.Succeeded;
+        }
+    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
 
