@@ -136,7 +136,11 @@ namespace _ExpApps
             { versioned = "Exp_apps_R17"; }
             PushButtonData PBD_mtag = CreateButton("MultiTag", versioned + ".dll", versioned + ".MultiTag",
                 IconImageType.Largeimage);
-            PBD_mtag.ToolTip = "Create Tags by Category for multiple selected elements at once";
+            PBD_mtag.ToolTip = "Create Tags by Category for multiple selected elements at once" +
+                 Environment.NewLine + "'Red' - Tags dont merge" +
+                  Environment.NewLine + "'Green' - Sample location of selected tag relative to Reference" +
+                   Environment.NewLine + "*auto OFF after use*"+
+                   Environment.NewLine + "'Blue' - Use sampled location for placing tags";
 
             PushButtonData PBD_managerefs = CreateButton("Mng. Ref.Planes", "MultiDWG.dll", "MultiDWG.ManageRefPlanes",
                 IconImageType.Largeimage);
@@ -376,7 +380,7 @@ namespace _ExpApps
             }
             Document doc = e.Application.ActiveUIDocument.Document;
             string version = doc.Application.VersionName;
-            List<string> distances = new List<string>();
+            List<string> distances;
             if (version.Contains("202") && !version.Contains("2021") && !version.Contains("2020"))
             { distances = shiftdistances(doc); }
             else { distances = Versioned_methods.shiftdistances(doc); }
