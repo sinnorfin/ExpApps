@@ -100,7 +100,6 @@ namespace AlignToBottom
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
@@ -162,7 +161,6 @@ namespace AlignToBottom
         {
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();

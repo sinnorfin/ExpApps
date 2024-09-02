@@ -207,7 +207,7 @@ namespace _ExpApps
            IconImageType.Noimage);
             PushButtonData qt11 = CreateButton("Clone Title properties", "MultiDWG.dll", "MultiDWG.ViewPortTitle",
            IconImageType.Noimage);
-            PushButtonData qt12 = CreateButton("Check Flow in Selected", "MultiDWG.dll", "MultiDWG.BKFlowCheck",
+            PushButtonData qt12 = CreateButton("Check Flow in Selected", "MultiDWG.dll", "MultiDWG.BkFlowCheck",
    IconImageType.Noimage);
             PushButtonData qt13 = CreateButton("Weld MEP", "MultiDWG.dll", "MultiDWG.WeldMEP",
    IconImageType.Noimage);
@@ -236,7 +236,8 @@ namespace _ExpApps
              qt11.ToolTip = "Pick a Viewport to take Title position/ line length from" + Environment.NewLine + "note: Reference is bottom left corner of Bounding box of Viewport"
                 + Environment.NewLine + "Bounds are affected by extensions of grids/levels, placed sections etc." + Environment.NewLine + " Works best if used on similar boundaries";
             qt12.ToolTip = "Check if Flow typed in parameter :A: equals the real flow from model." + Environment.NewLine + ":RED: - Copy 'Real' flow to 'Typed' Flow"
-               + Environment.NewLine + ":GREEN: - Give Report of differences, copies involved ID-s to clipboard";
+               + Environment.NewLine + "Gives Report of differences, copies involved ID-s to clipboard"
+            + Environment.NewLine + ":GREEN: - No Report";
             qt13.ToolTip = "Connects selected MEP element to its properly aligned neighbours.";
             panel_Export.AddItem(PBD_printrevision);
             panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);

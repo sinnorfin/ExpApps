@@ -25,6 +25,7 @@
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
+using Autodesk.Revit.DB.ExtensibleStorage;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
@@ -3343,7 +3344,7 @@ namespace MultiDWG
                     }
                 catch { }
                 }
-                if (StoreExp.GetSwitchStance(uiapp, "Green")) 
+                if (!StoreExp.GetSwitchStance(uiapp, "Green")) 
                     { 
                     System.Windows.Forms.Clipboard.SetText(reportids);
                     TaskDialog.Show("Report", report); 
@@ -3489,6 +3490,54 @@ namespace MultiDWG
                     {
                         connector.ConnectTo(pair);
                     }
+                }
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class RemoveSchemas : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiApp = commandData.Application;
+            UIDocument uiDoc = uiApp.ActiveUIDocument;
+            Application app = uiApp.Application;
+            Document doc = uiDoc.Document;
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Remove Schema Entities");
+                
+                    // List all schemas in the document
+                    var schemas = Schema.ListSchemas();
+                        foreach (Schema schema in schemas)
+                        {
+                            // Iterate through all elements in the document
+                            FilteredElementCollector collector = new FilteredElementCollector(doc)
+                                                                    .WhereElementIsNotElementType();
+
+                    foreach (Element element in collector)
+                    {
+                        try
+                        {
+                            // Get the entity associated with the schema
+                            Entity entity = element.GetEntity(schema);
+
+                            // If the entity exists, remove it
+                            if (entity != null && entity.IsValid())
+                            {
+                                element.DeleteEntity(schema);
+                            }
+                        }
+                        catch
+                        { }
+                    }
+                    return Result.Succeeded;
                 }
                 trans.Commit();
             }
