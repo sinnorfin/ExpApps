@@ -31,6 +31,8 @@ using Autodesk.Revit.ApplicationServices;
 using System;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Xml.Linq;
+using System.Reflection;
 
 
 namespace AnnoTools
@@ -117,6 +119,62 @@ namespace AnnoTools
             return Result.Succeeded;
         }
     }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class RehostMultiCategorytoNearest : IExternalCommand
+    {
+        public Result Execute(
+               ExternalCommandData commandData,
+               ref string message,
+               ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            List<IndependentTag> tags = new List<IndependentTag>();
+            List<(Element,XYZ)> hosts = new List<(Element,XYZ)>();
+            using (Transaction trans = new Transaction(doc))
+            {
+                foreach (ElementId eid in ids)
+                {
+                    if (doc.GetElement(eid) is IndependentTag tag)
+                    { if (tag.GetTaggedReferences().Count == 0) 
+                        { tags.Add(tag); }
+                    }
+                    else 
+                    {
+                        Element elem = doc.GetElement(eid);
+                        if (elem.Location is LocationCurve refcurve)
+                        {
+                            hosts.Add((elem,refcurve.Curve.Evaluate(0.5, true)));
+                        }
+                        else if (elem.Location is LocationPoint refpoint)
+                        {
+                            hosts.Add((elem, refpoint.Point));
+                        }
+                    }
+                }
+                trans.Start("Rehost Tags to Nearest");
+                foreach (IndependentTag tag in tags)
+                {
+                    Element closestElem = hosts.OrderBy(p => p.Item2.DistanceTo(tag.TagHeadPosition)).First().Item1;
+                    Reference newref = new Reference(closestElem);
+                    IndependentTag newtag = IndependentTag.Create(doc,tag.GetTypeId(), doc.ActiveView.Id, newref, false,
+                                TagOrientation.Horizontal,
+                                tag.TagHeadPosition);
+                    doc.Delete(tag.Id);
+                    newsel.Add(newtag.Id);
+                }
+                trans.Commit();
+
+            }
+            uidoc.Selection.SetElementIds(newsel);
+            return Result.Succeeded;
+        }
+    }
+
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class CheckTag : IExternalCommand
