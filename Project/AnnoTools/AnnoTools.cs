@@ -337,13 +337,14 @@ namespace AnnoTools
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
+            string version = doc.Application.VersionName;
             ICollection<ElementId> newSel = new List<ElementId>();
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            bool Mode_Ind = StoreExp.GetSwitchStance(uiapp, "Red");
             if (StoreExp.GetSwitchStance(uiapp, "Green"))
                 { ReadTag(doc, uidoc, uiapp);
                 return Result.Succeeded;}
-            bool Mode_Ind_Fixed = StoreExp.GetSwitchStance(uiapp, "Blue");
+            bool mod_NoMerge = StoreExp.GetSwitchStance(uiapp, "Red");
+            bool mod_SavedRelation = StoreExp.GetSwitchStance(uiapp, "Blue");
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Create Tags");
@@ -354,7 +355,7 @@ namespace AnnoTools
                     Element elem = doc.GetElement(eid);
                     Reference tagref = new Reference(elem);
                     IndependentTag tag = null;
-                    if (elem.Category.Name.Contains("Tags") && !Mode_Ind)
+                    if (elem.Category.Name.Contains("Tags") && !mod_NoMerge)
                     {
                         tag = elem as IndependentTag;
                         if (start)
@@ -363,6 +364,35 @@ namespace AnnoTools
                             start = false;
                         }
                         else { tag.TagHeadPosition = tagpos;}
+                    }
+                    else if (elem.Category.Name.Contains("Tags") && mod_NoMerge)
+                    {
+                        Element element;
+                        XYZ refpoint = new XYZ(0,0,0);
+                        tag = elem as IndependentTag;
+                        
+                            if (version.Contains("202") && !version.Contains("2021") && !version.Contains("2020"))
+                            { element = GetTaggedLocalElements(tag); }
+                            else { element = Versioned_methods.GetTaggedLocalElements(tag); }
+
+                            if (element.Location is LocationCurve)
+                            {
+                                LocationCurve refcurve = element.Location as LocationCurve;
+                                refpoint = refcurve.Curve.Evaluate(0.5, true);
+                            }
+                            else if (element.Location is LocationPoint)
+                            {
+                                LocationPoint locpoint = element.Location as LocationPoint;
+                                refpoint = locpoint.Point;
+                            }
+                            tag.TagOrientation = StoreExp.tag_orientation;
+                            tag.TagHeadPosition = refpoint;
+                           
+                        if (mod_SavedRelation)
+                        {
+                            tag.TagHeadPosition = tag.TagHeadPosition.Add(StoreExp.tag_shift);
+                        }
+                        
                     }
                     else if ( !elem.Category.Name.Contains("Tags"))
                     {
@@ -380,14 +410,14 @@ namespace AnnoTools
                                 TagMode.TM_ADDBY_CATEGORY, TagOrientation.Horizontal,
                                 refpoint.Point);
                         }
-                            if (start && !Mode_Ind)
+                            if (start && !mod_NoMerge)
                         {
                             tagpos = tag.TagHeadPosition;
                             start = false;
                         }
-                        else if (!Mode_Ind){ tag.TagHeadPosition = tagpos;}
+                        else if (!mod_NoMerge){ tag.TagHeadPosition = tagpos;}
                         tag.HasLeader = StoreExp.tag_leader;
-                        if (Mode_Ind && Mode_Ind_Fixed)
+                        if (mod_NoMerge && mod_SavedRelation)
                         {
                             tag.TagOrientation = StoreExp.tag_orientation;
                             tag.TagHeadPosition = tag.TagHeadPosition.Add(StoreExp.tag_shift);
