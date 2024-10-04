@@ -36,6 +36,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using Application = Autodesk.Revit.ApplicationServices.Application;
 using ComboBox = Autodesk.Revit.UI.ComboBox;
 using Grid = Autodesk.Revit.DB.Grid;
@@ -3328,6 +3329,128 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class BkVelocity : IExternalCommand
+    {
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            StoreExp.GetMenuValue(uiapp);
+            Parameter velocity=null;
+            int countOk = 0;
+            int countUnavailable = 0;
+            int countHighspeed = 0;
+            int countLowspeed = 0;
+            double maxlimit = 5;
+            double minlimit = 4;
+            if (StoreExp.Store.menu_1_Box.Value != null && StoreExp.Store.menu_1_Box.Value.ToString() != "")
+            { double.TryParse(StoreExp.Store.menu_1_Box.Value.ToString(),out maxlimit); }
+            if (StoreExp.Store.menu_2_Box.Value != null && StoreExp.Store.menu_2_Box.Value.ToString() != "")
+            { double.TryParse(StoreExp.Store.menu_2_Box.Value.ToString(),out minlimit); }
+            if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Green OFF") || StoreExp.Path_BKVelocity == null)
+            {
+                Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Text files(*.csv) | *.csv"
+                };
+                Nullable<bool> result = dlg.ShowDialog();
+                if (result == true)
+                {
+                    StoreExp.Path_BKVelocity = dlg.FileName;
+                }
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Velocity Calculate");
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid);
+                    Parameter flow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString());
+                    velocity = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString());
+                    string size = elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString().Split('-')[0];
+                    bool round = false;
+                    if (size.Contains('ø')) { round = true; }
+                    
+                    double.TryParse(flow.AsValueString().Split(' ')[0], out double flow_dec);
+
+                    var lines = File.ReadAllLines(StoreExp.Path_BKVelocity);
+                    var widths = lines[0].Split(',');
+                    if (!round)
+                    {
+                        string targetWidth = size.Split('x')[0];
+                        string targetHeight = size.Split('x')[1];
+                        int yIndex = Array.IndexOf(widths, targetWidth);
+                        if (yIndex != -1)
+                        {
+                            for (int i = 1; i < lines.Length; i++)
+                            {
+                                var values = lines[i].Split(',');
+
+                                if (int.TryParse(values[0], out int xValue) && xValue.ToString() == targetHeight)
+                                {
+                                    if (yIndex < values.Length)
+                                    {
+                                        double.TryParse(values[yIndex], out double area);
+                                        double bkVelocity = (flow_dec / area) / 3600;
+                                        velocity.SetValueString(bkVelocity.ToString());
+                                        countOk += 1;
+                                        if (bkVelocity > maxlimit) { countHighspeed += 1; newsel.Add(eid); }
+                                        if (bkVelocity < minlimit) { countLowspeed += 1; newsel.Add(eid); }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            countUnavailable += 1;
+                            //newsel.Add(eid);
+                        }
+                    }
+                    else 
+                    {
+                        var headers = lines[0].Split(',');
+                        var values = lines[1].Split(',');
+                        string targetDiameter = size.Split('ø')[1];
+                        int index = Array.IndexOf(headers, targetDiameter);
+                        if (index == -1)
+                        {
+                            countUnavailable += 1;
+                            //newsel.Add(eid);
+                        }
+                        else
+                        {
+                            string value = values[index];
+                            double.TryParse(value, out double area);
+                            double bkVelocity = (flow_dec / area) / 3600;
+                            velocity.SetValueString(bkVelocity.ToString());
+                            countOk += 1;
+                            if (bkVelocity > maxlimit) { countHighspeed += 1; newsel.Add(eid); }
+                            if (bkVelocity < minlimit) { countLowspeed += 1; newsel.Add(eid); }
+                        }
+                    }
+                }
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+                TaskDialog.Show("Report","For " + countUnavailable + 
+                    " elements - Size not found in selected Table"
+                    + Environment.NewLine + Environment.NewLine + (countOk - (countHighspeed + countLowspeed)) + 
+                    " - Elements were in the given range" + Environment.NewLine
+                    + Environment.NewLine + countHighspeed + " - have higher than "+maxlimit.ToString()+" m/s velocity."
+                    + Environment.NewLine + countLowspeed + " - have lower than "+minlimit.ToString()+" m/s velocity."
+                    + Environment.NewLine + "These "+(countHighspeed+countLowspeed)+" elements have been selected for review");
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class BkFlowCheck : IExternalCommand
     {
         public Result Execute(
@@ -3381,8 +3504,8 @@ namespace MultiDWG
                 catch { }
                 }
                 if (!StoreExp.GetSwitchStance(uiapp, "Green")) 
-                    { 
-                    System.Windows.Forms.Clipboard.SetText(reportids);
+                    {
+                    if (reportids != ""){ System.Windows.Forms.Clipboard.SetText(reportids); }
                     TaskDialog.Show("Report", report); 
                 }
                 uidoc.Selection.SetElementIds(newsel);
@@ -3536,6 +3659,28 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class RemoveSchemas : IExternalCommand
     {
+        public static List<ElementId> GetElementsWithSchema(Document doc, Schema schema)
+        {
+            List<ElementId> elementsWithSchema = new List<ElementId>();
+
+            // Retrieve all elements in the document
+            FilteredElementCollector collector = new FilteredElementCollector(doc).WhereElementIsNotElementType();
+            ICollection<Element> allElements = collector.ToElements();
+
+            foreach (Element element in allElements)
+            {
+                // Get the schema GUIDs associated with the element
+                IList<Guid> schemaGuids = element.GetEntitySchemaGuids();
+
+                if (schemaGuids.Count > 0)
+                {
+                    elementsWithSchema.Add(element.Id);
+                }
+            }
+
+            return elementsWithSchema;
+        }
+
         public Result Execute(
            ExternalCommandData commandData,
            ref string message,
@@ -3545,36 +3690,22 @@ namespace MultiDWG
             UIDocument uiDoc = uiApp.ActiveUIDocument;
             Application app = uiApp.Application;
             Document doc = uiDoc.Document;
+            StoreExp.GetMenuValue(uiApp);
+            Schema schema = null;
+          
+
+            string inputGuid = StoreExp.Store.menu_A_Box.Value.ToString();
+            Guid schemaGuid;
+            Guid.TryParse(inputGuid, out schemaGuid);
+            schema = Schema.Lookup(schemaGuid);
+            List<ElementId> elementsWithSchema = GetElementsWithSchema(doc, schema);
+
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Remove Schema Entities");
-                
-                    // List all schemas in the document
-                    var schemas = Schema.ListSchemas();
-                        foreach (Schema schema in schemas)
-                        {
-                            // Iterate through all elements in the document
-                            FilteredElementCollector collector = new FilteredElementCollector(doc)
-                                                                    .WhereElementIsNotElementType();
 
-                    foreach (Element element in collector)
-                    {
-                        try
-                        {
-                            // Get the entity associated with the schema
-                            Entity entity = element.GetEntity(schema);
-
-                            // If the entity exists, remove it
-                            if (entity != null && entity.IsValid())
-                            {
-                                element.DeleteEntity(schema);
-                            }
-                        }
-                        catch
-                        { }
-                    }
-                    return Result.Succeeded;
-                }
+                //doc.EraseSchemaAndAllEntities(schema);
+                uiDoc.Selection.SetElementIds(elementsWithSchema);
                 trans.Commit();
             }
             return Result.Succeeded;

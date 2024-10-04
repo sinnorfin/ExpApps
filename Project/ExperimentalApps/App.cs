@@ -215,7 +215,9 @@ namespace _ExpApps
    IconImageType.Noimage);
             PushButtonData qt13 = CreateButton("Weld MEP", "MultiDWG.dll", "MultiDWG.WeldMEP",
    IconImageType.Noimage);
-            //*** No need for R23+
+            PushButtonData qt14 = CreateButton("Calculate BK Velocity", "MultiDWG.dll", "MultiDWG.BkVelocity",
+   IconImageType.Noimage);
+            
             qt1.ToolTip = "Filters Vertical elements from selection" + Environment.NewLine + ":1: controls vertical sensitivity";
             qt2.ToolTip = "Filter the selected tags that are hosted by Round duct" + Environment.NewLine + "'Red' - hosted by Rectangular";
             // ALIGN ALL ON VIEW** qt3.ToolTip = "Merges selected tags with same content." + Environment.NewLine + ":A: and :B: controls sensitivity";
@@ -243,6 +245,10 @@ namespace _ExpApps
                + Environment.NewLine + "Gives Report of differences, copies involved ID-s to clipboard"
             + Environment.NewLine + ":GREEN: - No Report";
             qt13.ToolTip = "Connects selected MEP element to its properly aligned neighbours.";
+            qt14.ToolTip = "Calculate Velocity for selected BK"
+                + Environment.NewLine + ":A: - Parameter containing Flow" + Environment.NewLine + ":B: - Parameter for calculated Velocity" 
+                + Environment.NewLine + ":GREEN: - Chose new Size Table" + Environment.NewLine + ":1: - Optional - Max. Velocity"
+                + Environment.NewLine + ":2: - Optional - Min. Velocity";
             panel_Export.AddItem(PBD_printrevision);
             panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);
             panel_ViewSetup.AddStackedItems(PBD_shifttu, PBD_shifttd);
@@ -295,6 +301,7 @@ namespace _ExpApps
             QtButtonGroup.AddPushButton(qt11);
             QtButtonGroup.AddPushButton(qt12);
             QtButtonGroup.AddPushButton(qt13);
+            QtButtonGroup.AddPushButton(qt14);
             //Remove stance name from button name//
             PushButtonData PBD_unitogglered = CreateButton("Universal Toggle Red OFF", "StoreExp.dll",
               "ToggleRed", off: true);

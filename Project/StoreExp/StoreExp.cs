@@ -98,6 +98,7 @@ public class StoreExp
         public static XYZ tag_shift = new XYZ(0,0,0); public static bool tag_leader = false;
         public static TagOrientation tag_orientation = TagOrientation.Horizontal;
         public static string Path_Insulation = null; public static string Path_IDs = null;
+    public static string Path_BKVelocity = null;
 
     public static class Store
     //For storing values that are updated from the Ribbon
