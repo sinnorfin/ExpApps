@@ -241,9 +241,11 @@ namespace _ExpApps
                 ":BLUE: - Reset to default" + Environment.NewLine + ":1: - Controls shrink distance";
              qt11.ToolTip = "Pick a Viewport to take Title position/ line length from" + Environment.NewLine + "note: Reference is bottom left corner of Bounding box of Viewport"
                 + Environment.NewLine + "Bounds are affected by extensions of grids/levels, placed sections etc." + Environment.NewLine + " Works best if used on similar boundaries";
-            qt12.ToolTip = "Check if Flow typed in parameter :A: equals the real flow from model." + Environment.NewLine + ":RED: - Copy 'Real' flow to 'Typed' Flow"
-               + Environment.NewLine + "Gives Report of differences, copies involved ID-s to clipboard"
-            + Environment.NewLine + ":GREEN: - No Report";
+            qt12.ToolTip = "Insert flow from coming from model to Custom Flow parameter" + Environment.NewLine + 
+                ":A: equals the flow coming from model." + Environment.NewLine + 
+                ":RED: - Copy 'Model' flow to 'Typed' Flow"
+                + Environment.NewLine + "Gives Report of differences, copies involved ID-s to clipboard"
+                + Environment.NewLine + ":GREEN: - Disable Report";
             qt13.ToolTip = "Connects selected MEP element to its properly aligned neighbours.";
             qt14.ToolTip = "Calculate Velocity for selected BK"
                 + Environment.NewLine + ":A: - Parameter containing Flow" + Environment.NewLine + ":B: - Parameter for calculated Velocity" 

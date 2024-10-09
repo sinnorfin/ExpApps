@@ -3492,6 +3492,8 @@ namespace MultiDWG
                             newsel.Add(eid);
                             if (Edit)
                             {
+                                report += "Typed: " + Typedflow + " / " + "Real: " + Realflow + " ID:" + elem.Id;
+                                reportids += elem.Id + Environment.NewLine;
                                 // A sets the target parameter
                                 Parameter para_bmcflow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
                                 para_bmcflow.Set(connectedduct.LookupParameter("Flow").AsDouble());
@@ -3509,7 +3511,6 @@ namespace MultiDWG
                     TaskDialog.Show("Report", report); 
                 }
                 uidoc.Selection.SetElementIds(newsel);
-
                 trans.Commit();
             }
             return Result.Succeeded;
