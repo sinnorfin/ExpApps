@@ -1994,7 +1994,6 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class SelectAllOnLevel : IExternalCommand
     {
-        //Returns elements that are referred to a link/import
 
         // TO FIX: Does not select walls
         public Result Execute(
@@ -2008,6 +2007,7 @@ namespace MultiDWG
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
             ComboBox selectedlevel = StoreExp.GetComboBox(uiapp.GetRibbonPanels("Exp. Add-Ins"), "View Tools", "ExpLevel");
+            
             string LevelName = StoreExp.GetLevel(doc, selectedlevel.Current.ItemText).Name;
             //string LevelName = "X";
             // Type in 'A' to select WITHOUT annotation instead
@@ -2061,6 +2061,113 @@ namespace MultiDWG
                 trans.Commit();
             }
 
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ManageLevels : IExternalCommand
+    {
+
+        // TO FIX: Does not select walls
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            StoreExp.GetMenuValue(uiapp);
+            bool groupviews = false;
+            string grouppara = "";
+            if (StoreExp.Store.menu_A_Box.Value != null && StoreExp.Store.menu_A_Box.Value.ToString() != "")
+            { groupviews = true;
+                grouppara = StoreExp.Store.menu_A_Box.Value.ToString();
+            }
+            FilteredElementCollector allLevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
+
+            FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc,doc.ActiveView.Id);
+            Dictionary<ElementId, List<ElementId>> insulationDict = new Dictionary<ElementId, List<ElementId>>();
+
+            FilteredElementCollector ductInsulationCollector = new FilteredElementCollector(doc)
+                .OfClass(typeof(DuctInsulation))
+                .WhereElementIsNotElementType();
+
+            FilteredElementCollector pipeInsulationCollector = new FilteredElementCollector(doc)
+                .OfClass(typeof(PipeInsulation))
+                .WhereElementIsNotElementType();
+            ICollection<Element> allInsulations = ductInsulationCollector.ToElements().Concat(pipeInsulationCollector.ToElements()).ToList();
+            foreach (Element insulation in allInsulations)
+            {
+                InsulationLiningBase insulationBase = insulation as InsulationLiningBase;
+
+                if (insulationBase != null)
+                {
+                    ElementId hostId = insulationBase.HostElementId;
+
+                    if (!insulationDict.ContainsKey(hostId))
+                    {
+                        insulationDict[hostId] = new List<ElementId>();
+                    }
+                    insulationDict[hostId].Add(insulation.Id);
+                }
+            }
+            ICollection<Element> elems = elementsInDoc.ToElements();
+            IEnumerable<ViewFamilyType> ret = new FilteredElementCollector(doc)
+                            .WherePasses(new ElementClassFilter(typeof(ViewFamilyType), false))
+                            .Cast<ViewFamilyType>();
+            
+            ElementId hidepipeins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_PipeInsulations).Id;
+            ElementId hideductins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_DuctInsulations).Id;
+
+
+            ViewFamilyType FamType = ret.Where(e => e.ViewFamily == ViewFamily.ThreeDimensional).First() as ViewFamilyType;
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Create separate 3D views for levels");
+                foreach (Level level in allLevels)
+                {
+                    View newview = View3D.CreateIsometric(doc, FamType.Id);
+                    newview.SetCategoryHidden(hideductins, true);
+                    newview.SetCategoryHidden(hidepipeins, true);
+                    newview.DetailLevel = ViewDetailLevel.Fine;
+                    newview.Name = level.Name + "_AutoOverview";
+                    
+                    ICollection<ElementId> newsel = new List<ElementId>();
+                    ICollection<ElementId> unhide = new List<ElementId>();
+                    foreach (Element e in elems)
+                    {
+                        try
+                        {
+                            string check = "Y";
+                            if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
+                            else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
+
+                            if (check == level.Name)
+                            { newsel.Add(e.Id);
+                                if (insulationDict.ContainsKey(e.Id))
+                                {
+                                    foreach (ElementId insId in insulationDict[e.Id])
+                                    {
+                                        newsel.Add(insId);
+                                    }
+                                }
+                            }
+                        }
+
+                        catch { }
+                    }
+                    newview.IsolateElementsTemporary(newsel);
+                    newview.ConvertTemporaryHideIsolateToPermanent();
+                    newview.SetCategoryHidden(hideductins, false);
+                    newview.SetCategoryHidden(hidepipeins, false);
+                    newview.CropBox.Enabled = true;
+                    //newview.UnhideElements(allLevels.ToElementIds());
+                    if (groupviews) newview.LookupParameter(grouppara).Set("Auto_Overviews");
+                }
+                trans.Commit();
+            }
             return Result.Succeeded;
         }
     }
