@@ -2086,7 +2086,7 @@ namespace MultiDWG
                 grouppara = StoreExp.Store.menu_A_Box.Value.ToString();
             }
             FilteredElementCollector allLevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
-
+            ICollection<ElementId> levelids = allLevels.ToElementIds();
             FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc,doc.ActiveView.Id);
             Dictionary<ElementId, List<ElementId>> insulationDict = new Dictionary<ElementId, List<ElementId>>();
 
@@ -2163,7 +2163,7 @@ namespace MultiDWG
                     newview.SetCategoryHidden(hideductins, false);
                     newview.SetCategoryHidden(hidepipeins, false);
                     newview.CropBox.Enabled = true;
-                    //newview.UnhideElements(allLevels.ToElementIds());
+                    newview.UnhideElements(levelids);
                     if (groupviews) newview.LookupParameter(grouppara).Set("Auto_Overviews");
                 }
                 trans.Commit();
