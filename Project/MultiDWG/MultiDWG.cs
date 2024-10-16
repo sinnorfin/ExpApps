@@ -2087,6 +2087,9 @@ namespace MultiDWG
             }
             FilteredElementCollector allLevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
             ICollection<ElementId> levelids = allLevels.ToElementIds();
+            Dictionary<Level, double> LevelDict = new Dictionary<Level, double>();
+            foreach (Level level in allLevels) 
+            { LevelDict[level] = level.Elevation; }
             
             Dictionary<ElementId, List<ElementId>> insulationDict = new Dictionary<ElementId, List<ElementId>>();
 
@@ -2126,6 +2129,8 @@ namespace MultiDWG
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Create separate 3D views for levels");
+                FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                ICollection<ElementId> elemids = elementsInDoc.ToElementIds();
                 foreach (Level level in allLevels)
                 {
                     View newview = View3D.CreateIsometric(doc, FamType.Id);
@@ -2137,8 +2142,6 @@ namespace MultiDWG
                     ICollection<ElementId> newsel = new List<ElementId>();
                     ICollection<ElementId> unhide = new List<ElementId>();
                     ICollection<ElementId> sortedElemIds = new List<ElementId>();
-                    FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc, doc.ActiveView.Id);
-                    ICollection<ElementId> elemids = elementsInDoc.ToElementIds();
                     
                     foreach (ElementId eid in elemids)
                     {
@@ -2148,7 +2151,16 @@ namespace MultiDWG
                             string check = "Y";
                             if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
                             else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
-
+                            
+                            else if (e.LookupParameter("Schedule Level").AsString() == null) 
+                            {
+                                LocationPoint locpoint = e.Location as LocationPoint;
+                                check = LevelDict
+                                 .Where(kv => kv.Value < locpoint.Point.Z)
+                                    .OrderBy(kv => kv.Value)
+                                    .FirstOrDefault().Key.Name;
+                            }
+                            
                             if (check == level.Name)
                             { newsel.Add(e.Id);
                                 sortedElemIds.Add(e.Id);
@@ -2162,7 +2174,7 @@ namespace MultiDWG
                                 }
                             }
                         }
-                        catch { }
+                        catch { TaskDialog.Show("YX", "caught"); }
                     }
                     foreach (ElementId sortedId in sortedElemIds)
                     { elemids.Remove(sortedId); }
