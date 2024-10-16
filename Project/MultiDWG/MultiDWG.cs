@@ -2161,9 +2161,19 @@ namespace MultiDWG
                     newview.IsolateElementsTemporary(newsel);
                     newview.ConvertTemporaryHideIsolateToPermanent();
                     newview.SetCategoryHidden(hideductins, false);
-                    newview.SetCategoryHidden(hidepipeins, false);
+                    XYZ Eye = new XYZ(0, 0, 0);
+                    XYZ Up = new XYZ(0, 0, 1);
+                    XYZ Forward = new XYZ(0, 1, 0);
+                    View3D threed = newview as View3D;
+                    ElementId sectionbox = new ElementId(newview.Id.IntegerValue - 1);
+                    ICollection<ElementId> sectionboxlist = new List<ElementId>();
                     newview.CropBox.Enabled = true;
+                    sectionboxlist.Add(sectionbox);
+                    //sectionboxlist.Concat(levelids);
+                    ViewOrientation3D FrontOrient = new ViewOrientation3D(Eye, Up, Forward);
+                    threed.SetOrientation(FrontOrient);
                     newview.UnhideElements(levelids);
+                    newview.UnhideElements(sectionboxlist);
                     if (groupviews) newview.LookupParameter(grouppara).Set("Auto_Overviews");
                 }
                 trans.Commit();
