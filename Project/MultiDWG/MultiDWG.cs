@@ -2087,7 +2087,7 @@ namespace MultiDWG
             }
             FilteredElementCollector allLevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
             ICollection<ElementId> levelids = allLevels.ToElementIds();
-            FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc,doc.ActiveView.Id);
+            
             Dictionary<ElementId, List<ElementId>> insulationDict = new Dictionary<ElementId, List<ElementId>>();
 
             FilteredElementCollector ductInsulationCollector = new FilteredElementCollector(doc)
@@ -2113,7 +2113,7 @@ namespace MultiDWG
                     insulationDict[hostId].Add(insulation.Id);
                 }
             }
-            ICollection<Element> elems = elementsInDoc.ToElements();
+            
             IEnumerable<ViewFamilyType> ret = new FilteredElementCollector(doc)
                             .WherePasses(new ElementClassFilter(typeof(ViewFamilyType), false))
                             .Cast<ViewFamilyType>();
@@ -2136,8 +2136,13 @@ namespace MultiDWG
                     
                     ICollection<ElementId> newsel = new List<ElementId>();
                     ICollection<ElementId> unhide = new List<ElementId>();
-                    foreach (Element e in elems)
+                    ICollection<ElementId> sortedElemIds = new List<ElementId>();
+                    FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                    ICollection<ElementId> elemids = elementsInDoc.ToElementIds();
+                    
+                    foreach (ElementId eid in elemids)
                     {
+                        Element e = doc.GetElement(eid);
                         try
                         {
                             string check = "Y";
@@ -2146,18 +2151,22 @@ namespace MultiDWG
 
                             if (check == level.Name)
                             { newsel.Add(e.Id);
+                                sortedElemIds.Add(e.Id);
                                 if (insulationDict.ContainsKey(e.Id))
                                 {
                                     foreach (ElementId insId in insulationDict[e.Id])
                                     {
                                         newsel.Add(insId);
+                                        sortedElemIds.Add(insId);
                                     }
                                 }
                             }
                         }
-
                         catch { }
                     }
+                    foreach (ElementId sortedId in sortedElemIds)
+                    { elemids.Remove(sortedId); }
+
                     newview.IsolateElementsTemporary(newsel);
                     newview.ConvertTemporaryHideIsolateToPermanent();
                     newview.SetCategoryHidden(hideductins, false);
@@ -2169,7 +2178,6 @@ namespace MultiDWG
                     ICollection<ElementId> sectionboxlist = new List<ElementId>();
                     newview.CropBox.Enabled = true;
                     sectionboxlist.Add(sectionbox);
-                    //sectionboxlist.Concat(levelids);
                     ViewOrientation3D FrontOrient = new ViewOrientation3D(Eye, Up, Forward);
                     threed.SetOrientation(FrontOrient);
                     newview.UnhideElements(levelids);
