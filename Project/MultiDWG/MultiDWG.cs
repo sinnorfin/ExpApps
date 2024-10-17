@@ -2140,15 +2140,7 @@ namespace MultiDWG
 
                 foreach (Level level in allLevels)
                 {
-                    View3D oldview = all3dViews.FirstOrDefault(obj => obj.Name == level.Name + "_AutoOverview") as View3D;
-                    if (oldview != null)
-                        { doc.Delete(oldview.Id); }
                     
-                    View3D newview = View3D.CreateIsometric(doc, FamType.Id);
-                    newview.SetCategoryHidden(hideductins, true);
-                    newview.SetCategoryHidden(hidepipeins, true);
-                    newview.DetailLevel = ViewDetailLevel.Fine;
-                    newview.Name = level.Name + "_AutoOverview";
                     
                     ICollection<ElementId> newsel = new List<ElementId>();
                     ICollection<ElementId> unhide = new List<ElementId>();
@@ -2189,7 +2181,15 @@ namespace MultiDWG
                     }
                     foreach (ElementId sortedId in sortedElemIds)
                     { elemids.Remove(sortedId); }
-
+                    View3D oldview = all3dViews.FirstOrDefault(obj => obj.Name == level.Name + "_AutoOverview") as View3D;
+                    if (oldview != null)
+                    { doc.Delete(oldview.Id); }
+                    if (newsel.Count == 0) break;
+                    View3D newview = View3D.CreateIsometric(doc, FamType.Id);
+                    newview.SetCategoryHidden(hideductins, true);
+                    newview.SetCategoryHidden(hidepipeins, true);
+                    newview.DetailLevel = ViewDetailLevel.Fine;
+                    newview.Name = level.Name + "_AutoOverview";
                     newview.IsolateElementsTemporary(newsel);
                     newview.ConvertTemporaryHideIsolateToPermanent();
                     newview.SetCategoryHidden(hideductins, false);
