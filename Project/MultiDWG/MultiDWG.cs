@@ -2130,7 +2130,13 @@ namespace MultiDWG
             {
                 trans.Start("Create separate 3D views for levels");
                 FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc, doc.ActiveView.Id);
-                ICollection<ElementId> elemids = elementsInDoc.ToElementIds();
+
+                ICollection<ElementId> elemids = elementsInDoc.WhereElementIsNotElementType()
+        .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model 
+        && e.Category.Name.ToString() != "Duct Systems" 
+        && e.Category.Name.ToString() != "Piping Systems")
+        .Select(e => e.Id).ToList();
+                TaskDialog.Show("x", elemids.Count.ToString());
                 foreach (Level level in allLevels)
                 {
                     View newview = View3D.CreateIsometric(doc, FamType.Id);
@@ -2152,14 +2158,14 @@ namespace MultiDWG
                             if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
                             else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
                             
-                            else if (e.LookupParameter("Schedule Level").AsString() == null) 
-                            {
-                                LocationPoint locpoint = e.Location as LocationPoint;
-                                check = LevelDict
-                                 .Where(kv => kv.Value < locpoint.Point.Z)
-                                    .OrderBy(kv => kv.Value)
-                                    .FirstOrDefault().Key.Name;
-                            }
+                            //else if (e.LookupParameter("Schedule Level").AsString() == null) 
+                            //{
+                            //    LocationPoint locpoint = e.Location as LocationPoint;
+                            //    check = LevelDict
+                            //     .Where(kv => kv.Value < locpoint.Point.Z)
+                            //        .OrderBy(kv => kv.Value)
+                            //        .FirstOrDefault().Key.Name;
+                            //}
                             
                             if (check == level.Name)
                             { newsel.Add(e.Id);
@@ -2174,7 +2180,7 @@ namespace MultiDWG
                                 }
                             }
                         }
-                        catch { TaskDialog.Show("YX", "caught"); }
+                        catch { }
                     }
                     foreach (ElementId sortedId in sortedElemIds)
                     { elemids.Remove(sortedId); }
@@ -2182,6 +2188,7 @@ namespace MultiDWG
                     newview.IsolateElementsTemporary(newsel);
                     newview.ConvertTemporaryHideIsolateToPermanent();
                     newview.SetCategoryHidden(hideductins, false);
+                    newview.SetCategoryHidden(hidepipeins, true);
                     XYZ Eye = new XYZ(0, 0, 0);
                     XYZ Up = new XYZ(0, 0, 1);
                     XYZ Forward = new XYZ(0, 1, 0);
@@ -3082,7 +3089,8 @@ namespace MultiDWG
                             try
                             {
                                 Element e = doc.GetElement(eid);
-                                if (e.Category.CategoryType != CategoryType.Annotation && e.Category.Name.ToString() != "Grids")
+                                if (e.Category.CategoryType != CategoryType.Annotation 
+                                    && e.Category.Name.ToString() != "Grids")
                                 {
                                     newsel.Add(e.Id);
                                 }
