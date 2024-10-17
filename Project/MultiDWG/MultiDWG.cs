@@ -2086,6 +2086,7 @@ namespace MultiDWG
                 grouppara = StoreExp.Store.menu_A_Box.Value.ToString();
             }
             FilteredElementCollector allLevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
+            FilteredElementCollector all3dViews = new FilteredElementCollector(doc).OfClass(typeof(View3D));
             ICollection<ElementId> levelids = allLevels.ToElementIds();
             Dictionary<Level, double> LevelDict = new Dictionary<Level, double>();
             foreach (Level level in allLevels) 
@@ -2123,23 +2124,27 @@ namespace MultiDWG
             
             ElementId hidepipeins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_PipeInsulations).Id;
             ElementId hideductins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_DuctInsulations).Id;
-
-
             ViewFamilyType FamType = ret.Where(e => e.ViewFamily == ViewFamily.ThreeDimensional).First() as ViewFamilyType;
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Create separate 3D views for levels");
                 FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc, doc.ActiveView.Id);
 
-                ICollection<ElementId> elemids = elementsInDoc.WhereElementIsNotElementType()
-        .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model 
-        && e.Category.Name.ToString() != "Duct Systems" 
-        && e.Category.Name.ToString() != "Piping Systems")
-        .Select(e => e.Id).ToList();
-                TaskDialog.Show("x", elemids.Count.ToString());
+                    ICollection<ElementId> elemids = elementsInDoc.WhereElementIsNotElementType()
+                .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model 
+                && e.Category.Id.IntegerValue != -2008072
+                && e.Category.Name.ToString() != "Duct Systems" 
+                && e.Category.Name.ToString() != "Piping Systems"
+                )
+                .Select(e => e.Id).ToList();
+
                 foreach (Level level in allLevels)
                 {
-                    View newview = View3D.CreateIsometric(doc, FamType.Id);
+                    View3D oldview = all3dViews.FirstOrDefault(obj => obj.Name == level.Name + "_AutoOverview") as View3D;
+                    if (oldview != null)
+                        { doc.Delete(oldview.Id); }
+                    
+                    View3D newview = View3D.CreateIsometric(doc, FamType.Id);
                     newview.SetCategoryHidden(hideductins, true);
                     newview.SetCategoryHidden(hidepipeins, true);
                     newview.DetailLevel = ViewDetailLevel.Fine;
@@ -2155,19 +2160,19 @@ namespace MultiDWG
                         try
                         {
                             string check = "Y";
-                            if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
+                            if (e.LookupParameter("Level") != null && e.LookupParameter("Level").AsElementId().IntegerValue != -1) { check = e.LookupParameter("Level").AsValueString(); }
                             else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
-                            
-                            //else if (e.LookupParameter("Schedule Level").AsString() == null) 
-                            //{
-                            //    LocationPoint locpoint = e.Location as LocationPoint;
-                            //    check = LevelDict
-                            //     .Where(kv => kv.Value < locpoint.Point.Z)
-                            //        .OrderBy(kv => kv.Value)
-                            //        .FirstOrDefault().Key.Name;
-                            //}
-                            
-                            if (check == level.Name)
+
+                        else if (e.LookupParameter("Schedule Level")!= null)
+                        {
+                            LocationPoint locpoint = e.Location as LocationPoint;
+                            check = LevelDict
+                             .Where(kv => kv.Value < locpoint.Point.Z)
+                                .OrderBy(kv => kv.Value)
+                                .FirstOrDefault().Key.Name;
+                        }
+
+                        if (check == level.Name)
                             { newsel.Add(e.Id);
                                 sortedElemIds.Add(e.Id);
                                 if (insulationDict.ContainsKey(e.Id))
@@ -2195,7 +2200,7 @@ namespace MultiDWG
                     View3D threed = newview as View3D;
                     ElementId sectionbox = new ElementId(newview.Id.IntegerValue - 1);
                     ICollection<ElementId> sectionboxlist = new List<ElementId>();
-                    newview.CropBox.Enabled = true;
+                    threed.IsSectionBoxActive = true;
                     sectionboxlist.Add(sectionbox);
                     ViewOrientation3D FrontOrient = new ViewOrientation3D(Eye, Up, Forward);
                     threed.SetOrientation(FrontOrient);
