@@ -2140,8 +2140,6 @@ namespace MultiDWG
 
                 foreach (Level level in allLevels)
                 {
-                    
-                    
                     ICollection<ElementId> newsel = new List<ElementId>();
                     ICollection<ElementId> unhide = new List<ElementId>();
                     ICollection<ElementId> sortedElemIds = new List<ElementId>();
@@ -2160,7 +2158,7 @@ namespace MultiDWG
                             LocationPoint locpoint = e.Location as LocationPoint;
                             check = LevelDict
                              .Where(kv => kv.Value < locpoint.Point.Z)
-                                .OrderBy(kv => kv.Value)
+                                .OrderByDescending(kv => kv.Value)
                                 .FirstOrDefault().Key.Name;
                         }
 
@@ -2193,7 +2191,7 @@ namespace MultiDWG
                     newview.IsolateElementsTemporary(newsel);
                     newview.ConvertTemporaryHideIsolateToPermanent();
                     newview.SetCategoryHidden(hideductins, false);
-                    newview.SetCategoryHidden(hidepipeins, true);
+                    newview.SetCategoryHidden(hidepipeins, false);
                     XYZ Eye = new XYZ(0, 0, 0);
                     XYZ Up = new XYZ(0, 0, 1);
                     XYZ Forward = new XYZ(0, 1, 0);
