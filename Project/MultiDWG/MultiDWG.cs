@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -3479,6 +3480,46 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class BkVelocity : IExternalCommand
     {
+        public double getRoundVelocity(string[] lines, string size, double flow_dec)
+        {
+            double velocity = 0;
+            var headers = lines[0].Split(',');
+            var values = lines[1].Split(',');
+            string targetDiameter = size.Split('ø')[1];
+            int index = Array.IndexOf(headers, targetDiameter);
+            if (index != -1)
+            {
+                string value = values[index];
+                double.TryParse(value, out double area);
+                velocity = (flow_dec / area) / 3600;
+            }
+            return velocity; 
+        }
+        public double getRectVelocity(string[] lines, string[] widths, string size, double flow_dec)
+        {
+            double velocity = 0;
+            string targetWidth = size.Split('x')[0];
+            string targetHeight = size.Split('x')[1];
+            int yIndex = Array.IndexOf(widths, targetWidth);
+            if (yIndex != -1)
+            {
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    var values = lines[i].Split(',');
+
+                    if (int.TryParse(values[0], out int xValue) && xValue.ToString() == targetHeight)
+                    {
+                        if (yIndex < values.Length)
+                        {
+                            double.TryParse(values[yIndex], out double area);
+                            velocity = (flow_dec / area) / 3600;
+                        }
+                        break;
+                    }
+                }
+            }
+            return velocity;
+        }
         public Result Execute(
            ExternalCommandData commandData,
            ref string message,
@@ -3495,12 +3536,17 @@ namespace MultiDWG
             int countUnavailable = 0;
             int countHighspeed = 0;
             int countLowspeed = 0;
+            string width = "";
+            string height = "";
+            double input_flow = 0;
             double maxlimit = 5;
             double minlimit = 4;
             if (StoreExp.Store.menu_1_Box.Value != null && StoreExp.Store.menu_1_Box.Value.ToString() != "")
-            { double.TryParse(StoreExp.Store.menu_1_Box.Value.ToString(),out maxlimit); }
+            { width = StoreExp.Store.menu_1_Box.Value.ToString(); }
             if (StoreExp.Store.menu_2_Box.Value != null && StoreExp.Store.menu_2_Box.Value.ToString() != "")
-            { double.TryParse(StoreExp.Store.menu_2_Box.Value.ToString(),out minlimit); }
+            { height = StoreExp.Store.menu_2_Box.Value.ToString(); }
+            if (StoreExp.Store.menu_3_Box.Value != null && StoreExp.Store.menu_3_Box.Value.ToString() != "")
+            { double.TryParse(StoreExp.Store.menu_3_Box.Value.ToString(), out input_flow); }
             if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Green OFF") || StoreExp.Path_BKVelocity == null)
             {
                 Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog
@@ -3513,76 +3559,55 @@ namespace MultiDWG
                     StoreExp.Path_BKVelocity = dlg.FileName;
                 }
             }
+            string[] lines = File.ReadAllLines(StoreExp.Path_BKVelocity);
+            string[] widths = lines[0].Split(',');
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Velocity Calculate");
+                if (ids.Count == 0 && width != "" && height != "")
+                { TaskDialog.Show("Fire damper velocity", "Calculated velocity is: " 
+                    + Math.Round(getRectVelocity(lines, widths, width + "x" + height, input_flow),2).ToString()
+                    + "m/s" + Environment.NewLine + "for size: " + width + "x" + height + 
+                    " for flow of: " + input_flow + "m3/h");
+                    return Result.Cancelled;
+                }
+                else if (ids.Count == 0 && width != "" && height == "")
+                { TaskDialog.Show("Fire damper velocity", "Calculated velocity is: "
+                    + Math.Round(getRoundVelocity(lines, "ø" + width, input_flow),2).ToString() + "m/s"
+                    + Environment.NewLine + "for size: " + width + "ø" +
+                    " for flow of: " + input_flow + "m3/h");
+                    return Result.Cancelled;
+                }
+
                 foreach (ElementId eid in ids)
                 {
                     Element elem = doc.GetElement(eid);
                     Parameter flow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString());
+                    double.TryParse(flow.AsValueString().Split(' ')[0], out double flow_dec);
                     velocity = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString());
                     string size = elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString().Split('-')[0];
                     bool round = false;
+                    double bkVelocity = 0;
+
                     if (size.Contains('ø')) { round = true; }
                     
-                    double.TryParse(flow.AsValueString().Split(' ')[0], out double flow_dec);
-
-                    var lines = File.ReadAllLines(StoreExp.Path_BKVelocity);
-                    var widths = lines[0].Split(',');
                     if (!round)
                     {
-                        string targetWidth = size.Split('x')[0];
-                        string targetHeight = size.Split('x')[1];
-                        int yIndex = Array.IndexOf(widths, targetWidth);
-                        if (yIndex != -1)
-                        {
-                            for (int i = 1; i < lines.Length; i++)
-                            {
-                                var values = lines[i].Split(',');
-
-                                if (int.TryParse(values[0], out int xValue) && xValue.ToString() == targetHeight)
-                                {
-                                    if (yIndex < values.Length)
-                                    {
-                                        double.TryParse(values[yIndex], out double area);
-                                        double bkVelocity = (flow_dec / area) / 3600;
-                                        velocity.SetValueString(bkVelocity.ToString());
-                                        countOk += 1;
-                                        if (bkVelocity > maxlimit) { countHighspeed += 1; newsel.Add(eid); }
-                                        if (bkVelocity < minlimit) { countLowspeed += 1; newsel.Add(eid); }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            countUnavailable += 1;
-                            //newsel.Add(eid);
-                        }
+                        bkVelocity = getRectVelocity(lines, widths, size, flow_dec);
+                        velocity.SetValueString(bkVelocity.ToString());
+                        if (bkVelocity > maxlimit) { countHighspeed += 1; newsel.Add(eid); }
+                        if (bkVelocity < minlimit) { countLowspeed += 1; newsel.Add(eid); }
                     }
                     else 
                     {
-                        var headers = lines[0].Split(',');
-                        var values = lines[1].Split(',');
-                        string targetDiameter = size.Split('ø')[1];
-                        int index = Array.IndexOf(headers, targetDiameter);
-                        if (index == -1)
-                        {
-                            countUnavailable += 1;
-                            //newsel.Add(eid);
-                        }
-                        else
-                        {
-                            string value = values[index];
-                            double.TryParse(value, out double area);
-                            double bkVelocity = (flow_dec / area) / 3600;
-                            velocity.SetValueString(bkVelocity.ToString());
-                            countOk += 1;
-                            if (bkVelocity > maxlimit) { countHighspeed += 1; newsel.Add(eid); }
-                            if (bkVelocity < minlimit) { countLowspeed += 1; newsel.Add(eid); }
-                        }
+                        bkVelocity = getRoundVelocity(lines, size, flow_dec);
+                        velocity.SetValueString(bkVelocity.ToString());
+                        if (bkVelocity > maxlimit) { countHighspeed += 1; newsel.Add(eid); }
+                        if (bkVelocity < minlimit) { countLowspeed += 1; newsel.Add(eid); }
                     }
+                    if (bkVelocity == 0)
+                    { countUnavailable += 1; }
+                    else countOk += 1; 
                 }
                 uidoc.Selection.SetElementIds(newsel);
                 trans.Commit();
@@ -3808,27 +3833,6 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class RemoveSchemas : IExternalCommand
     {
-        public static List<ElementId> GetElementsWithSchema(Document doc, Schema schema)
-        {
-            List<ElementId> elementsWithSchema = new List<ElementId>();
-
-            // Retrieve all elements in the document
-            FilteredElementCollector collector = new FilteredElementCollector(doc).WhereElementIsNotElementType();
-            ICollection<Element> allElements = collector.ToElements();
-
-            foreach (Element element in allElements)
-            {
-                // Get the schema GUIDs associated with the element
-                IList<Guid> schemaGuids = element.GetEntitySchemaGuids();
-
-                if (schemaGuids.Count > 0)
-                {
-                    elementsWithSchema.Add(element.Id);
-                }
-            }
-
-            return elementsWithSchema;
-        }
 
         public Result Execute(
            ExternalCommandData commandData,
@@ -3840,23 +3844,28 @@ namespace MultiDWG
             Application app = uiApp.Application;
             Document doc = uiDoc.Document;
             StoreExp.GetMenuValue(uiApp);
-            Schema schema = null;
-          
+            int count = 0;
 
-            string inputGuid = StoreExp.Store.menu_A_Box.Value.ToString();
-            Guid schemaGuid;
-            Guid.TryParse(inputGuid, out schemaGuid);
-            schema = Schema.Lookup(schemaGuid);
-            List<ElementId> elementsWithSchema = GetElementsWithSchema(doc, schema);
-
-            using (Transaction trans = new Transaction(doc))
+            string info = "";
+            using (Transaction tx = new Transaction(doc, "Remove Schemas"))
             {
-                trans.Start("Remove Schema Entities");
-
-                //doc.EraseSchemaAndAllEntities(schema);
-                uiDoc.Selection.SetElementIds(elementsWithSchema);
-                trans.Commit();
+                tx.Start("Remove Schema");
+                foreach (Schema schema in Schema.ListSchemas())
+                {
+                    try
+                    {
+                        doc.EraseSchemaAndAllEntities(schema);
+                        count += 1;
+                    }
+                    catch (Exception ex)
+                    {
+                        info += schema.SchemaName + ": " + ex.ToString() + Environment.NewLine;
+                    }
+                }
+                tx.Commit();
             }
+
+            TaskDialog.Show("Info", info + Environment.NewLine + " Success:" + count.ToString());
             return Result.Succeeded;
         }
     }
