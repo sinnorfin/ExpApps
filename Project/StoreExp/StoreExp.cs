@@ -195,5 +195,10 @@ public class StoreExp
             }
             return false;
         }
+    public static bool IsOpen(Connector connectedconnector, ICollection<ElementId> selection)
+    {
+        if (selection.Contains(connectedconnector.Owner.Id)) return false;
+        return true;
     }
+}
 
