@@ -3691,6 +3691,93 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class ExpandSelection : IExternalCommand
+    {
+
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            bool Red = StoreExp.GetSwitchStance(uiapp, "Red");
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Expand selection");
+                ICollection<ElementId> selectedIds = uidoc.Selection.GetElementIds();
+                ICollection<ElementId> addedIds = new List<ElementId>();
+                foreach (ElementId elementId in selectedIds)
+                {
+                    Element element = doc.GetElement(elementId);
+                    if (element is MEPCurve mepCurve)
+                    {
+                        // select connected at each open end of the MEP element
+                        foreach (Connector connector in mepCurve.ConnectorManager.Connectors)
+                        {
+                            if (connector.IsConnected)
+                            {
+                                ConnectorSet connectedConnectors = connector.AllRefs;
+                                foreach (Connector connectedConnector in connectedConnectors)
+                                {
+                                    if (!Red && connectedConnector.Domain != Domain.DomainUndefined && 
+                                        StoreExp.IsOpen(connectedConnector, selectedIds))
+                                    {
+                                        addedIds.Add(connectedConnector.Owner.Id);
+                                    }
+                                    else if (connectedConnector.Domain != Domain.DomainUndefined &&
+                                        StoreExp.IsOpen(connectedConnector, selectedIds))
+                                    {
+                                        addedIds.Add(connector.Owner.Id);  
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                    else if (element is FamilyInstance familyInstance)
+                    {
+                        // select all connected at open connectors - familyinstaces
+                        try
+                        {
+                            foreach (Connector connector in familyInstance.MEPModel.ConnectorManager.Connectors)
+                            {
+                                if (connector.IsConnected)
+                                {
+                                    ConnectorSet connectedConnectors = connector.AllRefs;
+                                    foreach (Connector connectedConnector in connectedConnectors)
+                                    {
+                                        if (!Red && connectedConnector.Domain != Domain.DomainUndefined &&
+                                            StoreExp.IsOpen(connectedConnector, selectedIds))
+                                        { addedIds.Add(connectedConnector.Owner.Id);}
+                                        else if (connectedConnector.Domain != Domain.DomainUndefined &&
+                                            StoreExp.IsOpen(connectedConnector, selectedIds))
+                                        { addedIds.Add(connector.Owner.Id); }
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                if (Red)
+                {
+                    ICollection<ElementId> newsel = selectedIds.Except(addedIds).ToList();
+                    uidoc.Selection.SetElementIds(newsel);
+                }
+                else if (!Red)
+                {
+                    ICollection<ElementId> newsel = selectedIds.Concat(addedIds).ToList();
+                    uidoc.Selection.SetElementIds(newsel);
+                }
+                    trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class ExplodeMEP : IExternalCommand
     {
         
@@ -3705,15 +3792,10 @@ namespace MultiDWG
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Explode MEP");
-                // Create a selection filter to select MEP elements
                 ICollection<ElementId> selectedIds = uiDoc.Selection.GetElementIds();
-
-                // Iterate through the selected elements
                 foreach (ElementId elementId in selectedIds)
                 {
                     Element element = doc.GetElement(elementId);
-
-                    // Check if the element is an MEP element
                     if (element is MEPCurve mepCurve)
                     {
                         // Disconnect all connectors at each end of the MEP element
@@ -3726,7 +3808,8 @@ namespace MultiDWG
                                 // Disconnect the connector from other elements
                                 foreach (Connector connectedConnector in connectedConnectors)
                                 {
-                                    if (connectedConnector.Domain != Domain.DomainUndefined)
+                                    if (connectedConnector.Domain != Domain.DomainUndefined 
+                                        && StoreExp.IsOpen(connectedConnector,selectedIds))
                                     {
                                         connector.DisconnectFrom(connectedConnector);
                                     }
@@ -3748,7 +3831,8 @@ namespace MultiDWG
                                     // Disconnect the connector from other elements
                                     foreach (Connector connectedConnector in connectedConnectors)
                                     {
-                                        if (connectedConnector.Domain != Domain.DomainUndefined)
+                                        if (connectedConnector.Domain != Domain.DomainUndefined 
+                                            && StoreExp.IsOpen(connectedConnector,selectedIds))
                                         { connectedConnector.DisconnectFrom(connector); }
                                     }
                                 }
