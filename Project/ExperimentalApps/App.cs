@@ -276,9 +276,6 @@ namespace _ExpApps
                 member.Visible = false;
             }
             CB_ExpLevel.DropDownOpened += levels_cb_Opened;
-
-            panel_ViewSetup.AddStackedItems(PBD_qv1, PBD_qv2, PBD_qv3);
-            panel_ViewSetup.AddStackedItems(PBD_qv4, PBD_qv5, PBD_qv6);
             panel_ViewSetup.AddItem(PBD_setupqv);
             panel_Reelevate.AddItem(PBD_rehostelements);
             panel_Managers.AddItem(PBD_managerefs);
@@ -288,7 +285,18 @@ namespace _ExpApps
             panel_Annot.AddItem(PBD_mtag);
 
             PulldownButtonData QtData = new PulldownButtonData("Quicktools", "QuickTools");
+            PulldownButtonData QvData = new PulldownButtonData("Quickviews", "Quickviews");
+            
             PulldownButton QtButtonGroup = panel_Qt.AddItem(QtData) as PulldownButton;
+            IList<RibbonItem> quickviews = panel_ViewSetup.AddStackedItems(QvData,PBD_qv1);
+
+            PulldownButton QvButtonGroup = quickviews[0] as PulldownButton;
+            QvButtonGroup.AddPushButton(PBD_qv1);
+            QvButtonGroup.AddPushButton(PBD_qv2);
+            QvButtonGroup.AddPushButton(PBD_qv3);
+            QvButtonGroup.AddPushButton(PBD_qv4);
+            QvButtonGroup.AddPushButton(PBD_qv5);
+            QvButtonGroup.AddPushButton(PBD_qv6);
 
             QtButtonGroup.AddPushButton(qt1);
             QtButtonGroup.AddPushButton(qt2);
