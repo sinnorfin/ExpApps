@@ -2142,7 +2142,6 @@ namespace MultiDWG
                 foreach (Level level in allLevels)
                 {
                     ICollection<ElementId> newsel = new List<ElementId>();
-                    ICollection<ElementId> unhide = new List<ElementId>();
                     ICollection<ElementId> sortedElemIds = new List<ElementId>();
                     
                     foreach (ElementId eid in elemids)
