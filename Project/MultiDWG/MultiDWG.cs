@@ -2126,6 +2126,9 @@ namespace MultiDWG
             ElementId hidepipeins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_PipeInsulations).Id;
             ElementId hideductins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_DuctInsulations).Id;
             ViewFamilyType FamType = ret.Where(e => e.ViewFamily == ViewFamily.ThreeDimensional).First() as ViewFamilyType;
+// VERSION compatibility:
+// Id.integervalue is to be replaced with value on R2024 and further, value must be used before R24
+
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Create separate 3D views for levels");
