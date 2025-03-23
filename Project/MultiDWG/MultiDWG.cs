@@ -341,7 +341,15 @@ namespace MultiDWG
                     Parameter para;
                     try
                     {
-                        para = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
+                        if (StoreExp.GetSwitchStance(uiapp, "Red"))
+                        {
+                            Guid sharedpara = new Guid(StoreExp.Store.menu_1_Box.Value.ToString());
+                            para = elem.get_Parameter(sharedpara);
+                        }
+                        else
+                        {
+                            para = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
+                        }
                         string original = para.AsString();
                         if (StoreExp.Store.menu_B_Box.Value.ToString() == "*add")
                         {
@@ -2069,7 +2077,6 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class ManageLevels : IExternalCommand
     {
-
         // TO FIX: Does not select walls
         public Result Execute(
            ExternalCommandData commandData,
@@ -2083,16 +2090,18 @@ namespace MultiDWG
             bool groupviews = false;
             string grouppara = "";
             if (StoreExp.Store.menu_A_Box.Value != null && StoreExp.Store.menu_A_Box.Value.ToString() != "")
-            { groupviews = true;
+            {
+                groupviews = true;
                 grouppara = StoreExp.Store.menu_A_Box.Value.ToString();
             }
             FilteredElementCollector allLevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
             FilteredElementCollector all3dViews = new FilteredElementCollector(doc).OfClass(typeof(View3D));
             ICollection<ElementId> levelids = allLevels.ToElementIds();
             Dictionary<Level, double> LevelDict = new Dictionary<Level, double>();
-            foreach (Level level in allLevels) 
+            List<UniqueValue> uniqueValues = new List<UniqueValue>();
+            foreach (Level level in allLevels)
             { LevelDict[level] = level.Elevation; }
-            
+
             Dictionary<ElementId, List<ElementId>> insulationDict = new Dictionary<ElementId, List<ElementId>>();
 
             FilteredElementCollector ductInsulationCollector = new FilteredElementCollector(doc)
@@ -2118,80 +2127,88 @@ namespace MultiDWG
                     insulationDict[hostId].Add(insulation.Id);
                 }
             }
-            
+
             IEnumerable<ViewFamilyType> ret = new FilteredElementCollector(doc)
                             .WherePasses(new ElementClassFilter(typeof(ViewFamilyType), false))
                             .Cast<ViewFamilyType>();
-            
+
             ElementId hidepipeins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_PipeInsulations).Id;
             ElementId hideductins = doc.Settings.Categories.get_Item(BuiltInCategory.OST_DuctInsulations).Id;
             ViewFamilyType FamType = ret.Where(e => e.ViewFamily == ViewFamily.ThreeDimensional).First() as ViewFamilyType;
-// VERSION compatibility:
-// Id.integervalue is to be replaced with value on R2024 and further, value must be used before R24
+            // VERSION compatibility:
+            // Id.integervalue is to be replaced with value on R2024 and further, value must be used before R24
 
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Create separate 3D views for levels");
+
                 FilteredElementCollector elementsInDoc = new FilteredElementCollector(doc, doc.ActiveView.Id);
 
-                    ICollection<ElementId> elemids = elementsInDoc.WhereElementIsNotElementType()
-                .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model 
-                && e.Category.Id.IntegerValue != -2008072
-                && e.Category.Name.ToString() != "Duct Systems" 
-                && e.Category.Name.ToString() != "Piping Systems"
-                )
-                .Select(e => e.Id).ToList();
-
-                foreach (Level level in allLevels)
+                ICollection<ElementId> elemids = elementsInDoc.WhereElementIsNotElementType()
+            .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model
+            && e.Category.Id.IntegerValue != -2008072
+            && e.Category.Name.ToString() != "Duct Systems"
+            && e.Category.Name.ToString() != "Piping Systems"
+            )
+            .Select(e => e.Id).ToList();
+                foreach (ElementId eid in elemids)
                 {
-                    ICollection<ElementId> newsel = new List<ElementId>();
-                    ICollection<ElementId> sortedElemIds = new List<ElementId>();
-                    
-                    foreach (ElementId eid in elemids)
+                    Element e = doc.GetElement(eid);
+                    try
                     {
-                        Element e = doc.GetElement(eid);
-                        try
-                        {
-                            string check = "Y";
-                            if (e.LookupParameter("Level") != null && e.LookupParameter("Level").AsElementId().IntegerValue != -1) { check = e.LookupParameter("Level").AsValueString(); }
-                            else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
+                        string value="Null";
+                        if (e.LookupParameter("Level") != null && e.LookupParameter("Level").AsElementId().IntegerValue != -1) { value = e.LookupParameter("Level").AsValueString(); }
+                        else if (e.LookupParameter("Reference Level") != null) { value = e.LookupParameter("Reference Level").AsValueString(); }
 
-                        else if (e.LookupParameter("Schedule Level")!= null)
+                        else if (e.LookupParameter("Schedule Level") != null)
                         {
                             LocationPoint locpoint = e.Location as LocationPoint;
-                            check = LevelDict
-                             .Where(kv => kv.Value < locpoint.Point.Z)
+                            value = LevelDict
+                                .Where(kv => kv.Value < locpoint.Point.Z)
                                 .OrderByDescending(kv => kv.Value)
                                 .FirstOrDefault().Key.Name;
                         }
+                        UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
 
-                        if (check == level.Name)
-                            { newsel.Add(e.Id);
-                                sortedElemIds.Add(e.Id);
-                                if (insulationDict.ContainsKey(e.Id))
+                        if (checkedUV != null)
+                        {
+                            checkedUV.elementidgroup.Add(e.Id);
+                            if (insulationDict.ContainsKey(e.Id))
+                            {
+                                foreach (ElementId insId in insulationDict[e.Id])
                                 {
-                                    foreach (ElementId insId in insulationDict[e.Id])
-                                    {
-                                        newsel.Add(insId);
-                                        sortedElemIds.Add(insId);
-                                    }
+                                    checkedUV.elementidgroup.Add(insId);
                                 }
                             }
                         }
-                        catch { }
+                        else
+                        {
+                            UniqueValue newUV = new UniqueValue(value);
+                            uniqueValues.Add(newUV);
+                            newUV.elementidgroup.Add(e.Id);
+                            if (insulationDict.ContainsKey(e.Id))
+                            {
+                                foreach (ElementId insId in insulationDict[e.Id])
+                                {
+                                    checkedUV.elementidgroup.Add(insId);                                  
+                                }
+                            }
+                        }
                     }
-                    foreach (ElementId sortedId in sortedElemIds)
-                    { elemids.Remove(sortedId); }
-                    View3D oldview = all3dViews.FirstOrDefault(obj => obj.Name == level.Name + "_AutoOverview") as View3D;
+                    catch { }
+                }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Create separate 3D views for levels");
+                foreach (UniqueValue UV in uniqueValues.Skip(1))
+                {
+                    View3D oldview = all3dViews.FirstOrDefault(obj => obj.Name == UV.name + "_AutoOverview") as View3D;
                     if (oldview != null)
                     { doc.Delete(oldview.Id); }
-                    if (newsel.Count == 0) break;
+                    if (UV.elementidgroup.Count == 0) break;
                     View3D newview = View3D.CreateIsometric(doc, FamType.Id);
                     newview.SetCategoryHidden(hideductins, true);
                     newview.SetCategoryHidden(hidepipeins, true);
                     newview.DetailLevel = ViewDetailLevel.Fine;
-                    newview.Name = level.Name + "_AutoOverview";
-                    newview.IsolateElementsTemporary(newsel);
+                    newview.Name = UV.name + "_AutoOverview";
+                    newview.IsolateElementsTemporary(UV.elementidgroup);
                     newview.ConvertTemporaryHideIsolateToPermanent();
                     newview.SetCategoryHidden(hideductins, false);
                     newview.SetCategoryHidden(hidepipeins, false);
@@ -2796,6 +2813,39 @@ namespace MultiDWG
             return Result.Succeeded;
         }
     }
+    class UniqueValue
+    {
+        public List<ElementId> elementidgroup = new List<ElementId>();
+        public string name;
+        public Byte r;
+        public Byte g;
+        public Byte b;
+        public OverrideGraphicSettings newOverride;
+        public UniqueValue(string Name ) 
+        { 
+            name = Name;
+        }
+        public UniqueValue(string Name, Byte R, Byte G, Byte B, OverrideGraphicSettings OVGS)
+        {
+            name = Name;
+            r = R; g = G; b = B;
+            newOverride = new OverrideGraphicSettings();
+            newOverride.SetSurfaceBackgroundPatternId(OVGS.SurfaceBackgroundPatternId);
+            newOverride.SetSurfaceForegroundPatternId(OVGS.SurfaceForegroundPatternId);
+            newOverride.SetSurfaceBackgroundPatternColor(new Color(R, G, B));
+            newOverride.SetSurfaceForegroundPatternColor(new Color(R, G, B));
+            newOverride.SetProjectionLineColor(new Color(R, G, B));
+        }
+        public static UniqueValue CheckUV(List<UniqueValue> uniqueValues, string name)
+        {
+            foreach (UniqueValue UV in uniqueValues)
+            {
+                if (UV.name == name)
+                { return UV; }
+            }
+            return null;
+        }
+    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class OverrideAllOnLevel : IExternalCommand
@@ -2812,74 +2862,87 @@ namespace MultiDWG
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
             Random rnd = new Random();
-            
+            List<UniqueValue> uniqueValues = new List<UniqueValue>();
+
             FillPatternElement SolidPattern = null;
             FilteredElementCollector allpatterns = new FilteredElementCollector(doc).OfClass(typeof(FillPatternElement));
             FilteredElementCollector alllevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
             OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
             foreach (FillPatternElement pattern in allpatterns)
-            { if (pattern.GetFillPattern().IsSolidFill)
-                {SolidPattern = pattern; }
+            {
+                if (pattern.GetFillPattern().IsSolidFill)
+                { SolidPattern = pattern; }
             }
             newOverride.SetSurfaceBackgroundPatternId(SolidPattern.Id);
             newOverride.SetSurfaceForegroundPatternId(SolidPattern.Id);
-            foreach (Level level in alllevels)
+            using (Transaction trans = new Transaction(doc))
             {
-                string LevelName = level.Name;
-                Byte R = (byte)rnd.Next(0, 255);
-                Byte G = (byte)rnd.Next(0, 255);
-                Byte B = (byte)rnd.Next(0, 255);
-                newOverride.SetSurfaceBackgroundPatternColor(new Color(R, G, B));
-                newOverride.SetSurfaceForegroundPatternColor(new Color(R, G, B));
-                newOverride.SetProjectionLineColor(new Color(R, G, B));
-
+                trans.Start("Override Per level in view");
                 if (uidoc.Selection.GetElementIds().Count == 0)
+            {
+                FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+
+                ICollection<Element> elems = elementsInView.WhereElementIsNotElementType()
+            .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model
+            && e.Category.Id.IntegerValue != -2008072
+            && e.Category.Name.ToString() != "Duct Systems"
+            && e.Category.Name.ToString() != "Piping Systems"
+            ).ToList<Element>();
+                foreach (Element e in elems)
                 {
-                    FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
-                    ICollection<Element> elems = elementsInView.ToElements();
-                    foreach (Element e in elems)
+                    try
                     {
-                        try
+                        string value = "Y";
+                        if (e.LookupParameter("Level") != null) { value = e.LookupParameter("Level").AsValueString(); }
+                        else if (e.LookupParameter("Reference Level") != null) { value = e.LookupParameter("Reference Level").AsValueString(); }
+                        UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
+
+                        if (checkedUV != null)
                         {
-                            string check = "Y";
-                            if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
-                            else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
-
-                            if (check == LevelName)
-                                newsel.Add(e.Id);
+                            doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
                         }
-                        catch { }
-                    }
-                }
-                else
-                {
-                    foreach (ElementId eid in uidoc.Selection.GetElementIds())
-                    {
-                        Element e = doc.GetElement(eid);
-                        try
+                        else
                         {
-                            string check = "Y";
-                            if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
-                            else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
-
-                            if (check == LevelName)
-                            {
-                                newsel.Add(e.Id);
-                            }
+                            UniqueValue newUV = new UniqueValue(value,
+                                (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
+                            uniqueValues.Add(newUV);
+                            doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
                         }
-                        catch { }
                     }
-                }
-
-                using (Transaction trans = new Transaction(doc))
-                {
-                    trans.Start("Override Per level in view");
-                    foreach (ElementId eid in newsel)
-                    {doc.ActiveView.SetElementOverrides(eid, newOverride); }
-                    newsel = new List<ElementId>();
-                    trans.Commit();
+                    catch { }
                 }
             }
+            else
+            {
+                foreach (ElementId eid in uidoc.Selection.GetElementIds())
+                {
+                    Element e = doc.GetElement(eid);
+                    try
+                    {
+                        string value = "Y";
+                        if (e.LookupParameter("Level") != null) { value = e.LookupParameter("Level").AsValueString(); }
+                        else if (e.LookupParameter("Reference Level") != null) { value = e.LookupParameter("Reference Level").AsValueString(); }
+
+                        UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
+
+                        if (checkedUV != null)
+                        {
+                            doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
+                        }
+                        else
+                        {
+                            UniqueValue newUV = new UniqueValue(value,
+                                (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
+                            uniqueValues.Add(newUV);
+                            doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            trans.Commit();
+            }
+            
             return Result.Succeeded;
         }
     }
@@ -2887,33 +2950,8 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class OverrideAllByParameter : IExternalCommand
     {
-        static UniqueValue CheckUV(List<UniqueValue> uniqueValues, string name)
-        {
-            foreach (UniqueValue UV in uniqueValues)
-            {
-                if (UV.name == name)
-                { return UV; }
-            }
-            return null;
-        }
-        class UniqueValue
-        { public string name;
-            public Byte r;
-            public Byte g;
-            public Byte b;
-            public OverrideGraphicSettings newOverride;
-            public UniqueValue(string Name, Byte R, Byte G, Byte B,OverrideGraphicSettings OVGS)
-            {
-                name = Name;
-                r=R; g = G; b = B;
-                newOverride = new OverrideGraphicSettings();
-                newOverride.SetSurfaceBackgroundPatternId(OVGS.SurfaceBackgroundPatternId);
-                newOverride.SetSurfaceForegroundPatternId(OVGS.SurfaceForegroundPatternId);
-                newOverride.SetSurfaceBackgroundPatternColor(new Color(R, G, B));
-                newOverride.SetSurfaceForegroundPatternColor(new Color(R, G, B));
-                newOverride.SetProjectionLineColor(new Color(R, G, B));
-            }
-        }
+
+
         //Overrides graphics of elements grouped by parameter on active view
         public Result Execute(
            ExternalCommandData commandData,
@@ -2953,7 +2991,13 @@ namespace MultiDWG
                 if (uidoc.Selection.GetElementIds().Count == 0)
                 {
                     FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
-                    ICollection<Element> elems = elementsInView.ToElements();
+
+                    ICollection<Element> elems = elementsInView.WhereElementIsNotElementType()
+                .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model
+                && e.Category.Id.IntegerValue != -2008072
+                && e.Category.Name.ToString() != "Duct Systems"
+                && e.Category.Name.ToString() != "Piping Systems"
+                ).ToList<Element>();
                     foreach (Element e in elems)
                     {
                        
@@ -2964,7 +3008,7 @@ namespace MultiDWG
                                     string value;
                                     if (ValueStringSwitch) { value = e.LookupParameter(parameterName).AsValueString(); }
                                     else { value = e.LookupParameter(parameterName).AsString();}
-                                    UniqueValue checkedUV = CheckUV(uniqueValues, value);
+                                    UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
                                 
                                 if (checkedUV != null)
                                 { 
@@ -2992,7 +3036,7 @@ namespace MultiDWG
                             
                             if (e.LookupParameter(parameterName) != null)
                             {
-                                UniqueValue checkedUV = CheckUV(uniqueValues, e.LookupParameter(parameterName).AsString());
+                                UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, e.LookupParameter(parameterName).AsString());
                                 if (checkedUV != null)
                                 {
                                     doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
