@@ -2370,6 +2370,7 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             Selection SelectedObjs = uidoc.Selection;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> toHide = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
             string parametername = "";
             string parameterstring = "";
@@ -2581,6 +2582,7 @@ namespace MultiDWG
                                     try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
                                     catch { }
                                 }
+                                toHide.Add(elem.Id);
                             }
                         }
                         else if (Exclude == 1)
@@ -2623,6 +2625,7 @@ namespace MultiDWG
                                     try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
                                     catch { }
                                 }
+                                toHide.Add(elem.Id);
                             }
                         }
                         else
@@ -2665,6 +2668,7 @@ namespace MultiDWG
                                     try { PipeInsulation.Create(doc, elem.Id, ElementId.InvalidElementId, selectedRule.Thickness); }
                                     catch { }
                                 }
+                                toHide.Add(elem.Id);
                             }
                         }
                     }
@@ -2681,6 +2685,9 @@ namespace MultiDWG
                         }
                     }
                 }
+                
+                {doc.ActiveView.HideElementsTemporary(toHide); }
+                
                 trans.Commit();
             }
 
