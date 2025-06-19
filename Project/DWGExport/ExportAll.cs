@@ -35,6 +35,32 @@ using System.Linq;
 namespace ExportAll
 {
     [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class FastExportIFC : IExternalCommand
+    {
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            
+            UIApplication uiapp = commandData.Application;
+            Application app = uiapp.Application;
+            var options = new OpenOptions();
+            options.AllowOpeningLocalByWrongUser = true;
+            ModelPath filePath = new FilePath("C:"); 
+            Document doc = app.OpenDocumentFile(filePath, options);
+
+            IFCExportOptions ifcOptions = new IFCExportOptions();
+            string exportPath = "";
+            string fileName = "";
+            doc.Export(exportPath, fileName, ifcOptions);
+            doc.Close(false);
+
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
     public class ExportAll : IExternalCommand
     {
         public Result Execute(
