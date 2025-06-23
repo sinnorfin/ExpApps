@@ -48,13 +48,21 @@ namespace ExportAll
             Application app = uiapp.Application;
             var options = new OpenOptions();
             options.AllowOpeningLocalByWrongUser = true;
-            ModelPath filePath = new FilePath("C:"); 
-            Document doc = app.OpenDocumentFile(filePath, options);
+            string path = @"D:\Projects\Montgomery\Deliverables\IFC\TA_T211_TZ_TNI_HVAC_PAV_3998_0_Modèle 3D C67.rvt";
+            ModelPath modelPath = ModelPathUtils.ConvertUserVisiblePathToModelPath(path);
+            Document doc = app.OpenDocumentFile(modelPath, options);
 
             IFCExportOptions ifcOptions = new IFCExportOptions();
-            string exportPath = "";
-            string fileName = "";
-            doc.Export(exportPath, fileName, ifcOptions);
+            ifcOptions.FilterViewId = new ElementId(4838730);
+            ifcOptions.FileVersion = IFCVersion.IFC2x3;
+            string exportPath = "D:\\Tools\\Exported";
+            string fileName = "Automated";
+            using (Transaction trans = new Transaction(doc))
+            {
+            trans.Start("Fast Export IFC");
+            doc.Export(exportPath, fileName, ifcOptions); 
+            trans.RollBack();
+            }
             doc.Close(false);
 
             return Result.Succeeded;
