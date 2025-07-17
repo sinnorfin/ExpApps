@@ -3480,6 +3480,53 @@ namespace MultiDWG
             return Result.Succeeded;
             }
         }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ReferredToDetailline : IExternalCommand
+    {
+        //Returns elements that are referred to a link/import
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            
+            ICollection<ElementId> dimensions = new FilteredElementCollector(doc).OfClass(typeof(Dimension)).ToElementIds();
+            ICollection<ElementId> detaillines = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Lines).ToElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            ICollection<ElementId> linestokeep = new List<ElementId>();
+            foreach (ElementId eid in dimensions)
+            {
+                Element e = doc.GetElement(eid);
+                Dimension dimension = e as Dimension;
+                foreach (Reference reference in dimension.References)
+                {
+                    if ((doc.GetElement(reference.ElementId) is DetailLine))
+                    {
+                        linestokeep.Add(reference.ElementId);
+                    }
+                }
+            }
+            foreach (ElementId eid in detaillines)
+            {
+                if (!linestokeep.Contains(eid))
+
+                { newsel.Add(eid); }
+                 
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select detail lines not referred by dimensions");
+                if (newsel.Count > 0) { TaskDialog.Show("x", newsel.Count + " Detail lines not referred by dimensions!"); }
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
 
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
