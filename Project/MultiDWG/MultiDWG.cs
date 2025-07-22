@@ -3561,7 +3561,7 @@ namespace MultiDWG
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("AutoJoinElements");
-                foreach(Element elem in tocut)
+                foreach (Element elem in tocut)
                 {
                     ElementIntersectsElementFilter filter = new ElementIntersectsElementFilter(elem);
                     ICollection<Element> interfering = new FilteredElementCollector(doc, familiesID).WherePasses(filter).ToElements();
@@ -3569,6 +3569,121 @@ namespace MultiDWG
                     {
                         try { JoinGeometryUtils.JoinGeometry(doc, family, elem); }
                         catch { }
+                    }
+                }
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    //Will make WallOpenings for all Directshapes that clashes into a wall. Will only work for elements 90° to Revit Axes. 
+    public class AutoCreateWallOpenings : IExternalCommand
+    {
+        public static (XYZ,XYZ) GetCut(Element element)
+        {
+            XYZ minCut = null;
+            XYZ maxCut = null;
+            Options options = new Options();
+            GeometryElement geomElement = element.get_Geometry(options);
+            List<XYZ> points = new List<XYZ>();
+
+            foreach (GeometryObject geomObj in geomElement)
+            {
+                if (geomObj is GeometryInstance geomInstance)
+                {
+                    GeometryElement instanceGeometry = geomInstance.GetInstanceGeometry();
+                    foreach (GeometryObject instObj in instanceGeometry)
+                    {
+                        if (instObj is Solid solid)
+                        {
+                            foreach (Face face in solid.Faces)
+                            {
+                                Mesh mesh = face.Triangulate();
+                                foreach (XYZ vertex in mesh.Vertices)
+                                {
+                                    points.Add(vertex);
+                                }
+                            }
+                        }
+                        else if (instObj is Curve curve)
+                        {
+                            points.Add(curve.GetEndPoint(0));
+                            points.Add(curve.GetEndPoint(1));
+                        }
+                    }
+                }
+                else if (geomObj is Solid solid)
+                {
+                    foreach (Face face in solid.Faces)
+                    {
+                        Mesh mesh = face.Triangulate();
+                        foreach (XYZ vertex in mesh.Vertices)
+                        {
+                            points.Add(vertex);
+                        }
+                    }
+                }
+                else if (geomObj is Curve curve)
+                {
+                    points.Add(curve.GetEndPoint(0));
+                    points.Add(curve.GetEndPoint(1));
+                }
+            }
+            double maxDistance = 0;
+            XYZ pointA = null;
+            XYZ pointB = null;
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                for (int j = i + 1; j < points.Count; j++)
+                {
+                    double distance = points[i].DistanceTo(points[j]);
+                    if (distance > maxDistance)
+                    {
+                        maxDistance = distance;
+                        pointA = points[i];
+                        pointB = points[j];
+                    }
+                }
+            }
+
+            if (pointA != null && pointB != null)
+            {
+                minCut = pointA.Z < pointB.Z ? pointA : pointB;
+                maxCut = pointA.Z >= pointB.Z ? pointA : pointB;
+            }
+            return (minCut, maxCut);
+        }
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> AllDirectShapes = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(DirectShape)).ToElementIds();
+            ICollection<ElementId> AllWalls = new FilteredElementCollector(doc, doc.ActiveView.Id).OfCategory(BuiltInCategory.OST_Walls).ToElementIds();
+
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Auto Create Wall Openings");
+                foreach (ElementId eId in AllWalls)
+                {
+                    Element elem = doc.GetElement(eId);
+                    Wall wall = elem as Wall;
+                    ElementIntersectsElementFilter filter = new ElementIntersectsElementFilter(elem);
+                    ICollection<Element> interfering = new FilteredElementCollector(doc, AllDirectShapes).WherePasses(filter).ToElements();
+                    foreach (Element box in interfering)
+                    {
+                        //For Angled cuts
+                        //(XYZ minCut, XYZ maxCut) = GetCut(box);
+                        //doc.Create.NewOpening(wall, minCut, maxCut);
+                        BoundingBoxXYZ box_bounding = box.get_BoundingBox(doc.ActiveView);
+                        doc.Create.NewOpening(wall, box_bounding.Min, box_bounding.Max);
                     }
                 }
                 trans.Commit();
