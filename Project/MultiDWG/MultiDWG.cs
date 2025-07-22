@@ -3583,6 +3583,7 @@ namespace MultiDWG
     {
         public static (XYZ,XYZ) GetCut(Element element)
         {
+            // Get two furthest points in an elementgeometry
             XYZ minCut = null;
             XYZ maxCut = null;
             Options options = new Options();
