@@ -32,8 +32,10 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Windows.Controls;
@@ -3835,6 +3837,154 @@ namespace MultiDWG
                     + Environment.NewLine + countLowspeed + " - have lower than "+minlimit.ToString()+" m/s velocity."
                     + Environment.NewLine + "These "+(countHighspeed+countLowspeed)+" elements have been selected for review");
             }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class PurgeNested : IExternalCommand
+    {
+//Takes a list of family names, then opens - purges - loads them back to the project.
+        public class DefaultFamilyLoadOptions : IFamilyLoadOptions
+        {
+            public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
+            {
+                overwriteParameterValues = true;
+                return true; // Load family into project
+            }
+
+            public bool OnSharedFamilyFound(
+                Family sharedFamily,
+                bool familyInUse,
+                out FamilySource source,
+                out bool overwriteParameterValues)
+            {
+                source = FamilySource.Project;
+                overwriteParameterValues = true;
+                return true; // Load shared family into project
+            }
+        }
+        public ICollection<ElementId> GetUnusedAssets(Document doc, string methodName)
+        {
+            MethodInfo method = typeof(Document).GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (method != null)
+            {
+                return (ICollection<ElementId>)method.Invoke(doc, null);
+            }
+            return new List<ElementId>();
+        }
+        public void AddUnusedAssets(Document doc, ICollection<ElementId> elementIds, string assetType, List<ElementId> ids)
+        {
+            foreach (var id in elementIds)
+            {
+                Element elem = doc.GetElement(id);
+                if (elem != null)
+                {
+                    ids.Add(id);
+                }
+            }
+        }
+       
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            string path = "";
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Text files(*.txt) | *.txt"
+            };
+            Nullable<bool> result = dlg.ShowDialog();
+            if (result == true)
+            {
+                path = dlg.FileName;
+            }
+
+            List<string> familynames = new List<string>();
+            using (TextReader fileids = File.OpenText(path))
+            {
+                string Line;
+                while ((Line = fileids.ReadLine()) != null)
+                {
+                    if (!Line.StartsWith("#"))
+                    { 
+                            familynames.Add(Line);
+                        }
+                       
+                }
+            }
+            ICollection<Element> AllFamilies = new FilteredElementCollector(doc).OfClass(typeof(Family)).Where(e => familynames.Contains(e.Name)).ToList();
+            foreach (Family family in AllFamilies)
+            {
+                if (family.IsUserCreated && family.IsEditable)
+                {
+                    
+                        Document famdoc = doc.EditFamily(family);
+                        using (Transaction famtrans = new Transaction(famdoc))
+                        {
+                            
+                            List<ElementId> unusedAssetIds = new List<ElementId>();
+                            // Retrieve unused assets using reflection
+                            famtrans.Start("Purge Family");
+                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedMaterials"), "Material", unusedAssetIds);
+                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedAppearances"), "Appearance", unusedAssetIds);
+                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedStructures"), "Structure", unusedAssetIds);
+                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedThermals"), "Thermal", unusedAssetIds);
+
+                        // Collect all FamilyInstances in the family document (famdoc)
+                        var allInstances = new FilteredElementCollector(famdoc)
+                            .OfClass(typeof(FamilyInstance))
+                            .WhereElementIsNotElementType()
+                            .ToElements();
+
+                        // Build a hash set of family IDs that are used
+                        HashSet<ElementId> usedFamilyIds = new HashSet<ElementId>();
+                        foreach (FamilyInstance fi in allInstances)
+                        {
+                            if (fi.Symbol?.Family != null)
+                            {
+                                usedFamilyIds.Add(fi.Symbol.Family.Id);
+                            }
+                        }
+
+                        // Collect all loaded families (nested families)
+                        FilteredElementCollector familyCollector = new FilteredElementCollector(famdoc)
+                            .OfClass(typeof(Family));
+
+                        HashSet<ElementId> unusedFamilyIds = new HashSet<ElementId>();
+
+                        foreach (Family fam in familyCollector)
+                        {
+
+                            if (!usedFamilyIds.Contains(fam.Id) && fam.IsEditable && fam.StructuralSectionShape== Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionShape.Invalid)
+                            {
+                                unusedFamilyIds.Add(fam.Id);
+                            }
+                        }
+
+                        // Delete unused nested families
+                        if (unusedFamilyIds.Count > 0)
+                        {
+                            foreach(ElementId eid in unusedFamilyIds)
+                            { try { famdoc.Delete(eid); }
+                                catch { }
+                            }
+                            
+                        }
+                    
+                                famtrans.Commit();
+                                famdoc.LoadFamily(doc, new DefaultFamilyLoadOptions());
+                            }
+                            
+                        
+                    }
+
+                
+            }  
             return Result.Succeeded;
         }
     }
