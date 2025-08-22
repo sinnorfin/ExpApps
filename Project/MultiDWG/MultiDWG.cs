@@ -2291,7 +2291,7 @@ namespace MultiDWG
                 Thickness = thickness;
             }
         }
-        static MEPSystem GetNextSystem(ICollection<ElementId> ids, Document doc)
+        public static MEPSystem GetNextSystem(ICollection<ElementId> ids, Document doc)
         {
             foreach (ElementId eid in ids)
             {
@@ -2340,7 +2340,7 @@ namespace MultiDWG
                 { if (elem is DuctInsulation && Exclude == 0) doc.Delete(elem.Id); }
             }
         }
-        static ICollection<ElementId> RemoveElementsfromList(MEPSystem system, ICollection<ElementId> ids, Document doc)
+        public static ICollection<ElementId> RemoveElementsfromList(MEPSystem system, ICollection<ElementId> ids, Document doc)
         {
             ICollection<ElementId> newList = new List<ElementId>(ids);
             foreach (ElementId eid in ids)
@@ -2431,98 +2431,13 @@ namespace MultiDWG
             string pattern = @"\d+";
             Regex regex = new Regex(pattern);
 
-            ////LUXIA HVAC SHAFT RULES
-            //new Rule("M561F", 15, 25, 20),
-            //    new Rule("M561F", 32, 40, 25),
-            //    new Rule("M561F", 50, 50, 30),
-            //    new Rule("M561F", 65, 125, 40),
-            //    new Rule("M561R", 15, 25, 20),
-            //    new Rule("M561R", 32, 40, 25),
-            //    new Rule("M561R", 50, 50, 30),
-            //    new Rule("M561R", 65, 125, 40),
-
-            //    new Rule("M5503", 15, 20, 19),
-            //    new Rule("M5503", 25, 40, 25),
-            //    new Rule("M5503", 50, 65, 32),
-            //    new Rule("M5503", 80, 200, 50),
-            //    new Rule("M5503", 250, 300, 60),
-            //    new Rule("M5504", 15, 20, 19),
-            //    new Rule("M5504", 25, 40, 25),
-            //    new Rule("M5504", 50, 65, 32),
-            //    new Rule("M5504", 80, 200, 50),
-            //    new Rule("M5504", 250, 300, 60),
-
-                 //KNOPY RULES//
-                //new Rule("CWA", 15, 25, 20),
-                //new Rule("CWA", 32, 50, 30),
-                //new Rule("CWA", 65, 125, 40),
-                //new Rule("CWA", 150, 400, 50),
-                //new Rule("CHR", 15, 25, 25),
-                //new Rule("CHR", 32, 50, 30),
-                //new Rule("CHR", 65, 125, 40),
-                //new Rule("CHR", 150, 400, 50),
-
-                //new Rule("KWA", 15, 15, 9),
-                //new Rule("KWA", 20, 32, 13),
-                //new Rule("KWA", 40, 80, 19),
-                //new Rule("KWA", 100, 150, 25),
-                //new Rule("KWA", 200, 400, 32),
-                //new Rule("KWR", 15, 15, 9),
-                //new Rule("KWR", 20, 32, 13),
-                //new Rule("KWR", 40, 80, 19),
-                //new Rule("KWR", 100, 150, 25),
-                //new Rule("KWR", 200, 400, 32),
-               
-                //KNOPY RULES//
-
-                //MOBILIS RULES//
-                //new Rule("CVA", 15, 15, 25),
-                //new Rule("CVA", 20, 25, 30),
-                //new Rule("CVA", 32, 100, 40),
-                //new Rule("CVA", 125, 250, 50),
-                //new Rule("CVR", 15, 15, 25),
-                //new Rule("CVR", 20, 25, 30),
-                //new Rule("CVR", 32, 100, 40),
-                //new Rule("CVR", 125, 250, 50),
-                //new Rule("KWA", 15, 15, 9),
-                //new Rule("KWA", 20, 25, 13),
-                //new Rule("KWA", 32, 50, 19),
-                //new Rule("KWA", 65, 125, 25),
-                //new Rule("KWA", 150, 250, 32),
-                //new Rule("KWR", 15, 15, 9),
-                //new Rule("KWR", 20, 25, 13),
-                //new Rule("KWR", 32, 50, 19),
-                //new Rule("KWR", 65, 125, 25),
-                //new Rule("KWR", 150, 250, 32),
-                //MOBILIS RULES//
-
-                //AG RULES//
-                //new Rule("ECD", 15, 25, 19),
-                //new Rule("ECD", 32, 40, 25),
-                //new Rule("ECD", 50, 100, 32),
-                //new Rule("ECR", 15, 25, 19),
-                //new Rule("ECR", 32, 40, 25),
-                //new Rule("ECR", 50, 100, 32),
-                //new Rule("EGD", 15, 25, 19),
-                //new Rule("EGD", 32, 40, 25),
-                //new Rule("EGD", 50, 100, 32),
-                //new Rule("EGR", 15, 25, 19),
-                //new Rule("EGR", 32, 40, 25),
-                //new Rule("EGR", 50, 100, 32),
-                //AG RULES//
-
             foreach (Rule rule in rules)
             { rule.Thickness = UnitUtils.ConvertToInternalUnits(rule.Thickness, UnitTypeId.Millimeters); }
             Rule selectedRule = null;
 
             Dictionary<string, List<Rule>> ruleDictionary = rules.GroupBy(r => r.Name)
             .ToDictionary(g => g.Key, g => g.ToList());
-            //if (ruleDictionary.TryGetValue(externalName, out List<Rule> selectedList))
-            //{
-            //    selectedRule = selectedList.FirstOrDefault(r => externalValue >= r.MinS && externalValue <= r.MaxS);
-            //}
-            //TaskDialog.Show("The selected Rule", selectedRule.Name + " " + selectedRule.MinS + " " + selectedRule.MaxS + " " + selectedRule.Thickness);
-
+            
             UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "20", out double insulationThickness);
             while ((nextSystem = GetNextSystem(ids, doc)) != null)
             {
@@ -2771,6 +2686,48 @@ namespace MultiDWG
             }
             return Result.Succeeded;
         } 
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class IsolateSystems : IExternalCommand
+    {
+        
+        //Isolates on the selected systems for the active view
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            List<string> systemabbrevs = new List<string>();
+            MEPSystem nextSystem;
+            FilteredElementCollector allSystems = new FilteredElementCollector(doc).OfClass(typeof(MEPSystem));
+            List<ElementId> hideIds = new List<ElementId>();
+            while ((nextSystem = ApplyInsulations.GetNextSystem(ids, doc)) != null)
+            {
+                Element SystemTypeasElement = doc.GetElement(nextSystem.GetTypeId());
+                systemabbrevs.Add(SystemTypeasElement.get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).ToString());
+                ids = ApplyInsulations.RemoveElementsfromList(nextSystem, ids, doc);
+            }
+            List<string> systemNamestoIsolate = systemabbrevs.Distinct().ToList();
+            using (Transaction trans = new Transaction(doc))
+            {
+               
+                foreach (MEPSystem system in allSystems)
+                {
+                    if (systemNamestoIsolate.Contains(doc.GetElement(system.GetTypeId()).get_Parameter(BuiltInParameter.RBS_SYSTEM_ABBREVIATION_PARAM).ToString()))
+                    { hideIds.Add(system.Id); }
+                }
+                TaskDialog.Show("x", hideIds.Count().ToString());
+                trans.Start("Isolate Selected systems");
+                doc.ActiveView.IsolateElementsTemporary(hideIds);
+                trans.Commit();
+            }
+                return Result.Succeeded;
+        }
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
