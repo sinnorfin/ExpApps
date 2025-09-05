@@ -2729,6 +2729,165 @@ namespace MultiDWG
                 return Result.Succeeded;
         }
     }
+
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class AlignSectionBoxToFace : IExternalCommand
+    {
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uiapp.ActiveUIDocument.Document;
+            View activeView = doc.ActiveView;
+            StoreExp.GetMenuValue(uiapp);
+                // Step 1: Check that we’re in a 3D view
+                if (!(activeView is View3D view3D))
+            {
+                TaskDialog.Show("Error", "Please run this command in a 3D view.");
+                return Result.Failed;
+            }
+
+            // Step 2: Check if view has a scope box applied
+            if (view3D.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP) != null &&
+                view3D.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId() != ElementId.InvalidElementId)
+            {
+                TaskDialog.Show("Error", "This view has a scope box applied. Remove it before running.");
+                return Result.Failed;
+            }
+
+            try
+            {
+                // Step 3: Pick a face
+                Reference pickedRef = uidoc.Selection.PickObject(ObjectType.Face, "Pick a face");
+                if (pickedRef == null)
+                    return Result.Cancelled;
+
+                GeometryObject geomObj = doc.GetElement(pickedRef).GetGeometryObjectFromReference(pickedRef);
+                if (!(geomObj is Face pickedFace))
+                {
+                    TaskDialog.Show("Error", "Please select a valid face.");
+                    return Result.Failed;
+                }
+
+                // Normal of picked face (approximate orientation)
+                XYZ faceNormal = pickedFace.ComputeNormal(new UV(0.5, 0.5)).Normalize();
+
+                // Step 4: Work with section box
+                if (!view3D.IsSectionBoxActive)
+                {
+                    TaskDialog.Show("Error", "Section box must be active in the 3D view.");
+                    return Result.Failed;
+                }
+                BoundingBoxXYZ sectionBox = view3D.GetSectionBox();
+                BoundingBoxXYZ newBox = new BoundingBoxXYZ
+                {
+                    Min = sectionBox.Min,
+                    Max = sectionBox.Max,
+                    Transform = sectionBox.Transform
+                };
+                Transform boxTransform = newBox.Transform;
+                if (StoreExp.GetSwitchStance(uiapp, "Universal Toggle Green OFF"))
+                {
+                    BoundingBoxUV faceUV = pickedFace.GetBoundingBox();
+                    XYZ faceCenter = pickedFace.Evaluate(new UV((faceUV.Min.U + faceUV.Max.U) / 2.0, (faceUV.Min.V + faceUV.Max.V) / 2.0));
+
+
+                    XYZ boxX = new XYZ(boxTransform.BasisX.X, boxTransform.BasisX.Y, 0).Normalize();
+                    XYZ boxY = new XYZ(boxTransform.BasisY.X, boxTransform.BasisY.Y, 0).Normalize();
+                    XYZ faceXY = new XYZ(faceNormal.X, faceNormal.Y, 0).Normalize();
+
+
+                    double lengthX = (newBox.Max - newBox.Min).DotProduct(boxX);
+                    double lengthY = (newBox.Max - newBox.Min).DotProduct(boxY);
+                    XYZ longest = lengthX > lengthY ? boxX : boxY;
+
+
+                    double angle = longest.AngleTo(faceXY);
+                    if (longest.CrossProduct(faceXY).Z < 0) angle = -angle;
+
+
+                    Transform rotation = Transform.CreateRotationAtPoint(XYZ.BasisZ, angle, faceCenter);
+                    newBox.Transform = rotation.Multiply(newBox.Transform);
+                }
+
+
+                // Define section box face normals (local XYZ directions)
+                boxTransform = newBox.Transform;
+                XYZ[] boxNormals = new XYZ[]
+                {
+                boxTransform.BasisX,
+                -boxTransform.BasisX,
+                boxTransform.BasisY,
+                -boxTransform.BasisY,
+                boxTransform.BasisZ,
+                -boxTransform.BasisZ
+                };
+
+                // Find closest parallel section box normal to the picked face
+                XYZ closestNormal = null;
+                double maxDot = -1;
+                if (!StoreExp.GetSwitchStance(uiapp, "Universal Toggle Blue OFF"))
+                { faceNormal = -faceNormal; }
+                foreach (XYZ n in boxNormals)
+                {
+                    double dot = faceNormal.DotProduct(n);
+                    if (dot > maxDot)
+                    {
+                        maxDot = dot;
+                        closestNormal = n;
+                        
+                    }
+                }
+
+                if (closestNormal == null)
+                {
+                    TaskDialog.Show("Error", "Could not find parallel section box face.");
+                    return Result.Failed;
+                }
+
+                // Step 5: Move that section box face to align with picked face
+                // Get face reference point
+                double offset = UnitUtils.ConvertToInternalUnits(50.0, UnitTypeId.Centimeters); // Revit 2021+
+
+
+                // Get face reference point
+                XYZ facePoint = pickedFace.Evaluate(new UV(0.5, 0.5));
+
+                    // Transform picked point into section box local coords
+                    XYZ localPoint = boxTransform.Inverse.OfPoint(facePoint);
+
+                    if (closestNormal.IsAlmostEqualTo(boxTransform.BasisX)) newBox.Min = new XYZ(localPoint.X - offset, newBox.Min.Y, newBox.Min.Z);
+                    else if (closestNormal.IsAlmostEqualTo(-boxTransform.BasisX)) newBox.Max = new XYZ(localPoint.X + offset, newBox.Max.Y, newBox.Max.Z);
+                    else if (closestNormal.IsAlmostEqualTo(boxTransform.BasisY)) newBox.Min = new XYZ(newBox.Min.X, localPoint.Y - offset, newBox.Min.Z);
+                    else if (closestNormal.IsAlmostEqualTo(-boxTransform.BasisY)) newBox.Max = new XYZ(newBox.Max.X, localPoint.Y + offset, newBox.Max.Z);
+                    else if (closestNormal.IsAlmostEqualTo(boxTransform.BasisZ)) newBox.Min = new XYZ(newBox.Min.X, newBox.Min.Y, localPoint.Z - offset);
+                    else if (closestNormal.IsAlmostEqualTo(-boxTransform.BasisZ)) newBox.Max = new XYZ(newBox.Max.X, newBox.Max.Y, localPoint.Z + offset);
+                using (Transaction tx = new Transaction(doc, "Align Section Box with Offset"))
+                {
+                    tx.Start();
+                    view3D.SetSectionBox(newBox);
+                    tx.Commit();
+                }
+
+                 return Result.Succeeded;
+            }
+            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+            {
+                return Result.Cancelled;
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+                return Result.Failed;
+            }
+        }
+    }
+
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class AddParaforVisible : IExternalCommand
