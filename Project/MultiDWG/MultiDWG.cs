@@ -2730,6 +2730,7 @@ namespace MultiDWG
         }
     }
 
+
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class AlignSectionBoxToFace : IExternalCommand
@@ -2815,48 +2816,49 @@ namespace MultiDWG
                     newBox.Transform = rotation.Multiply(newBox.Transform);
                 }
 
-
-                // Define section box face normals (local XYZ directions)
-                boxTransform = newBox.Transform;
-                XYZ[] boxNormals = new XYZ[]
+                else
                 {
+                    // Define section box face normals (local XYZ directions)
+                    boxTransform = newBox.Transform;
+                    XYZ[] boxNormals = new XYZ[]
+                    {
                 boxTransform.BasisX,
                 -boxTransform.BasisX,
                 boxTransform.BasisY,
                 -boxTransform.BasisY,
                 boxTransform.BasisZ,
                 -boxTransform.BasisZ
-                };
+                    };
 
-                // Find closest parallel section box normal to the picked face
-                XYZ closestNormal = null;
-                double maxDot = -1;
-                if (!StoreExp.GetSwitchStance(uiapp, "Universal Toggle Blue OFF"))
-                { faceNormal = -faceNormal; }
-                foreach (XYZ n in boxNormals)
-                {
-                    double dot = faceNormal.DotProduct(n);
-                    if (dot > maxDot)
+                    // Find closest parallel section box normal to the picked face
+                    XYZ closestNormal = null;
+                    double maxDot = -1;
+                    if (!StoreExp.GetSwitchStance(uiapp, "Universal Toggle Blue OFF"))
+                    { faceNormal = -faceNormal; }
+                    foreach (XYZ n in boxNormals)
                     {
-                        maxDot = dot;
-                        closestNormal = n;
-                        
+                        double dot = faceNormal.DotProduct(n);
+                        if (dot > maxDot)
+                        {
+                            maxDot = dot;
+                            closestNormal = n;
+
+                        }
                     }
-                }
 
-                if (closestNormal == null)
-                {
-                    TaskDialog.Show("Error", "Could not find parallel section box face.");
-                    return Result.Failed;
-                }
+                    if (closestNormal == null)
+                    {
+                        TaskDialog.Show("Error", "Could not find parallel section box face.");
+                        return Result.Failed;
+                    }
 
-                // Step 5: Move that section box face to align with picked face
-                // Get face reference point
-                double offset = UnitUtils.ConvertToInternalUnits(50.0, UnitTypeId.Centimeters); // Revit 2021+
+                    // Step 5: Move that section box face to align with picked face
+                    // Get face reference point
+                    double offset = UnitUtils.ConvertToInternalUnits(50.0, UnitTypeId.Centimeters); // Revit 2021+
 
 
-                // Get face reference point
-                XYZ facePoint = pickedFace.Evaluate(new UV(0.5, 0.5));
+                    // Get face reference point
+                    XYZ facePoint = pickedFace.Evaluate(new UV(0.5, 0.5));
 
                     // Transform picked point into section box local coords
                     XYZ localPoint = boxTransform.Inverse.OfPoint(facePoint);
@@ -2867,6 +2869,7 @@ namespace MultiDWG
                     else if (closestNormal.IsAlmostEqualTo(-boxTransform.BasisY)) newBox.Max = new XYZ(newBox.Max.X, localPoint.Y + offset, newBox.Max.Z);
                     else if (closestNormal.IsAlmostEqualTo(boxTransform.BasisZ)) newBox.Min = new XYZ(newBox.Min.X, newBox.Min.Y, localPoint.Z - offset);
                     else if (closestNormal.IsAlmostEqualTo(-boxTransform.BasisZ)) newBox.Max = new XYZ(newBox.Max.X, newBox.Max.Y, localPoint.Z + offset);
+                }
                 using (Transaction tx = new Transaction(doc, "Align Section Box with Offset"))
                 {
                     tx.Start();
