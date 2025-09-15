@@ -529,9 +529,18 @@ namespace MultiDWG
                     Parameter sourcePara;
                     try
                     {
-                        targetPara = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString()) as Parameter;
-                        sourcePara = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
-
+                        if (StoreExp.GetSwitchStance(uiapp, "Red"))
+                        {
+                            Guid paraguid = new Guid(StoreExp.Store.menu_1_Box.Value.ToString());
+                            sourcePara = elem.get_Parameter(paraguid);
+                        }
+                        else sourcePara = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
+                        if (StoreExp.GetSwitchStance(uiapp, "Green"))
+                        {
+                            Guid paraguid = new Guid(StoreExp.Store.menu_2_Box.Value.ToString());
+                            targetPara = elem.get_Parameter(paraguid);
+                        }
+                        else targetPara = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString()) as Parameter;
 
                         if (StoreExp.Store.menu_C_Box.Value.ToString() == "S")
                         {
@@ -573,42 +582,42 @@ namespace MultiDWG
             return Result.Succeeded;
         }
     }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class InjectCircuitnumber : IExternalCommand
-    {
-        //Inject parameter value to target parameter
+    //[Transaction(TransactionMode.Manual)]
+    //[Regeneration(RegenerationOption.Manual)]
+    //public class InjectCircuitnumber : IExternalCommand
+    //{
+    //    //Inject parameter value to target parameter
 
-        public Result Execute(
-            ExternalCommandData commandData,
-            ref string message,
-            ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Document doc = uidoc.Document;
-            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-            StoreExp.GetMenuValue(uiapp);
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Inject Built-in to Normal");
-                foreach (ElementId eid in ids)
-                {
-                    Element elem = doc.GetElement(eid) as Element;
-                    try
-                    {
-                        Guid paraguid = new Guid("b17c58f0-9fa0-49cf-a5c0-4c13bc0a9a5b");
-                        Parameter targetPara = elem.get_Parameter(paraguid);
-                        Parameter sourcePara = elem.get_Parameter(BuiltInParameter.RBS_ELEC_CIRCUIT_NUMBER);
-                        targetPara.Set(sourcePara.AsValueString());
-                    }
-                    catch { }
-                }
-                trans.Commit();
-            }
-            return Result.Succeeded;
-        }
-    }
+    //    public Result Execute(
+    //        ExternalCommandData commandData,
+    //        ref string message,
+    //        ElementSet elements)
+    //    {
+    //        UIApplication uiapp = commandData.Application;
+    //        UIDocument uidoc = uiapp.ActiveUIDocument;
+    //        Document doc = uidoc.Document;
+    //        ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+    //        StoreExp.GetMenuValue(uiapp);
+    //        using (Transaction trans = new Transaction(doc))
+    //        {
+    //            trans.Start("Inject Built-in to Normal");
+    //            foreach (ElementId eid in ids)
+    //            {
+    //                Element elem = doc.GetElement(eid) as Element;
+    //                try
+    //                {
+    //                    Guid paraguid = new Guid("b17c58f0-9fa0-49cf-a5c0-4c13bc0a9a5b");
+    //                    Parameter targetPara = elem.get_Parameter(paraguid);
+    //                    Parameter sourcePara = elem.get_Parameter(BuiltInParameter.RBS_ELEC_CIRCUIT_NUMBER);
+    //                    targetPara.Set(sourcePara.AsValueString());
+    //                }
+    //                catch { }
+    //            }
+    //            trans.Commit();
+    //        }
+    //        return Result.Succeeded;
+    //    }
+    //}
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class RecessHeight : IExternalCommand
