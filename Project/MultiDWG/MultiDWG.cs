@@ -4341,6 +4341,25 @@ namespace MultiDWG
             return Result.Succeeded;
         }
     }
+    public class SelectedElementsFilter : ISelectionFilter
+    {
+        private readonly HashSet<ElementId> _allowedIds;
+
+        public SelectedElementsFilter(IEnumerable<ElementId> selectedIds)
+        {
+            _allowedIds = new HashSet<ElementId>(selectedIds);
+        }
+
+        public bool AllowElement(Element elem)
+        {
+            return _allowedIds.Contains(elem.Id);
+        }
+
+        public bool AllowReference(Reference reference, XYZ position)
+        {
+            return _allowedIds.Contains(reference.ElementId);
+        }
+    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class WeldMEP : IExternalCommand
@@ -4359,6 +4378,7 @@ namespace MultiDWG
             {
                 
                 ICollection<ElementId> selectedIds = uiDoc.Selection.GetElementIds();
+                var selectedfilter = new SelectedElementsFilter(selectedIds);
                 foreach (ElementId elementId in selectedIds)
                 {
                     Element element = doc.GetElement(elementId);
@@ -4393,13 +4413,33 @@ namespace MultiDWG
                 trans.Start("Weld MEP");
                 foreach (Connector connector in Check)
                 {
-                    // Find the pair based on the Origin
-                    Connector pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
+                    Boolean inaccurate = StoreExp.GetSwitchStance(uiApp, "Red");
+                    
+                    Connector pair = null;
+                    if (!inaccurate)
+                    {
+                        // Find the pair based on the Origin
+                         pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
+                    }
+
+                    else { pair = Check.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < 0.05);
                         
+                    }
+                    
                     // If a pair is found, connect them
                     if (pair != null && !connector.IsConnected)
                     {
                         connector.ConnectTo(pair);
+                        if (inaccurate)
+                        {
+                            if (!StoreExp.GetSwitchStance(uiApp, "Green")) 
+                            { TaskDialog.Show("Attention", "Attention, Low-accuracy weld! Turn OFF 'Red' switch to limit welding to precise alignments." 
+                                + Environment.NewLine +
+                                "  **  Turn ON 'Green' to disable this warning.  **  "); }
+                            Reference tomove = uiDoc.Selection.PickObject(ObjectType.Element, selectedfilter,"Select element to keep FIXED in position.");
+                            ElementTransformUtils.MoveElement(doc, tomove.ElementId, new XYZ(1e-6, 0, 0));
+                            
+                        }
                     }
                 }
                 trans.Commit();
