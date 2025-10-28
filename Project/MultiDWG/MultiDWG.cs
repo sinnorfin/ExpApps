@@ -4422,7 +4422,7 @@ namespace MultiDWG
                          pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
                     }
 
-                    else { pair = Check.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < 0.05);
+                    else { pair = Check.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < 0.03);
                         
                     }
                     
@@ -4433,10 +4433,10 @@ namespace MultiDWG
                         if (inaccurate)
                         {
                             if (!StoreExp.GetSwitchStance(uiApp, "Green")) 
-                            { TaskDialog.Show("Attention", "Attention, Low-accuracy weld! Turn OFF 'Red' switch to limit welding to precise alignments." 
-                                + Environment.NewLine +
+                            { TaskDialog.Show("Attention", "Low-accuracy weld! - Please Select element to KEEP in place" + Environment.NewLine + Environment.NewLine + "  **  Turn OFF 'Red' to only allow precise alignments.  **  " 
+                                + Environment.NewLine + Environment.NewLine +
                                 "  **  Turn ON 'Green' to disable this warning.  **  "); }
-                            Reference tomove = uiDoc.Selection.PickObject(ObjectType.Element, selectedfilter,"Select element to keep FIXED in position.");
+                            Reference tomove = uiDoc.Selection.PickObject(ObjectType.Element, selectedfilter,"Select Element to KEEP in place.");
                             ElementTransformUtils.MoveElement(doc, tomove.ElementId, new XYZ(1e-6, 0, 0));
                             
                         }
