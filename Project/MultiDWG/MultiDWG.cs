@@ -4272,6 +4272,115 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class RotateMEP : IExternalCommand
+    {
+
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiApp = commandData.Application;
+            UIDocument uiDoc = uiApp.ActiveUIDocument;
+            Document doc = uiDoc.Document;
+            ICollection<ElementId> selectedIds = uiDoc.Selection.GetElementIds();
+            List<Connector> bases = new List<Connector>();
+            int elemcounter = 0;
+            int connectorsifsingle = 0;
+            StoreExp.GetMenuValue(uiApp);
+            string fail = "Selection should only contain one possible Axis for rotation"
+                     + Environment.NewLine + "Other ends of the selection should be open." + Environment.NewLine
+                     + Environment.NewLine + "Try again with new selection!";
+            foreach (ElementId elementId in selectedIds)
+            {
+                int addcount = bases.Count();
+                Element element = doc.GetElement(elementId);
+                if (element is MEPCurve mepCurve)
+                {
+                    if (selectedIds.Count() == 1)
+                    { connectorsifsingle = mepCurve.ConnectorManager.Connectors.Size; }
+                    foreach (Connector connector in mepCurve.ConnectorManager.Connectors)
+                    {
+                        if (connector.IsConnected)
+                        {
+                            ConnectorSet connectedConnectors = connector.AllRefs;
+                            foreach (Connector connectedConnector in connectedConnectors)
+                            {
+                                if (connectedConnector.Domain != Domain.DomainUndefined
+                                    && StoreExp.IsOpen(connectedConnector, selectedIds))
+                                {
+                                   bases.Add(connectedConnector);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (element is FamilyInstance familyInstance)
+                {
+                    try
+                    {
+                        if (selectedIds.Count() == 1)
+                        { connectorsifsingle = familyInstance.MEPModel.ConnectorManager.Connectors.Size; }
+                        foreach (Connector connector in familyInstance.MEPModel.ConnectorManager.Connectors)
+                        {
+                            if (connector.IsConnected)
+                            {
+                                ConnectorSet connectedConnectors = connector.AllRefs;
+                                foreach (Connector connectedConnector in connectedConnectors)
+                                {
+                                    if (connectedConnector.Domain != Domain.DomainUndefined
+                                        && StoreExp.IsOpen(connectedConnector, selectedIds))
+                                    { bases.Add(connector); }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                if (bases.Count > addcount) elemcounter += 1;
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Rotate MEP");
+                Connector pickedConnector = null;
+                //TaskDialog.Show("Debug", "Connection Bases:" + bases.Count.ToString() + "Elements:" + elemcounter.ToString());
+                if (elemcounter == 1)
+                {
+                    if (bases.Count >= 2 && bases.Select(x => x.Angle).Distinct().Count() > 1)
+                    {
+                        TaskDialog.Show("Failed",fail );
+                        return Result.Cancelled;
+                    }
+                    if (selectedIds.Count == 1 && bases.Count() >= connectorsifsingle  )
+                    { 
+                        TaskDialog.Show("Failed", fail);
+                        return Result.Cancelled;
+                    }
+                    pickedConnector = bases.OrderBy(x => x.Id).FirstOrDefault();
+                    
+                    XYZ origin = pickedConnector.Origin;
+                    Transform transform = pickedConnector.CoordinateSystem;
+                    XYZ direction = transform.BasisZ; // The axis of the connector
+                    double length = 10.0;
+                    XYZ endPoint = origin + (direction * length);
+                    Line axis = Line.CreateBound(origin, endPoint);
+                    double angle = 45;
+                    double inputangle = 0;
+                    if (StoreExp.Store.menu_1_Box.Value != null) double.TryParse(StoreExp.Store.menu_1_Box.Value.ToString(), out inputangle);
+                    if (inputangle != 0) angle = inputangle;
+                    if (StoreExp.GetSwitchStance(uiApp, "Red")) angle = angle * -1;
+                    angle *= (Math.PI / 180);
+                    ElementTransformUtils.RotateElements(doc, selectedIds, axis, angle);
+                }
+                else TaskDialog.Show("Failed", fail);
+                
+                trans.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class ExplodeMEP : IExternalCommand
     {
         
@@ -4343,6 +4452,9 @@ namespace MultiDWG
     }
     public class SelectedElementsFilter : ISelectionFilter
     {
+        /// <summary>
+        /// Filter to only include elements in the current selection for picking.
+        /// </summary>
         private readonly HashSet<ElementId> _allowedIds;
 
         public SelectedElementsFilter(IEnumerable<ElementId> selectedIds)
