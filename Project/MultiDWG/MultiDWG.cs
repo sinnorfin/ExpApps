@@ -4284,7 +4284,7 @@ namespace MultiDWG
             UIDocument uiDoc = uiApp.ActiveUIDocument;
             Document doc = uiDoc.Document;
             ICollection<ElementId> selectedIds = uiDoc.Selection.GetElementIds();
-            List<Connector> bases = new List<Connector>();
+            List<Connector> rotationBases = new List<Connector>();
             int elemcounter = 0;
             int connectorsifsingle = 0;
             StoreExp.GetMenuValue(uiApp);
@@ -4293,7 +4293,7 @@ namespace MultiDWG
                      + Environment.NewLine + "Try again with new selection!";
             foreach (ElementId elementId in selectedIds)
             {
-                int addcount = bases.Count();
+                int addcount = rotationBases.Count();
                 Element element = doc.GetElement(elementId);
                 if (element is MEPCurve mepCurve)
                 {
@@ -4309,7 +4309,7 @@ namespace MultiDWG
                                 if (connectedConnector.Domain != Domain.DomainUndefined
                                     && StoreExp.IsOpen(connectedConnector, selectedIds))
                                 {
-                                   bases.Add(connectedConnector);
+                                   rotationBases.Add(connectedConnector);
                                 }
                             }
                         }
@@ -4330,33 +4330,33 @@ namespace MultiDWG
                                 {
                                     if (connectedConnector.Domain != Domain.DomainUndefined
                                         && StoreExp.IsOpen(connectedConnector, selectedIds))
-                                    { bases.Add(connector); }
+                                    { rotationBases.Add(connector); }
                                 }
                             }
                         }
                     }
                     catch { }
                 }
-                if (bases.Count > addcount) elemcounter += 1;
+                if (rotationBases.Count > addcount) elemcounter += 1;
             }
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Rotate MEP");
+                //TaskDialog.Show("Debug", "Connection Bases:" + rotationBases.Count.ToString() + "Elements:" + elemcounter.ToString());
                 Connector pickedConnector = null;
-                //TaskDialog.Show("Debug", "Connection Bases:" + bases.Count.ToString() + "Elements:" + elemcounter.ToString());
-                if (elemcounter == 1)
+                if (elemcounter == 1 || rotationBases.Count <= 2)
                 {
-                    if (bases.Count >= 2 && bases.Select(x => x.Angle).Distinct().Count() > 1)
+                    if (rotationBases.Count == 2 && Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize())) != 1 )
                     {
-                        TaskDialog.Show("Failed",fail );
+                        TaskDialog.Show("Failed",fail);
                         return Result.Cancelled;
                     }
-                    if (selectedIds.Count == 1 && bases.Count() >= connectorsifsingle  )
+                    if (selectedIds.Count == 1 && rotationBases.Count() >= connectorsifsingle && rotationBases.Select(x => x.Angle).Distinct().Count() > 1)
                     { 
                         TaskDialog.Show("Failed", fail);
                         return Result.Cancelled;
                     }
-                    pickedConnector = bases.OrderBy(x => x.Id).FirstOrDefault();
+                    pickedConnector = rotationBases.OrderBy(x => x.Id).FirstOrDefault();
                     
                     XYZ origin = pickedConnector.Origin;
                     Transform transform = pickedConnector.CoordinateSystem;
@@ -4368,12 +4368,13 @@ namespace MultiDWG
                     double inputangle = 0;
                     if (StoreExp.Store.menu_1_Box.Value != null) double.TryParse(StoreExp.Store.menu_1_Box.Value.ToString(), out inputangle);
                     if (inputangle != 0) angle = inputangle;
+                    if (pickedConnector.Shape != ConnectorProfileType.Round && pickedConnector.Width != pickedConnector.Height) angle = 180;
+                    if (pickedConnector.Shape != ConnectorProfileType.Round && pickedConnector.Width == pickedConnector.Height) angle = 90;
                     if (StoreExp.GetSwitchStance(uiApp, "Red")) angle = angle * -1;
                     angle *= (Math.PI / 180);
                     ElementTransformUtils.RotateElements(doc, selectedIds, axis, angle);
                 }
                 else TaskDialog.Show("Failed", fail);
-                
                 trans.Commit();
             }
             return Result.Succeeded;
