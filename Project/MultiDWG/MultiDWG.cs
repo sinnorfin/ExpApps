@@ -4356,6 +4356,7 @@ namespace MultiDWG
                         TaskDialog.Show("Failed", fail);
                         return Result.Cancelled;
                     }
+
                     pickedConnector = rotationBases.OrderBy(x => x.Id).FirstOrDefault();
                     
                     XYZ origin = pickedConnector.Origin;
