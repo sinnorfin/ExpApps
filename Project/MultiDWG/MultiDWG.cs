@@ -4342,11 +4342,11 @@ namespace MultiDWG
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Rotate MEP");
-                //TaskDialog.Show("Debug", "Connection Bases:" + rotationBases.Count.ToString() + "Elements:" + elemcounter.ToString());
+                TaskDialog.Show("Debug", "Connection Bases:" + rotationBases.Count.ToString() + "Elements:" + elemcounter.ToString());
                 Connector pickedConnector = null;
                 if (elemcounter == 1 || rotationBases.Count <= 2)
                 {
-                    if (rotationBases.Count == 2 && Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize())) != 1 )
+                    if (rotationBases.Count == 2 && Math.Abs(Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize())) - 1) > 0.01 )
                     {
                         TaskDialog.Show("Failed",fail);
                         return Result.Cancelled;
