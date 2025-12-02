@@ -4342,7 +4342,7 @@ namespace MultiDWG
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Rotate MEP");
-                TaskDialog.Show("Debug", "Connection Bases:" + rotationBases.Count.ToString() + "Elements:" + elemcounter.ToString());
+                //TaskDialog.Show("Debug", "Connection Bases:" + rotationBases.Count.ToString() + "Elements:" + elemcounter.ToString());
                 Connector pickedConnector = null;
                 if (elemcounter == 1 || rotationBases.Count <= 2)
                 {
@@ -4530,15 +4530,18 @@ namespace MultiDWG
                     Boolean inaccurate = StoreExp.GetSwitchStance(uiApp, "Red");
                     
                     Connector pair = null;
-                    if (!inaccurate)
-                    {
+                    //if (!inaccurate)
+                    //{
                         // Find the pair based on the Origin
-                         pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
-                    }
+                    pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
 
-                    else { pair = Check.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < 0.03);
-                        
+                    //}
+
+                    if (pair == null && inaccurate)
+                    {
+                        pair = Check.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < 0.03);
                     }
+                    else inaccurate = true;
                     
                     // If a pair is found, connect them
                     if (pair != null && !connector.IsConnected)
