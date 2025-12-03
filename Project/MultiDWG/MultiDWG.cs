@@ -4346,7 +4346,7 @@ namespace MultiDWG
                 Connector pickedConnector = null;
                 if (elemcounter == 1 || rotationBases.Count <= 2)
                 {
-                    if (rotationBases.Count == 2 && Math.Abs(Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize())) - 1) > 0.01 )
+                    if (rotationBases.Count == 2 && Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize())) != 1 )
                     {
                         TaskDialog.Show("Failed",fail);
                         return Result.Cancelled;
