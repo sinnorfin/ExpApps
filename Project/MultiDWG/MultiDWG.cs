@@ -4346,7 +4346,7 @@ namespace MultiDWG
                 Connector pickedConnector = null;
                 if (elemcounter == 1 || rotationBases.Count <= 2)
                 {
-                    if (rotationBases.Count == 2 && Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize())) != 1 )
+                    if (rotationBases.Count == 2 && Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize()) - 1) > 0.01 )
                     {
                         TaskDialog.Show("Failed",fail);
                         return Result.Cancelled;
@@ -4530,19 +4530,15 @@ namespace MultiDWG
                     Boolean inaccurate = StoreExp.GetSwitchStance(uiApp, "Red");
                     
                     Connector pair = null;
-                    //if (!inaccurate)
-                    //{
-                        // Find the pair based on the Origin
-                    pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
-
-                    //}
-
-                    if (pair == null && inaccurate)
+                    // Find the pair based on the Origin
+                    if (!inaccurate)
+                    {
+                        pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
+                    }
+                    else
                     {
                         pair = Check.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < 0.03);
-                    }
-                    else inaccurate = true;
-                    
+                    }                              
                     // If a pair is found, connect them
                     if (pair != null && !connector.IsConnected)
                     {
