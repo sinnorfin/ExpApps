@@ -4227,7 +4227,6 @@ namespace MultiDWG
                                     }
                                 }
                             }
-
                         }
                     }
                     else if (element is FamilyInstance familyInstance)
@@ -4346,7 +4345,7 @@ namespace MultiDWG
                 Connector pickedConnector = null;
                 if (elemcounter == 1 || rotationBases.Count <= 2)
                 {
-                    if (rotationBases.Count == 2 && Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize()) - 1) > 0.01 )
+                    if (rotationBases.Count == 2 && Math.Abs(Math.Abs(rotationBases[0].CoordinateSystem.BasisZ.Normalize().DotProduct(rotationBases[1].CoordinateSystem.BasisZ.Normalize())) - 1) > 0.01 )
                     {
                         TaskDialog.Show("Failed",fail);
                         return Result.Cancelled;
@@ -4420,7 +4419,6 @@ namespace MultiDWG
                                     }
                                 }
                             }
-
                         }
                     }
                     else if (element is FamilyInstance familyInstance)
@@ -4446,7 +4444,6 @@ namespace MultiDWG
                         catch { }
                     }
                 }
-
                 trans.Commit();
             }
             return Result.Succeeded;
@@ -4487,12 +4484,21 @@ namespace MultiDWG
             UIDocument uiDoc = uiApp.ActiveUIDocument;
             Application app = uiApp.Application;
             Document doc = uiDoc.Document;
-            List <Connector> Check = new List<Connector>();
+            List<Connector> allUnconnectedConnectors = new List<Connector>();
+            List<Tuple<Connector, Connector, bool>> Pairs = new List<Tuple<Connector, Connector, bool>>();
+            double tolerance = 0.1;
+            string extra = "";
+            if (StoreExp.GetSwitchStance(uiApp, "Red"))
+            {
+                tolerance = 2;
+                extra = "* Warning * EXTRA ";
+            }
+            var pair = new Tuple<Connector, Connector, bool>(null, null, false);
             using (Transaction trans = new Transaction(doc))
             {
-                
+
                 ICollection<ElementId> selectedIds = uiDoc.Selection.GetElementIds();
-                var selectedfilter = new SelectedElementsFilter(selectedIds);
+                
                 foreach (ElementId elementId in selectedIds)
                 {
                     Element element = doc.GetElement(elementId);
@@ -4503,7 +4509,7 @@ namespace MultiDWG
                         {
                             if (!connector.IsConnected)
                             {
-                                Check.Add(connector);
+                                allUnconnectedConnectors.Add(connector);
                             }
 
                         }
@@ -4517,7 +4523,7 @@ namespace MultiDWG
                             {
                                 if (!connector.IsConnected)
                                 {
-                                Check.Add(connector);
+                                    allUnconnectedConnectors.Add(connector);
                                 }
                             }
                         }
@@ -4525,33 +4531,42 @@ namespace MultiDWG
                     }
                 }
                 trans.Start("Weld MEP");
-                foreach (Connector connector in Check)
+                foreach (Connector connector in allUnconnectedConnectors)
                 {
-                    Boolean inaccurate = StoreExp.GetSwitchStance(uiApp, "Red");
-                    
-                    Connector pair = null;
                     // Find the pair based on the Origin
-                    if (!inaccurate)
+                    pair = new Tuple<Connector, Connector, bool>(connector,
+                       allUnconnectedConnectors.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin))
+                       , false);
+                    if (pair.Item2 == null)
                     {
-                        pair = Check.FirstOrDefault(c => c != connector && c.Origin.IsAlmostEqualTo(connector.Origin));
+                        pair = new Tuple<Connector, Connector, bool>(connector,
+                        allUnconnectedConnectors.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < tolerance)
+                        , true);
                     }
-                    else
+                    if (pair.Item2 != null)
                     {
-                        pair = Check.FirstOrDefault(c => c != connector && (c.Origin.DistanceTo(connector.Origin)) < 0.03);
-                    }                              
-                    // If a pair is found, connect them
-                    if (pair != null && !connector.IsConnected)
+                        Pairs.Add(pair);
+                    }
+                }
+                foreach (Tuple<Connector, Connector, bool> currentpair in Pairs)
+                {                 
+                    if (currentpair.Item2 != null && !currentpair.Item1.IsConnected && !currentpair.Item2.IsConnected)
                     {
-                        connector.ConnectTo(pair);
-                        if (inaccurate)
+                        currentpair.Item1.ConnectTo(currentpair.Item2);
+                        if (currentpair.Item3)
                         {
-                            if (!StoreExp.GetSwitchStance(uiApp, "Green")) 
-                            { TaskDialog.Show("Attention", "Low-accuracy weld! - Please Select element to KEEP in place" + Environment.NewLine + Environment.NewLine + "  **  Turn OFF 'Red' to only allow precise alignments.  **  " 
+                            if (!StoreExp.GetSwitchStance(uiApp, "Green"))
+                            {
+                                TaskDialog.Show("Attention", extra + "Low-accuracy weld! - Please Select element to KEEP in place" + Environment.NewLine + Environment.NewLine + "  **  Turn OFF 'Red' to only allow precise alignments.  **  "
                                 + Environment.NewLine + Environment.NewLine +
-                                "  **  Turn ON 'Green' to disable this warning.  **  "); }
-                            Reference tomove = uiDoc.Selection.PickObject(ObjectType.Element, selectedfilter,"Select Element to KEEP in place.");
+                                "  **  Turn ON 'Green' to disable this warning.  **  ");
+                            }
+                            List<ElementId> eidForFilter = new List<ElementId>();
+                            eidForFilter.Add(currentpair.Item1.Owner.Id);
+                            eidForFilter.Add(currentpair.Item2.Owner.Id);
+                            var selectedfilter = new SelectedElementsFilter(eidForFilter); ;
+                            Reference tomove = uiDoc.Selection.PickObject(ObjectType.Element, selectedfilter, "Select Element to KEEP in place.");
                             ElementTransformUtils.MoveElement(doc, tomove.ElementId, new XYZ(1e-6, 0, 0));
-                            
                         }
                     }
                 }
