@@ -4564,7 +4564,7 @@ namespace MultiDWG
                             List<ElementId> eidForFilter = new List<ElementId>();
                             eidForFilter.Add(currentpair.Item1.Owner.Id);
                             eidForFilter.Add(currentpair.Item2.Owner.Id);
-                            var selectedfilter = new SelectedElementsFilter(eidForFilter); ;
+                            var selectedfilter = new SelectedElementsFilter(eidForFilter);
                             Reference tomove = uiDoc.Selection.PickObject(ObjectType.Element, selectedfilter, "Select Element to KEEP in place.");
                             ElementTransformUtils.MoveElement(doc, tomove.ElementId, new XYZ(1e-6, 0, 0));
                         }
@@ -4648,7 +4648,75 @@ namespace MultiDWG
             }
             return Result.Succeeded;
         }
-    } 
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SwapMEP : IExternalCommand
+    {
+        bool AreLinesParallel(Line line1, Line line2)
+        {
+            if (line1 == null || line2 == null)
+                return false;
+
+            XYZ dir1 = line1.Direction;
+            XYZ dir2 = line2.Direction;
+
+            // Normalize and compare
+            dir1 = dir1.Normalize();
+            dir2 = dir2.Normalize();
+
+            // Check if parallel (or anti-parallel)
+            return dir1.IsAlmostEqualTo(dir2) || dir1.IsAlmostEqualTo(-dir2);
+        }
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            if (ids.Count()> 1 || 
+                !(doc.GetElement(ids.FirstOrDefault()).Location is LocationCurve))
+                {
+                    TaskDialog.Show("Fail", "Only select one MEP Line element");
+                    return Result.Failed; 
+                }
+            Reference picked = uidoc.Selection.PickObject(ObjectType.Element);
+            LocationCurve curvePick = doc.GetElement(picked).Location as LocationCurve;
+            LocationCurve curveSel = doc.GetElement(ids.First()).Location as LocationCurve;
+            using (Transaction trans = new Transaction(doc))
+            {
+                Line line1 = curvePick.Curve as Line;
+                Line line2 = curveSel.Curve as Line;
+                if (!AreLinesParallel(line1, line2))
+                {
+                    TaskDialog.Show("Fail", "Directions Not parallel!");
+                    return Result.Failed;
+                }
+                XYZ dir = line1.Direction.Normalize();
+                // Project the start points onto the perpendicular direction
+                XYZ start1 = line1.Origin;
+                XYZ start2 = line2.Origin;
+
+                // Calculate the distance between the two lines in the perpendicular direction
+                XYZ projStart1 = start1 - dir * start1.DotProduct(dir);
+                XYZ projStart2 = start2 - dir * start2.DotProduct(dir);
+
+                // The translation vector is the difference in distance along the perpendicular
+                XYZ translation = projStart2 - projStart1;
+
+                // Translate each curve
+                trans.Start("Swap MEP lines");
+                ElementTransformUtils.MoveElement(doc, picked.ElementId, translation);
+                ElementTransformUtils.MoveElement(doc, ids.First(), -translation);
+                trans.Commit();
+                uidoc.Selection.SetElementIds(ids);
+            }
+            return Result.Succeeded;
+        }
+    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class ManageRefPlanes : IExternalCommand
