@@ -98,6 +98,7 @@ namespace PrintRevision
             this.closed = true ;
         }
     }
+    //Select and Print a certain Revision using the current print settings.
     [Transaction(TransactionMode.Manual)]
     public class PrintRevision : IExternalCommand
     {

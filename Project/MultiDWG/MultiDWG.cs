@@ -4329,7 +4329,20 @@ namespace MultiDWG
                                 {
                                     if (connectedConnector.Domain != Domain.DomainUndefined
                                         && StoreExp.IsOpen(connectedConnector, selectedIds))
-                                    { rotationBases.Add(connector); }
+                                    { MechanicalFitting mechfit = familyInstance.MEPModel as MechanicalFitting;
+                                        if (mechfit.PartType == PartType.TapAdjustable || mechfit.PartType == PartType.TapPerpendicular)
+                                        {
+                                            ConnectorSet tapConnectors = connector.AllRefs;
+                                            foreach (Connector tapConnector in tapConnectors)
+                                            {
+                                                if (tapConnector.Domain != Domain.DomainUndefined
+                                                    && StoreExp.IsOpen(tapConnector, selectedIds))
+                                                {
+                                                    rotationBases.Add(tapConnector);
+                                                }
+                                            }
+                                        }
+                                        else { rotationBases.Add(connector); } }
                                 }
                             }
                         }
@@ -4719,6 +4732,7 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    // Create Reference Planes from at the origins of 3 selected items, or Delete Ref.Planes
     public class ManageRefPlanes : IExternalCommand
     {
         UIDocument uidoc = null;

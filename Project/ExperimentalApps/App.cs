@@ -75,20 +75,16 @@ namespace _ExpApps
         {
             UIControlledApplication UiCtrApp = a;
             a.CreateRibbonTab("Exp. Add-Ins");
-            RibbonPanel panel_Export = a.CreateRibbonPanel("Exp. Add-Ins", "Export");
             RibbonPanel panel_ViewSetup = a.CreateRibbonPanel("Exp. Add-Ins", "View Tools");
             RibbonPanel panel_Reelevate = a.CreateRibbonPanel("Exp. Add-Ins", "Re-Elevate");
             RibbonPanel panel_Annot = a.CreateRibbonPanel("Exp. Add-Ins", "Annotation");
             RibbonPanel panel_Modifiers = a.CreateRibbonPanel("Exp. Add-Ins", "Universal Modifiers");
             RibbonPanel panel_Managers = a.CreateRibbonPanel("Exp. Add-Ins", "Managers");
             RibbonPanel panel_Selections = a.CreateRibbonPanel("Exp. Add-Ins", "Selections");
+            RibbonPanel panel_Modeling = a.CreateRibbonPanel("Exp. Add-Ins", "Modeling");
             RibbonPanel panel_Qt = a.CreateRibbonPanel("Exp. Add-Ins", "Quick Tools");
             ComboBoxData CBD_ShiftRange = new ComboBoxData("ShiftRange");
             ComboBoxData CBD_ExpLevel = new ComboBoxData("ExpLevel");
-
-            PushButtonData PBD_printrevision = CreateButton("Print Revision", "DWGExport.dll", "PrintRevision.PrintRevision",
-                IconImageType.Largeimage);
-            PBD_printrevision.ToolTip = "Select and Print a certain Revision using the current print settings.";
 
             //*** SAVE A SET INSTEAD OF PRINT
 
@@ -142,10 +138,6 @@ namespace _ExpApps
                    Environment.NewLine + "*auto OFF after use*"+
                    Environment.NewLine + "'Blue' - Use sampled location for placing tags";
 
-            PushButtonData PBD_managerefs = CreateButton("Mng. Ref.Planes", "MultiDWG.dll", "MultiDWG.ManageRefPlanes",
-                IconImageType.Largeimage);
-            PBD_managerefs.ToolTip = "Create Reference Planes from at the origins of 3 selected items, or Delete Ref.Planes";
-            //*** MOVE TO SECONDARY TOOLS
             PushButtonData PBD_managerevs = CreateButton("Mng. Revisions", "Revision_Editor.dll", "Revision_Editor.Revision_Editor",
                 IconImageType.Largeimage);
             PBD_managerevs.ToolTip = "Manage Revisions";
@@ -168,6 +160,14 @@ namespace _ExpApps
 
             PushButtonData PBD_allonlevel = CreateButton("Level", "MultiDWG.dll", "MultiDWG.SelectAllOnLevel", IconImageType.Noimage);
             PBD_allonlevel.ToolTip = "Return elements on level specified in dropdown list - 'Red'+'A': Override level by name - 'Green': Invert";
+
+            PushButtonData PBD_rotMEP = CreateButton("Rot. MEP", "MultiDWG.dll", "MultiDWG.RotateMEP");
+            PBD_rotMEP.ToolTip = "Rotate selected MEP elements around axis of connection at edge of selection (default 45°)"
+                 + Environment.NewLine + ":RED: inverts direction of Rotate"
+                 + Environment.NewLine + ":1: controls angle of rotation";
+
+            PushButtonData PBD_swapMEP = CreateButton("Swap MEP", "MultiDWG.dll", "MultiDWG.SwapMEP");
+            PBD_rotMEP.ToolTip = "Swap locations of selected MEP element with picked MEP element";
 
             PushButtonData PBD_qv1 = CreateButton("1", "SetViewRange.dll", "QuickViews.QuickView1",
                 IconImageType.Noimage);
@@ -251,7 +251,6 @@ namespace _ExpApps
                 + Environment.NewLine + ":A: - Parameter containing Flow" + Environment.NewLine + ":B: - Parameter for calculated Velocity" 
                 + Environment.NewLine + ":GREEN: - Chose new Size Table" + Environment.NewLine + ":1: - Optional - Max. Velocity"
                 + Environment.NewLine + ":2: - Optional - Min. Velocity";
-            panel_Export.AddItem(PBD_printrevision);
             panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);
             panel_ViewSetup.AddStackedItems(PBD_shifttu, PBD_shifttd);
             panel_ViewSetup.AddStackedItems(PBD_tl, PBD_tpc);
@@ -278,10 +277,10 @@ namespace _ExpApps
             CB_ExpLevel.DropDownOpened += levels_cb_Opened;
             panel_ViewSetup.AddItem(PBD_setupqv);
             panel_Reelevate.AddItem(PBD_rehostelements);
-            panel_Managers.AddItem(PBD_managerefs);
             panel_Managers.AddItem(PBD_managerevs);
             panel_Selections.AddStackedItems(PBD_memadd, PBD_memdel, PBD_memsel);
             panel_Selections.AddStackedItems(PBD_linkedId, PBD_allonlevel, PBD_selanno);
+            panel_Modeling.AddStackedItems(PBD_rotMEP, PBD_swapMEP);
             panel_Annot.AddItem(PBD_mtag);
 
             PulldownButtonData QtData = new PulldownButtonData("Quicktools", "QuickTools");
