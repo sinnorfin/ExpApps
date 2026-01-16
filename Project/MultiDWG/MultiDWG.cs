@@ -4330,7 +4330,7 @@ namespace MultiDWG
                                     if (connectedConnector.Domain != Domain.DomainUndefined
                                         && StoreExp.IsOpen(connectedConnector, selectedIds))
                                     { MechanicalFitting mechfit = familyInstance.MEPModel as MechanicalFitting;
-                                        if (mechfit.PartType == PartType.TapAdjustable || mechfit.PartType == PartType.TapPerpendicular)
+                                        if (mechfit.PartType == PartType.TapAdjustable || mechfit.PartType == PartType.TapPerpendicular || mechfit.PartType == PartType.SpudAdjustable || mechfit.PartType == PartType.SpudPerpendicular)
                                         {
                                             ConnectorSet tapConnectors = connector.AllRefs;
                                             foreach (Connector tapConnector in tapConnectors)

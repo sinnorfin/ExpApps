@@ -51,12 +51,17 @@ namespace RehostElements
             Double targetLevelElev =  0;
             Double ElemLevelElev = 0;
             int FaceHosted = 0;
+            StoreExp.GetMenuValue(uiapp);
             ComboBox selectedlevel = StoreExp.GetComboBox(uiapp.GetRibbonPanels("Exp. Add-Ins"), "View Tools", "ExpLevel");
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Re-Host Elements");
                 targetLevel = StoreExp.GetLevel(doc, selectedlevel.Current.ItemText);
-                if (targetLevel != null)
+                if (StoreExp.GetSwitchStance(uiapp, "Red")) 
+                { targetLevel = StoreExp.GetLevel(doc,StoreExp.Store.menu_A_Box.Value.ToString());
+                    TaskDialog.Show("Warning", "RED override active, Rehosted to level specified in 'A':" + StoreExp.Store.menu_A_Box.Value.ToString());
+                }
+                    if (targetLevel != null)
                 {
                     targetLevelElev = targetLevel.Elevation;
                 }
