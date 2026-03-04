@@ -397,6 +397,8 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             ICollection<ElementId> ids;
+            bool Match = StoreExp.GetSwitchStance(uiapp, "Red");
+            bool Invert = StoreExp.GetSwitchStance(uiapp, "Blue");
             if (uidoc.Selection.GetElementIds().Count == 0)
             {
                 FilteredElementCollector elementsinview = new FilteredElementCollector(doc, doc.ActiveView.Id);
@@ -2072,6 +2074,71 @@ namespace MultiDWG
                         }
                     }
                     catch { }
+                }
+            }
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Select all annotation in view");
+                uidoc.Selection.SetElementIds(newsel);
+                trans.Commit();
+            }
+
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SelectScopebyName : IExternalCommand
+    {
+
+        // TO FIX: Does not select walls
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            StoreExp.GetMenuValue(uiapp);
+            bool Red = StoreExp.GetSwitchStance(uiapp, "Universal Toggle Red OFF");
+            ICollection<ElementId> newsel = new List<ElementId>();
+            string ScopeName = StoreExp.Store.menu_A_Box.Value.ToString();
+            FilteredElementCollector allScopeboxes = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_VolumeOfInterest);
+            if (!Red)
+            {
+                foreach (Element e in allScopeboxes)
+                {
+                    if (e.Name == ScopeName)
+                    {
+                        newsel.Add(e.Id);
+                        break;
+                    }
+                }
+            }
+            else if (Red)
+            {
+                ICollection<ElementId> usedScopes = new List<ElementId>();
+
+                FilteredElementCollector allViews = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Views);
+                foreach (Element view in allViews)
+                {
+                    try
+                    {
+                        if (view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId() != null)
+                        {
+                            ElementId scope = view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).AsElementId();
+                            usedScopes.Add(scope);
+                        }
+                    }
+                    catch { }
+                }
+                foreach (Element e in allScopeboxes)
+                {
+                    if (!usedScopes.Contains(e.Id))
+                    {
+                        newsel.Add(e.Id); 
+                    }
                 }
             }
             using (Transaction trans = new Transaction(doc))
