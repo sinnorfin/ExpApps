@@ -397,21 +397,27 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             ICollection<ElementId> ids;
+            StoreExp.GetMenuValue(uiapp);
+            string value = StoreExp.Store.menu_B_Box.Value.ToString();
             bool Match = StoreExp.GetSwitchStance(uiapp, "Red");
             bool Invert = StoreExp.GetSwitchStance(uiapp, "Blue");
+            string Report_matching = "containing";
+            string Report_invert = "";
+            if (Match) Report_matching = "matching";
+            if (Invert) Report_invert = "not ";
             if (uidoc.Selection.GetElementIds().Count == 0)
             {
                 FilteredElementCollector elementsinview = new FilteredElementCollector(doc, doc.ActiveView.Id);
                 ids = elementsinview.ToElementIds();
             }
             else { ids = uidoc.Selection.GetElementIds(); }
-            StoreExp.GetMenuValue(uiapp);
+            
             using (Transaction trans = new Transaction(doc))
             {
-                trans.Start("Select all Not containing");
+                trans.Start("Select all " + Report_invert + Report_matching);
                 double c = 0;
                 double x = 0;
-                string original;
+                
                 foreach (ElementId eid in ids)
                 {
                     Element elem = doc.GetElement(eid);
@@ -419,21 +425,21 @@ namespace MultiDWG
                     try
                     {
                         para = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
-                        if (para.HasValue)
-                        { original = para.AsString(); }
-                        else original = "?*?*?";
-                        if (!StoreExp.Store.menu_B_Box.Value.ToString().Contains(original))
-                        { c += 1; 
-                        newsel.Add(elem.Id); }
+                        if (!para.HasValue) continue;
+                        string paravalue = para.AsString();
+                        bool add = Match ? value.Equals(paravalue) : value.Contains(paravalue);
+                        if (Invert) add = !add;
+                        if (!add) continue;
+                        c += 1;
+                        newsel.Add(elem.Id);
                     }
-                    catch { x += 1;
-                    }
+                    catch { x += 1;}
                 }
                 trans.Commit();
                 
                 uidoc.Selection.SetElementIds(newsel);
                 string text = "Parameter value of: '" + StoreExp.Store.menu_A_Box.Value.ToString()
-                              + "' not matching: '" + StoreExp.Store.menu_B_Box.Value.ToString()
+                              + " " + Report_invert + Report_matching + StoreExp.Store.menu_B_Box.Value.ToString()
                               + "' in " + c.ToString() + " elements";
                 if (c == 0) { text = "All elements pass"; }
                 if (x > 0) { text += Environment.NewLine + "No such parameter in the following number of elements: " + x.ToString(); }
@@ -2090,8 +2096,6 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class SelectScopebyName : IExternalCommand
     {
-
-        // TO FIX: Does not select walls
         public Result Execute(
            ExternalCommandData commandData,
            ref string message,
@@ -2103,10 +2107,11 @@ namespace MultiDWG
             StoreExp.GetMenuValue(uiapp);
             bool Red = StoreExp.GetSwitchStance(uiapp, "Universal Toggle Red OFF");
             ICollection<ElementId> newsel = new List<ElementId>();
-            string ScopeName = StoreExp.Store.menu_A_Box.Value.ToString();
+            
             FilteredElementCollector allScopeboxes = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_VolumeOfInterest);
             if (!Red)
             {
+                string ScopeName = StoreExp.Store.menu_A_Box.Value.ToString();
                 foreach (Element e in allScopeboxes)
                 {
                     if (e.Name == ScopeName)

@@ -396,3 +396,11 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/Icons
+/Build/AlignToBottom.dll
+/Build/AnnoTools.dll
+/Build/DWGExport.dll
+/Build/ExpApps.dll
+/Build/MultiDWG.dll
+/Build/RehostElements.dll
+/Build/SetViewRange.dll
