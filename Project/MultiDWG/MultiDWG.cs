@@ -396,39 +396,50 @@ namespace MultiDWG
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
-            ICollection<ElementId> ids;
+            ICollection<Element> elementsinview = new List<Element>(); ;
             StoreExp.GetMenuValue(uiapp);
             string value = StoreExp.Store.menu_B_Box.Value.ToString();
-            bool Match = StoreExp.GetSwitchStance(uiapp, "Red");
-            bool Invert = StoreExp.GetSwitchStance(uiapp, "Blue");
-            string Report_matching = "containing";
-            string Report_invert = "";
-            if (Match) Report_matching = "matching";
-            if (Invert) Report_invert = "not ";
-            if (uidoc.Selection.GetElementIds().Count == 0)
+            bool Invert = StoreExp.GetSwitchStance(uiapp, "Red");
+            bool Match = StoreExp.GetSwitchStance(uiapp, "Green");
+            string Report_matching = "containing '";
+            string Report_invert = " ";
+            if (Match) Report_matching = "matching '";
+            if (Invert) Report_invert = " NOT ";
+            ICollection<ElementId> selection = uidoc.Selection.GetElementIds();
+            if (selection.Count == 0)
             {
-                FilteredElementCollector elementsinview = new FilteredElementCollector(doc, doc.ActiveView.Id);
-                ids = elementsinview.ToElementIds();
+                elementsinview =
+                    new FilteredElementCollector(doc, doc.ActiveView.Id)
+                    .WhereElementIsNotElementType()
+                    .WhereElementIsViewIndependent()
+                    .Where(e => e.Category != null && !e.Category.Name.Contains("Center"))
+                    .ToList<Element>() ; 
             }
-            else { ids = uidoc.Selection.GetElementIds(); }
+            else 
+            {
+                foreach (ElementId eid in selection)
+                { elementsinview.Add(doc.GetElement(eid));}
+            }
             
             using (Transaction trans = new Transaction(doc))
             {
                 trans.Start("Select all " + Report_invert + Report_matching);
                 double c = 0;
                 double x = 0;
-                
-                foreach (ElementId eid in ids)
+                foreach (Element elem in elementsinview)
                 {
-                    Element elem = doc.GetElement(eid);
                     Parameter para;
                     try
                     {
                         para = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
-                        if (!para.HasValue) continue;
-                        string paravalue = para.AsString();
-                        bool add = Match ? value.Equals(paravalue) : value.Contains(paravalue);
-                        if (Invert) add = !add;
+                        if (para == null) continue;
+                        string paravalue = "";
+                        if (para.AsString() != null) paravalue = para.AsString();
+                        bool add = Match ? paravalue.Equals(value) : paravalue.Contains(value);
+                        if (Invert) 
+                        {add = !add;}
+                        if (Invert && !Match && paravalue=="")
+                        { add = true; }
                         if (!add) continue;
                         c += 1;
                         newsel.Add(elem.Id);
@@ -438,11 +449,12 @@ namespace MultiDWG
                 trans.Commit();
                 
                 uidoc.Selection.SetElementIds(newsel);
-                string text = "Parameter value of: '" + StoreExp.Store.menu_A_Box.Value.ToString()
-                              + " " + Report_invert + Report_matching + StoreExp.Store.menu_B_Box.Value.ToString()
+                string text = StoreExp.Store.menu_A_Box.Value.ToString()
+                              + Report_invert + Report_matching + StoreExp.Store.menu_B_Box.Value.ToString()
                               + "' in " + c.ToString() + " elements";
-                if (c == 0) { text = "All elements pass"; }
+
                 if (x > 0) { text += Environment.NewLine + "No such parameter in the following number of elements: " + x.ToString(); }
+                if (c == 0) { text += Environment.NewLine + "All elements passed"; }
                 TaskDialog.Show("Result", text);
             }
             return Result.Succeeded;
