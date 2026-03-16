@@ -382,10 +382,12 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class SelectNotMatching : IExternalCommand
+    public class SelectByParameter : IExternalCommand
     {
         //Checks parameter value of 'A' in selection and see if it contains 'B'.
-        //Returns in selection the ones that does not match.
+        //Returns in selection the ones that match.
+        //RED - switch between perfect match and just containment.
+        //GREEN - inverts to find not matching/containing.
 
         public Result Execute(
             ExternalCommandData commandData,
@@ -2326,45 +2328,7 @@ namespace MultiDWG
             return Result.Succeeded;
         }
     }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class ClearOverrides : IExternalCommand
-    {
-        //Clears all overrides in view
-        public Result Execute(
-           ExternalCommandData commandData,
-           ref string message,
-           ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Document doc = uidoc.Document;
-            ICollection<ElementId> newsel = new List<ElementId>();
-            OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
-            if (uidoc.Selection.GetElementIds().Count == 0)
-            {
-                FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
-                ICollection<Element> elems = elementsInView.ToElements();
-                foreach (Element e in elems)
-                {
-                    try
-                    {
-                    newsel.Add(e.Id); 
-                    }
-                    catch { }
-                }
-            }
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Remove overrides in view");
-                foreach (ElementId eid in newsel)
-                { doc.ActiveView.SetElementOverrides(eid, newOverride); }
-                newsel = new List<ElementId>();
-                trans.Commit();
-            }
-            return Result.Succeeded;
-        }
-    }
+    
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class ApplyInsulations : IExternalCommand
@@ -3067,112 +3031,140 @@ namespace MultiDWG
             return null;
         }
     }
+  
+
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class OverrideAllOnLevel : IExternalCommand
+    public class ColorByParameter : IExternalCommand
     {
-        //Overrides graphics of elements grouped by level on active view
-        public Result Execute(
-           ExternalCommandData commandData,
-           ref string message,
-           ElementSet elements)
-        {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Document doc = uidoc.Document;
-            ICollection<ElementId> newsel = new List<ElementId>();
-            StoreExp.GetMenuValue(uiapp);
-            Random rnd = new Random();
-            List<UniqueValue> uniqueValues = new List<UniqueValue>();
-
-            FillPatternElement SolidPattern = null;
-            FilteredElementCollector allpatterns = new FilteredElementCollector(doc).OfClass(typeof(FillPatternElement));
-            FilteredElementCollector alllevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
-            OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
-            foreach (FillPatternElement pattern in allpatterns)
+        public static Result ClearOverrides (
+               ExternalCommandData commandData,
+               ref string message,
+               ElementSet elements)
             {
-                if (pattern.GetFillPattern().IsSolidFill)
-                { SolidPattern = pattern; }
-            }
-            newOverride.SetSurfaceBackgroundPatternId(SolidPattern.Id);
-            newOverride.SetSurfaceForegroundPatternId(SolidPattern.Id);
-            using (Transaction trans = new Transaction(doc))
-            {
-                trans.Start("Override Per level in view");
+            //Clears all overrides in view
+                UIApplication uiapp = commandData.Application;
+                UIDocument uidoc = uiapp.ActiveUIDocument;
+                Document doc = uidoc.Document;
+                ICollection<ElementId> newsel = new List<ElementId>();
+                OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
                 if (uidoc.Selection.GetElementIds().Count == 0)
-            {
-                FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
-
-                ICollection<Element> elems = elementsInView.WhereElementIsNotElementType()
-            .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model
-            && e.Category.Id.IntegerValue != -2008072
-            && e.Category.Name.ToString() != "Duct Systems"
-            && e.Category.Name.ToString() != "Piping Systems"
-            ).ToList<Element>();
-                foreach (Element e in elems)
                 {
-                    try
+                    FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                    ICollection<Element> elems = elementsInView.ToElements();
+                    foreach (Element e in elems)
                     {
-                        string value = "Y";
-                        if (e.LookupParameter("Level") != null) { value = e.LookupParameter("Level").AsValueString(); }
-                        else if (e.LookupParameter("Reference Level") != null) { value = e.LookupParameter("Reference Level").AsValueString(); }
-                        UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
-
-                        if (checkedUV != null)
+                        try
                         {
-                            doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
+                            newsel.Add(e.Id);
                         }
-                        else
+                        catch { }
+                    }
+                }
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Remove overrides in view");
+                    foreach (ElementId eid in newsel)
+                    { doc.ActiveView.SetElementOverrides(eid, newOverride); }
+                    newsel = new List<ElementId>();
+                    trans.Commit();
+                }
+                return Result.Succeeded;
+            }
+        public static Result ColorByLevel(
+               ExternalCommandData commandData,
+               ref string message,
+               ElementSet elements)
+            {
+                //Overrides graphics of elements grouped by level on active view
+                UIApplication uiapp = commandData.Application;
+                UIDocument uidoc = uiapp.ActiveUIDocument;
+                Document doc = uidoc.Document;
+                ICollection<ElementId> newsel = new List<ElementId>();
+                StoreExp.GetMenuValue(uiapp);
+                Random rnd = new Random();
+                List<UniqueValue> uniqueValues = new List<UniqueValue>();
+
+                FillPatternElement SolidPattern = null;
+                FilteredElementCollector allpatterns = new FilteredElementCollector(doc).OfClass(typeof(FillPatternElement));
+                FilteredElementCollector alllevels = new FilteredElementCollector(doc).OfClass(typeof(Level));
+                OverrideGraphicSettings newOverride = new OverrideGraphicSettings();
+                foreach (FillPatternElement pattern in allpatterns)
+                {
+                    if (pattern.GetFillPattern().IsSolidFill)
+                    { SolidPattern = pattern; }
+                }
+                newOverride.SetSurfaceBackgroundPatternId(SolidPattern.Id);
+                newOverride.SetSurfaceForegroundPatternId(SolidPattern.Id);
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Override Per level in view");
+                    if (uidoc.Selection.GetElementIds().Count == 0)
+                    {
+                        FilteredElementCollector elementsInView = new FilteredElementCollector(doc, doc.ActiveView.Id);
+
+                        ICollection<Element> elems = elementsInView.WhereElementIsNotElementType()
+                    .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model
+                    && e.Category.Id.IntegerValue != -2008072
+                    && e.Category.Name.ToString() != "Duct Systems"
+                    && e.Category.Name.ToString() != "Piping Systems"
+                    ).ToList<Element>();
+                        foreach (Element e in elems)
                         {
-                            UniqueValue newUV = new UniqueValue(value,
-                                (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
-                            uniqueValues.Add(newUV);
-                            doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                            try
+                            {
+                                string value = "Y";
+                                if (e.LookupParameter("Level") != null) { value = e.LookupParameter("Level").AsValueString(); }
+                                else if (e.LookupParameter("Reference Level") != null) { value = e.LookupParameter("Reference Level").AsValueString(); }
+                                UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
+
+                                if (checkedUV != null)
+                                {
+                                    doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
+                                }
+                                else
+                                {
+                                    UniqueValue newUV = new UniqueValue(value,
+                                        (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
+                                    uniqueValues.Add(newUV);
+                                    doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                                }
+                            }
+                            catch { }
                         }
                     }
-                    catch { }
-                }
-            }
-            else
-            {
-                foreach (ElementId eid in uidoc.Selection.GetElementIds())
-                {
-                    Element e = doc.GetElement(eid);
-                    try
+                    else
                     {
-                        string value = "Y";
-                        if (e.LookupParameter("Level") != null) { value = e.LookupParameter("Level").AsValueString(); }
-                        else if (e.LookupParameter("Reference Level") != null) { value = e.LookupParameter("Reference Level").AsValueString(); }
-
-                        UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
-
-                        if (checkedUV != null)
+                        foreach (ElementId eid in uidoc.Selection.GetElementIds())
                         {
-                            doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
-                        }
-                        else
-                        {
-                            UniqueValue newUV = new UniqueValue(value,
-                                (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
-                            uniqueValues.Add(newUV);
-                            doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                            Element e = doc.GetElement(eid);
+                            try
+                            {
+                                string value = "Y";
+                                if (e.LookupParameter("Level") != null) { value = e.LookupParameter("Level").AsValueString(); }
+                                else if (e.LookupParameter("Reference Level") != null) { value = e.LookupParameter("Reference Level").AsValueString(); }
+
+                                UniqueValue checkedUV = UniqueValue.CheckUV(uniqueValues, value);
+
+                                if (checkedUV != null)
+                                {
+                                    doc.ActiveView.SetElementOverrides(e.Id, checkedUV.newOverride);
+                                }
+                                else
+                                {
+                                    UniqueValue newUV = new UniqueValue(value,
+                                        (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), (byte)rnd.Next(0, 255), newOverride);
+                                    uniqueValues.Add(newUV);
+                                    doc.ActiveView.SetElementOverrides(e.Id, newUV.newOverride);
+                                }
+                            }
+                            catch { }
                         }
                     }
-                    catch { }
+                    trans.Commit();
                 }
+                return Result.Succeeded;
             }
-            trans.Commit();
-            }
-            
-            return Result.Succeeded;
-        }
-    }
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    public class OverrideAllByParameter : IExternalCommand
-    {
-
-
         //Overrides graphics of elements grouped by parameter on active view
         public Result Execute(
            ExternalCommandData commandData,
@@ -3180,6 +3172,11 @@ namespace MultiDWG
            ElementSet elements)
         {
             UIApplication uiapp = commandData.Application;
+            if (StoreExp.GetSwitchStance(uiapp, "Blue")) 
+            {
+                TaskDialog.Show("Note", ":BLUE: is ON, overrides are Cleaned from active view");
+                return ClearOverrides(commandData, ref message, elements); }
+            if (StoreExp.GetSwitchStance(uiapp, "Green")) { return ColorByLevel(commandData, ref message, elements); }
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
             StoreExp.GetMenuValue(uiapp);

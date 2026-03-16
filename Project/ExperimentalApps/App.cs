@@ -161,6 +161,16 @@ namespace _ExpApps
             PushButtonData PBD_allonlevel = CreateButton("Level", "MultiDWG.dll", "MultiDWG.SelectAllOnLevel", IconImageType.Noimage);
             PBD_allonlevel.ToolTip = "Return elements on level specified in dropdown list - 'Red'+'A': Override level by name - 'Green': Invert";
 
+            PushButtonData PBD_selectbyparameter = CreateButton("Select by parameter", "MultiDWG.dll", "MultiDWG.SelectByParameter");
+            PBD_selectbyparameter.ToolTip = "Returns selection of elements that contains value of :B: in parameter named :A:" 
+                 + Environment.NewLine + ":RED: OFF: Containing - ON: Matching"
+                 + Environment.NewLine + ":GREEN: Inverts to 'NOT' containing/matching";
+
+            PushButtonData PBD_colorby = CreateButton("Color by parameter", "MultiDWG.dll", "MultiDWG.ColorByParameter");
+            PBD_colorby.ToolTip = "Assign Color override by unique parameter values"
+                + Environment.NewLine + ":A: Parameter Name"
+            + Environment.NewLine + ":GREEN: Color by Level"; 
+
             PushButtonData PBD_rotMEP = CreateButton("Rot. MEP", "MultiDWG.dll", "MultiDWG.RotateMEP");
             PBD_rotMEP.ToolTip = "Rotate selected MEP elements around axis of connection at edge of selection (default 45°)"
                  + Environment.NewLine + ":RED: inverts direction of Rotate"
@@ -278,6 +288,7 @@ namespace _ExpApps
             panel_ViewSetup.AddItem(PBD_setupqv);
             panel_Reelevate.AddItem(PBD_rehostelements);
             panel_Managers.AddItem(PBD_managerevs);
+            panel_Selections.AddStackedItems(PBD_selectbyparameter,PBD_colorby);
             panel_Selections.AddStackedItems(PBD_memadd, PBD_memdel, PBD_memsel);
             panel_Selections.AddStackedItems(PBD_linkedId, PBD_allonlevel, PBD_selanno);
             panel_Modeling.AddStackedItems(PBD_rotMEP, PBD_swapMEP);
