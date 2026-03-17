@@ -436,7 +436,7 @@ namespace MultiDWG
                         para = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
                         if (para == null) continue;
                         string paravalue = "";
-                        if (para.AsString() != null) paravalue = para.AsString();
+                        paravalue = para.AsString() != null ? para.AsString() : para.AsValueString(); 
                         bool add = Match ? paravalue.Equals(value) : paravalue.Contains(value);
                         if (Invert) 
                         {add = !add;}
@@ -2048,11 +2048,11 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> newsel = new List<ElementId>();
             StoreExp.GetMenuValue(uiapp);
+            bool selectbyInput = StoreExp.GetSwitchStance(uiapp, "Red");
+            bool invert = StoreExp.GetSwitchStance(uiapp, "Green");
             ComboBox selectedlevel = StoreExp.GetComboBox(uiapp.GetRibbonPanels("Exp. Add-Ins"), "View Tools", "ExpLevel");
             
             string LevelName = StoreExp.GetLevel(doc, selectedlevel.Current.ItemText).Name;
-            //string LevelName = "X";
-            // Type in 'A' to select WITHOUT annotation instead
             if (StoreExp.GetSwitchStance(uiapp,"Red") && StoreExp.Store.menu_A_Box.Value != null)
             {
                 if (StoreExp.Store.menu_A_Box.Value.ToString() != "")
@@ -2069,9 +2069,9 @@ namespace MultiDWG
                         string check = "Y";
                         if (e.LookupParameter("Level") != null) { check = e.LookupParameter("Level").AsValueString(); }
                         else if (e.LookupParameter("Reference Level") != null) { check = e.LookupParameter("Reference Level").AsValueString(); }
-
-                        if (check == LevelName)
-                            newsel.Add(e.Id);
+                        bool result = (check == LevelName);
+                        if (invert) result = !result;
+                        if (result) newsel.Add(e.Id);
                     }
 
                     catch { }

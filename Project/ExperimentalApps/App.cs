@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 
 namespace _ExpApps
 {
@@ -156,7 +157,9 @@ namespace _ExpApps
             PBD_linkedId.ToolTip = "Get ID of element in linked model";
 
             PushButtonData PBD_selanno = CreateButton("Anno", "MultiDWG.dll", "MultiDWG.OnlyAnnotation", IconImageType.Noimage);
-            PBD_selanno.ToolTip = "Return all annotation elements - 'Red' - Return model elements instead";
+            PBD_selanno.ToolTip = "Select Annotation elements"
+            + Environment.NewLine + ":RED: select Model elements"
+            + Environment.NewLine + ":BLUE: with .red. OFF - Selects annotation hosted by the selection";
 
             PushButtonData PBD_allonlevel = CreateButton("Level", "MultiDWG.dll", "MultiDWG.SelectAllOnLevel", IconImageType.Noimage);
             PBD_allonlevel.ToolTip = "Return elements on level specified in dropdown list - 'Red'+'A': Override level by name - 'Green': Invert";
@@ -169,7 +172,8 @@ namespace _ExpApps
             PushButtonData PBD_colorby = CreateButton("Color by parameter", "MultiDWG.dll", "MultiDWG.ColorByParameter");
             PBD_colorby.ToolTip = "Assign Color override by unique parameter values"
                 + Environment.NewLine + ":A: Parameter Name"
-            + Environment.NewLine + ":GREEN: Color by Level"; 
+            + Environment.NewLine + ":GREEN: Color by Level"
+            + Environment.NewLine + ":BLUE: Clear Overrides";
 
             PushButtonData PBD_rotMEP = CreateButton("Rot. MEP", "MultiDWG.dll", "MultiDWG.RotateMEP");
             PBD_rotMEP.ToolTip = "Rotate selected MEP elements around axis of connection at edge of selection (default 45°)"
