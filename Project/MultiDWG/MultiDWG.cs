@@ -386,8 +386,9 @@ namespace MultiDWG
     {
         //Checks parameter value of 'A' in selection and see if it contains 'B'.
         //Returns in selection the ones that match.
-        //RED - switch between perfect match and just containment.
-        //GREEN - inverts to find not matching/containing.
+        //GREEN - switch between perfect match and just containment.
+        //RED - inverts to find not matching/containing.
+        //BLUE - excludes elements with unfilled parameter.
 
         public Result Execute(
             ExternalCommandData commandData,
@@ -403,6 +404,7 @@ namespace MultiDWG
             string value = StoreExp.Store.menu_B_Box.Value.ToString();
             bool Invert = StoreExp.GetSwitchStance(uiapp, "Red");
             bool Match = StoreExp.GetSwitchStance(uiapp, "Green");
+            bool Exclude = StoreExp.GetSwitchStance(uiapp, "Blue");
             string Report_matching = "containing '";
             string Report_invert = " ";
             if (Match) Report_matching = "matching '";
@@ -440,7 +442,7 @@ namespace MultiDWG
                         bool add = Match ? paravalue.Equals(value) : paravalue.Contains(value);
                         if (Invert) 
                         {add = !add;}
-                        if (Invert && !Match && paravalue=="")
+                        if (Invert && Exclude && paravalue=="")
                         { add = true; }
                         if (!add) continue;
                         c += 1;

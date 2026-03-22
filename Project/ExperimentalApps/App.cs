@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
+using System.Xml.Linq;
 
 namespace _ExpApps
 {
@@ -167,7 +168,8 @@ namespace _ExpApps
             PushButtonData PBD_selectbyparameter = CreateButton("Select by parameter", "MultiDWG.dll", "MultiDWG.SelectByParameter");
             PBD_selectbyparameter.ToolTip = "Returns selection of elements that contains value of :B: in parameter named :A:" 
                  + Environment.NewLine + ":RED: OFF: Containing - ON: Matching"
-                 + Environment.NewLine + ":GREEN: Inverts to 'NOT' containing/matching";
+                 + Environment.NewLine + ":GREEN: Inverts to 'NOT' containing/matching"
+                 + Environment.NewLine + ":BLUE: excludes elements with unfilled parameter.";
 
             PushButtonData PBD_colorby = CreateButton("Color by parameter", "MultiDWG.dll", "MultiDWG.ColorByParameter");
             PBD_colorby.ToolTip = "Assign Color override by unique parameter values"
@@ -175,13 +177,17 @@ namespace _ExpApps
             + Environment.NewLine + ":GREEN: Color by Level"
             + Environment.NewLine + ":BLUE: Clear Overrides";
 
+            PushButtonData PBD_expandsel = CreateButton("Expand selection", "MultiDWG.dll", "MultiDWG.ExpandSelection");
+            PBD_expandsel.ToolTip = "Expands selection to connected elements. Expansion happens on all connected connectors."
+            + Environment.NewLine + ":RED: Deselect outermost elements of selection clusters.";
+
             PushButtonData PBD_rotMEP = CreateButton("Rot. MEP", "MultiDWG.dll", "MultiDWG.RotateMEP");
             PBD_rotMEP.ToolTip = "Rotate selected MEP elements around axis of connection at edge of selection (default 45°)"
                  + Environment.NewLine + ":RED: inverts direction of Rotate"
                  + Environment.NewLine + ":1: controls angle of rotation";
 
             PushButtonData PBD_swapMEP = CreateButton("Swap MEP", "MultiDWG.dll", "MultiDWG.SwapMEP");
-            PBD_rotMEP.ToolTip = "Swap locations of selected MEP element with picked MEP element";
+            PBD_swapMEP.ToolTip = "Swap locations of selected MEP element with picked MEP element";
 
             PushButtonData PBD_qv1 = CreateButton("1", "SetViewRange.dll", "QuickViews.QuickView1",
                 IconImageType.Noimage);
@@ -292,7 +298,7 @@ namespace _ExpApps
             panel_ViewSetup.AddItem(PBD_setupqv);
             panel_Reelevate.AddItem(PBD_rehostelements);
             panel_Managers.AddItem(PBD_managerevs);
-            panel_Selections.AddStackedItems(PBD_selectbyparameter,PBD_colorby);
+            panel_Selections.AddStackedItems(PBD_selectbyparameter,PBD_colorby,PBD_expandsel);
             panel_Selections.AddStackedItems(PBD_memadd, PBD_memdel, PBD_memsel);
             panel_Selections.AddStackedItems(PBD_linkedId, PBD_allonlevel, PBD_selanno);
             panel_Modeling.AddStackedItems(PBD_rotMEP, PBD_swapMEP);
