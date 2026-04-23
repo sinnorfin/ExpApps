@@ -237,7 +237,9 @@ namespace _ExpApps
    IconImageType.Noimage);
             PushButtonData qt14 = CreateButton("Calculate BK Velocity", "MultiDWG.dll", "MultiDWG.BkVelocity",
    IconImageType.Noimage);
-            
+            PushButtonData qt15 = CreateButton("Surface Area for Duct fittings", "MultiDWG.dll", "MultiDWG.DuctSurfaceArea",
+              IconImageType.Noimage);
+
             qt1.ToolTip = "Filters Vertical elements from selection" + Environment.NewLine + ":1: controls vertical sensitivity";
             qt2.ToolTip = "Filter the selected tags that are hosted by Round duct" + Environment.NewLine + "'Red' - hosted by Rectangular";
             // ALIGN ALL ON VIEW** qt3.ToolTip = "Merges selected tags with same content." + Environment.NewLine + ":A: and :B: controls sensitivity";
@@ -271,6 +273,8 @@ namespace _ExpApps
                 + Environment.NewLine + ":A: - Parameter containing Flow" + Environment.NewLine + ":B: - Parameter for calculated Velocity" 
                 + Environment.NewLine + ":GREEN: - Chose new Size Table" + Environment.NewLine + ":1: - Optional - Max. Velocity"
                 + Environment.NewLine + ":2: - Optional - Min. Velocity";
+            qt15.ToolTip = "Calculate Surface area of selected Duct fittings"
+                + Environment.NewLine + ":A: - Parameter to store Area" + Environment.NewLine + "should be of type 'Area' ";
             panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);
             panel_ViewSetup.AddStackedItems(PBD_shifttu, PBD_shifttd);
             panel_ViewSetup.AddStackedItems(PBD_tl, PBD_tpc);
@@ -322,6 +326,7 @@ namespace _ExpApps
             QtButtonGroup.AddPushButton(qt2);
             QtButtonGroup.AddPushButton(qt3);
             QtButtonGroup.AddPushButton(qt4);
+            QtButtonGroup.AddPushButton(qt15);
             QtButtonGroup.AddPushButton(qt5);
             QtButtonGroup.AddPushButton(qt6);
             QtButtonGroup.AddPushButton(qt7);

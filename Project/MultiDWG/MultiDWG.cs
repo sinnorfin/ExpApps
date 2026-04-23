@@ -36,10 +36,8 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using System.Windows.Controls;
-using System.Windows.Forms;
+using static StoreExp;
 using Application = Autodesk.Revit.ApplicationServices.Application;
 using ComboBox = Autodesk.Revit.UI.ComboBox;
 using Grid = Autodesk.Revit.DB.Grid;
@@ -126,6 +124,10 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             Options geOpt = new Options();
+            StoreExp.GetMenuValue(uiapp);
+            string valueasstring = StoreExp.Store.menu_A_Box.Value as string;
+            string parametername = string.IsNullOrWhiteSpace(valueasstring) ? 
+                "BMC_Surface Area" : StoreExp.Store.menu_A_Box.Value.ToString();
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Calculate Duct Surface Area");
@@ -170,19 +172,26 @@ namespace MultiDWG
                         }
                     }
                     double total = surfaceAreas - connectorAreas * parts;
-                    elem.LookupParameter("Duct Surface Area").Set(total);
+                    Parameter param_Surfacearea = elem.LookupParameter(parametername);
+                    if (param_Surfacearea == null)
+                    {
+                        TaskDialog.Show("Error","Parameter by name of " + parametername + " not found"
+                        + Environment.NewLine + " Add parameter to project or set different one in :A: ");
+                        return Result.Failed;
+                    }
+                    param_Surfacearea.Set(total);
                     // CHECK NUMBER OF PARTS
                     //if (Store.menu_A_Box.Value.ToString() != "") { TaskDialog.Show("Report", "Parts counted: " + parts); }
                     // TO ONLY INCLUDE CONNECTOR SIZE ON ENDCAPS
-                    if (ConnectorCount == 1) { elem.LookupParameter("Duct Surface Area").Set(connectorAreas); }
+                    if (ConnectorCount == 1) { param_Surfacearea.Set(connectorAreas); }
                     // TO USE BUILT-IN AREA FOR ROUND REDUCERS
                     //if value is null, .tostring fails - to solve
                     if (parts == 5 ) 
                         //|| Store.menu_B_Box.Value.ToString() != "")
                     {
                         FamilySymbol famsim = doc.GetElement(elem.GetTypeId()) as FamilySymbol;
-                        try { elem.LookupParameter("Duct Surface Area").Set(famsim.LookupParameter("Duct Area").AsDouble()); }
-                        catch { elem.LookupParameter("Duct Surface Area").Set(elem.LookupParameter("Duct Area").AsDouble()); }
+                        try { param_Surfacearea.Set(famsim.LookupParameter("Duct Area").AsDouble()); }
+                        catch { param_Surfacearea.Set(elem.LookupParameter("Duct Area").AsDouble()); }
                     }
                 }
                 tx.Commit();
