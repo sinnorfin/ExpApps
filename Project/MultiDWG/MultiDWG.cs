@@ -4142,68 +4142,56 @@ namespace MultiDWG
             {
                 if (family.IsUserCreated && family.IsEditable)
                 {
-                    
-                        Document famdoc = doc.EditFamily(family);
-                        using (Transaction famtrans = new Transaction(famdoc))
-                        {
-                            
-                            List<ElementId> unusedAssetIds = new List<ElementId>();
-                            // Retrieve unused assets using reflection
-                            famtrans.Start("Purge Family");
-                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedMaterials"), "Material", unusedAssetIds);
-                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedAppearances"), "Appearance", unusedAssetIds);
-                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedStructures"), "Structure", unusedAssetIds);
-                            AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedThermals"), "Thermal", unusedAssetIds);
+                    Document famdoc = doc.EditFamily(family);
+                    using (Transaction famtrans = new Transaction(famdoc))
+                    {  
+                    List<ElementId> unusedAssetIds = new List<ElementId>();
+                    // Retrieve unused assets using reflection
+                    famtrans.Start("Purge Family");
+                    AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedMaterials"), "Material", unusedAssetIds);
+                    AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedAppearances"), "Appearance", unusedAssetIds);
+                    AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedStructures"), "Structure", unusedAssetIds);
+                    AddUnusedAssets(famdoc, GetUnusedAssets(famdoc, "GetUnusedThermals"), "Thermal", unusedAssetIds);
+                    // Collect all FamilyInstances in the family document (famdoc)
+                    var allInstances = new FilteredElementCollector(famdoc)
+                        .OfClass(typeof(FamilyInstance))
+                        .WhereElementIsNotElementType()
+                        .ToElements();
 
-                        // Collect all FamilyInstances in the family document (famdoc)
-                        var allInstances = new FilteredElementCollector(famdoc)
-                            .OfClass(typeof(FamilyInstance))
-                            .WhereElementIsNotElementType()
-                            .ToElements();
-
-                        // Build a hash set of family IDs that are used
-                        HashSet<ElementId> usedFamilyIds = new HashSet<ElementId>();
-                        foreach (FamilyInstance fi in allInstances)
+                    // Build a hash set of family IDs that are used
+                    HashSet<ElementId> usedFamilyIds = new HashSet<ElementId>();
+                    foreach (FamilyInstance fi in allInstances)
+                    {
+                        if (fi.Symbol?.Family != null)
                         {
-                            if (fi.Symbol?.Family != null)
-                            {
-                                usedFamilyIds.Add(fi.Symbol.Family.Id);
-                            }
+                            usedFamilyIds.Add(fi.Symbol.Family.Id);
                         }
-
-                        // Collect all loaded families (nested families)
-                        FilteredElementCollector familyCollector = new FilteredElementCollector(famdoc)
-                            .OfClass(typeof(Family));
-
-                        HashSet<ElementId> unusedFamilyIds = new HashSet<ElementId>();
-
-                        foreach (Family fam in familyCollector)
-                        {
-
-                            if (!usedFamilyIds.Contains(fam.Id) && fam.IsEditable && fam.StructuralSectionShape== Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionShape.Invalid)
-                            {
-                                unusedFamilyIds.Add(fam.Id);
-                            }
-                        }
-
-                        // Delete unused nested families
-                        if (unusedFamilyIds.Count > 0)
-                        {
-                            foreach(ElementId eid in unusedFamilyIds)
-                            { try { famdoc.Delete(eid); }
-                                catch { }
-                            }
-                            
-                        }
-                    
-                                famtrans.Commit();
-                                famdoc.LoadFamily(doc, new DefaultFamilyLoadOptions());
-                            }
-                            
-                        
                     }
+                    // Collect all loaded families (nested families)
+                    FilteredElementCollector familyCollector = new FilteredElementCollector(famdoc)
+                        .OfClass(typeof(Family));
+                    HashSet<ElementId> unusedFamilyIds = new HashSet<ElementId>();
 
-                
+                    foreach (Family fam in familyCollector)
+                    {
+
+                        if (!usedFamilyIds.Contains(fam.Id) && fam.IsEditable && fam.StructuralSectionShape== Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionShape.Invalid)
+                        {
+                            unusedFamilyIds.Add(fam.Id);
+                        }
+                    }
+                    // Delete unused nested families
+                    if (unusedFamilyIds.Count > 0)
+                    {
+                        foreach(ElementId eid in unusedFamilyIds)
+                        { try { famdoc.Delete(eid); }
+                            catch { }
+                        }
+                    }
+                    famtrans.Commit();
+                    famdoc.LoadFamily(doc, new DefaultFamilyLoadOptions());
+                    }
+                }        
             }  
             return Result.Succeeded;
         }
@@ -4302,23 +4290,22 @@ namespace MultiDWG
                         // select connected at each open end of the MEP element
                         foreach (Connector connector in mepCurve.ConnectorManager.Connectors)
                         {
-                            if (connector.IsConnected)
+                            if (!connector.IsConnected) continue;
+                            ConnectorSet connectedConnectors = connector.AllRefs;
+                            foreach (Connector connectedConnector in connectedConnectors)
                             {
-                                ConnectorSet connectedConnectors = connector.AllRefs;
-                                foreach (Connector connectedConnector in connectedConnectors)
+                                if (!Red && connectedConnector.Domain != Domain.DomainUndefined && 
+                                    StoreExp.IsOpen(connectedConnector, selectedIds))
                                 {
-                                    if (!Red && connectedConnector.Domain != Domain.DomainUndefined && 
-                                        StoreExp.IsOpen(connectedConnector, selectedIds))
-                                    {
-                                        addedIds.Add(connectedConnector.Owner.Id);
-                                    }
-                                    else if (connectedConnector.Domain != Domain.DomainUndefined &&
-                                        StoreExp.IsOpen(connectedConnector, selectedIds))
-                                    {
-                                        addedIds.Add(connector.Owner.Id);  
-                                    }
+                                    addedIds.Add(connectedConnector.Owner.Id);
+                                }
+                                else if (connectedConnector.Domain != Domain.DomainUndefined &&
+                                    StoreExp.IsOpen(connectedConnector, selectedIds))
+                                {
+                                    addedIds.Add(connector.Owner.Id);  
                                 }
                             }
+                            
                         }
                     }
                     else if (element is FamilyInstance familyInstance)
@@ -4328,18 +4315,16 @@ namespace MultiDWG
                         {
                             foreach (Connector connector in familyInstance.MEPModel.ConnectorManager.Connectors)
                             {
-                                if (connector.IsConnected)
+                                if (!connector.IsConnected) continue;
+                                ConnectorSet connectedConnectors = connector.AllRefs;
+                                foreach (Connector connectedConnector in connectedConnectors)
                                 {
-                                    ConnectorSet connectedConnectors = connector.AllRefs;
-                                    foreach (Connector connectedConnector in connectedConnectors)
-                                    {
-                                        if (!Red && connectedConnector.Domain != Domain.DomainUndefined &&
-                                            StoreExp.IsOpen(connectedConnector, selectedIds))
-                                        { addedIds.Add(connectedConnector.Owner.Id);}
-                                        else if (connectedConnector.Domain != Domain.DomainUndefined &&
-                                            StoreExp.IsOpen(connectedConnector, selectedIds))
-                                        { addedIds.Add(connector.Owner.Id); }
-                                    }
+                                    if (!Red && connectedConnector.Domain != Domain.DomainUndefined &&
+                                        StoreExp.IsOpen(connectedConnector, selectedIds))
+                                    { addedIds.Add(connectedConnector.Owner.Id);}
+                                    else if (connectedConnector.Domain != Domain.DomainUndefined &&
+                                        StoreExp.IsOpen(connectedConnector, selectedIds))
+                                    { addedIds.Add(connector.Owner.Id); }
                                 }
                             }
                         }
@@ -4356,7 +4341,7 @@ namespace MultiDWG
                     ICollection<ElementId> newsel = selectedIds.Concat(addedIds).ToList();
                     uidoc.Selection.SetElementIds(newsel);
                 }
-                    trans.Commit();
+                trans.Commit();
             }
             return Result.Succeeded;
         }
@@ -4392,16 +4377,14 @@ namespace MultiDWG
                     { connectorsifsingle = mepCurve.ConnectorManager.Connectors.Size; }
                     foreach (Connector connector in mepCurve.ConnectorManager.Connectors)
                     {
-                        if (connector.IsConnected)
+                        if (!connector.IsConnected) continue;
+                        ConnectorSet connectedConnectors = connector.AllRefs;
+                        foreach (Connector connectedConnector in connectedConnectors)
                         {
-                            ConnectorSet connectedConnectors = connector.AllRefs;
-                            foreach (Connector connectedConnector in connectedConnectors)
+                            if (connectedConnector.Domain != Domain.DomainUndefined
+                                && StoreExp.IsOpen(connectedConnector, selectedIds))
                             {
-                                if (connectedConnector.Domain != Domain.DomainUndefined
-                                    && StoreExp.IsOpen(connectedConnector, selectedIds))
-                                {
-                                   rotationBases.Add(connectedConnector);
-                                }
+                                rotationBases.Add(connectedConnector);
                             }
                         }
                     }
@@ -4414,28 +4397,27 @@ namespace MultiDWG
                         { connectorsifsingle = familyInstance.MEPModel.ConnectorManager.Connectors.Size; }
                         foreach (Connector connector in familyInstance.MEPModel.ConnectorManager.Connectors)
                         {
-                            if (connector.IsConnected)
+                            if (!connector.IsConnected) continue;
+                            ConnectorSet connectedConnectors = connector.AllRefs;
+                            foreach (Connector connectedConnector in connectedConnectors)
                             {
-                                ConnectorSet connectedConnectors = connector.AllRefs;
-                                foreach (Connector connectedConnector in connectedConnectors)
-                                {
-                                    if (connectedConnector.Domain != Domain.DomainUndefined
-                                        && StoreExp.IsOpen(connectedConnector, selectedIds))
-                                    { MechanicalFitting mechfit = familyInstance.MEPModel as MechanicalFitting;
-                                        if (mechfit.PartType == PartType.TapAdjustable || mechfit.PartType == PartType.TapPerpendicular || mechfit.PartType == PartType.SpudAdjustable || mechfit.PartType == PartType.SpudPerpendicular)
+                            if (!(connectedConnector.Domain != Domain.DomainUndefined
+                                && StoreExp.IsOpen(connectedConnector, selectedIds))) continue;
+                                 
+                                if (familyInstance.MEPModel is MechanicalFitting)
+                                { MechanicalFitting mechfit = familyInstance.MEPModel as MechanicalFitting;
+                                if (mechfit.PartType == PartType.TapAdjustable || mechfit.PartType == PartType.TapPerpendicular || mechfit.PartType == PartType.SpudAdjustable || mechfit.PartType == PartType.SpudPerpendicular)
+                                    {
+                                        ConnectorSet tapConnectors = connector.AllRefs;
+                                        foreach (Connector tapConnector in tapConnectors)
                                         {
-                                            ConnectorSet tapConnectors = connector.AllRefs;
-                                            foreach (Connector tapConnector in tapConnectors)
-                                            {
-                                                if (tapConnector.Domain != Domain.DomainUndefined
-                                                    && StoreExp.IsOpen(tapConnector, selectedIds))
-                                                {
-                                                    rotationBases.Add(tapConnector);
-                                                }
-                                            }
+                                            if (!(tapConnector.Domain != Domain.DomainUndefined
+                                                && StoreExp.IsOpen(tapConnector, selectedIds))) continue; 
+                                            rotationBases.Add(tapConnector);
                                         }
-                                        else { rotationBases.Add(connector); } }
+                                    }
                                 }
+                                else { rotationBases.Add(connector); } 
                             }
                         }
                     }
@@ -4455,14 +4437,17 @@ namespace MultiDWG
                         TaskDialog.Show("Failed",fail);
                         return Result.Cancelled;
                     }
-                    if (selectedIds.Count == 1 && rotationBases.Count() >= connectorsifsingle && rotationBases.Select(x => x.Angle).Distinct().Count() > 1)
-                    { 
-                        TaskDialog.Show("Failed", fail);
+                    if (connectorsifsingle > 2)
+                    {
+                        TaskDialog.Show("More than two rotation bases", fail);
                         return Result.Cancelled;
                     }
-
                     pickedConnector = rotationBases.OrderBy(x => x.Id).FirstOrDefault();
-                    
+                    if (pickedConnector == null)
+                    {
+                        TaskDialog.Show("No available rotation base", fail);
+                        return Result.Cancelled;
+                    }
                     XYZ origin = pickedConnector.Origin;
                     Transform transform = pickedConnector.CoordinateSystem;
                     XYZ direction = transform.BasisZ; // The axis of the connector

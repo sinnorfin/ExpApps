@@ -123,7 +123,9 @@ namespace _ExpApps
             { versioned = "Exp_apps_R17"; }
             PushButtonData PBD_rehostelements = CreateButton("RehostElements", versioned + ".dll", versioned + ".RehostElements",
                 IconImageType.Largeimage);
-            PBD_tpc.ToolTip = "Sets the Reference Level of selected elements to the active Plan View's Associated Level";
+            PBD_tpc.ToolTip = "Sets the Reference Level of selected elements to the selected level in the dropdown menu" 
+                + Environment.NewLine + "or if not selected, the active Plan View's Associated Level"
+                + Environment.NewLine + "or if :RED: is ON - the level specified in :A:";
 
             PushButtonData PBD_setupqv = CreateButton("Options", "SetViewRange.dll", "QuickViews.QuickViews",
                 IconImageType.Noimage);
@@ -287,7 +289,7 @@ namespace _ExpApps
             {
                 CB_Distances.AddItem(new ComboBoxMemberData( i.ToString(), "Select Distance"));
             }
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 120; i++)
             {
                 CB_ExpLevel.AddItem(new ComboBoxMemberData("Level_" + i, "Select Level"));
             }
