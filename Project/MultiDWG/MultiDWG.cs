@@ -4457,7 +4457,7 @@ namespace MultiDWG
                 double length = 10.0;
                 XYZ endPoint = origin + (direction * length);
                 Line axis = Line.CreateBound(origin, endPoint);
-                double angle = 45;
+                double angle = 90;
                 double inputangle = 0;
                 if (StoreExp.Store.menu_1_Box.Value != null) double.TryParse(StoreExp.Store.menu_1_Box.Value.ToString(), out inputangle);
                 if (inputangle != 0) angle = inputangle;
