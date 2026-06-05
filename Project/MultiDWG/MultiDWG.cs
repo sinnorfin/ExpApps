@@ -3391,6 +3391,35 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
+    public class SelectSystems : IExternalCommand
+    {
+        //Selects the systems of selected elements
+        public Result Execute(
+           ExternalCommandData commandData,
+           ref string message,
+           ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            List<MEPSystem> systems = new List<MEPSystem>();
+            MEPSystem nextSystem;
+           
+            while ((nextSystem = ApplyInsulations.GetNextSystem(ids, doc)) != null)
+            {
+                systems.Add(nextSystem);
+                ids = ApplyInsulations.RemoveElementsfromList(nextSystem, ids, doc);
+            }
+            ICollection<ElementId> newsel = new List<ElementId>();
+            foreach (MEPSystem mepsys in systems)
+            { newsel.Add(mepsys.Id); }
+            uidoc.Selection.SetElementIds(newsel);
+            return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
     public class CopyAnnotation : IExternalCommand
     {
         //Returns elements that are referred to a link/import
@@ -4394,6 +4423,8 @@ namespace MultiDWG
                         if (elemcounter == 1) connectorsifsingle = familyInstance.MEPModel.ConnectorManager.Connectors.Size;
                         foreach (Connector connector in familyInstance.MEPModel.ConnectorManager.Connectors)
                         {
+                            if (elemcounter == 1)
+                                {rotationBases.Add(connector); continue;}
                             if (!connector.IsConnected) continue;
                             ConnectorSet connectedConnectors = connector.AllRefs;
                             foreach (Connector connectedConnector in connectedConnectors)
