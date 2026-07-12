@@ -433,6 +433,129 @@ namespace AnnoTools
             return Result.Succeeded;
         }
     }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ShaftTags : IExternalCommand
+    {
+        public Element GetTaggedLocalElements(IndependentTag tag)
+        { return tag.GetTaggedLocalElements().First(); }
+
+        public Result Execute(
+               ExternalCommandData commandData,
+               ref string message,
+               ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            double vr_margin;
+            UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "1 cm", out vr_margin);
+            ICollection<ElementId> newSel = new List<ElementId>();
+            View activeview = doc.ActiveView;
+            ViewPlan actviewplan = activeview as ViewPlan;
+            double baseelev = activeview.GenLevel.Elevation;
+            PlanViewRange viewrange = actviewplan.GetViewRange();
+            double BottomRange = baseelev + viewrange.GetOffset(PlanViewPlane.ViewDepthPlane)-vr_margin;
+            double TopRange = baseelev + viewrange.GetOffset(PlanViewPlane.TopClipPlane)+vr_margin;
+            var categories = new List<ElementFilter>
+             {
+                    new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory),
+                    new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves),
+                    new ElementCategoryFilter(BuiltInCategory.OST_PipeCurves),
+                    new ElementCategoryFilter(BuiltInCategory.OST_DuctTerminal)
+             };
+            Dictionary<string, bool> flowdowndict = new Dictionary<string, bool>
+            {
+                { "Ev.",false },
+                { "Ecs.",false},
+                { "Recs.",true},
+                { "R.Ch.",true},
+                { "R.Ch. (37°)",true},
+                { "D.Ch.",false},
+                { "D.Ch. (40°)",false},
+                { "Eu.",true},
+                { "Plv.",true},
+                { "E",false},
+                { "P",true},
+                { "PAF",true},
+                { "Rejet",false}
+             };
+            IList<Element> elementsinview = new FilteredElementCollector(doc, activeview.Id)
+                .WhereElementIsNotElementType()
+                .WherePasses(
+                    new LogicalOrFilter(categories)
+                )
+                .ToElements();
+
+            using (Transaction tx = new Transaction(doc))
+            {
+                tx.Start("Create Shaft Tags");
+                foreach (Element elem in elementsinview)
+                {
+                    Reference tagref = new Reference(elem);
+                    IndependentTag tag = null;
+                    bool top = false;
+                    bool bottom = false;
+                    if (elem.Location is LocationCurve)
+                    {
+                        bool isDuct = elem.Category.BuiltInCategory == BuiltInCategory.OST_DuctCurves;
+                        LocationCurve refline = elem.Location as LocationCurve;
+                        XYZ start = refline.Curve.GetEndPoint(0);
+                        XYZ end = refline.Curve.GetEndPoint(1);
+                        ElementId famsymtag = null;
+                        double lower = start.Z <= end.Z ? start.Z : end.Z;
+                        double upper = start.Z > end.Z ? start.Z : end.Z;
+                        
+                        bool flowdown = flowdowndict[elem.get_Parameter(BuiltInParameter.RBS_DUCT_PIPE_SYSTEM_ABBREVIATION_PARAM).AsString()];
+                        if (!(lower > BottomRange)) bottom = true;
+                        if (!(upper < TopRange)) top = true;
+                        if (!top && !bottom) continue;
+                        if (top && bottom)
+                        {
+                            famsymtag = flowdown ?
+                            new ElementId(6174063) : new ElementId(6174065);
+                            if (isDuct) famsymtag = flowdown ?
+                            new ElementId(6174444) : new ElementId(6174442);
+                        }
+                        else if (top)
+                        {
+                            famsymtag = flowdown ?
+                                new ElementId(6174067) : new ElementId(6174069);
+                            if (isDuct) famsymtag = flowdown ?
+                            new ElementId(6174440) : new ElementId(6174438);
+                        }
+                        else if (bottom)
+                        {
+                            famsymtag = flowdown ?
+                                new ElementId(6174059) : new ElementId(6174061);
+                            if (isDuct) famsymtag = flowdown ?
+                            new ElementId(6174448) : new ElementId(6174446);
+                        }
+                        try
+                        {
+                            tag = IndependentTag.Create(doc, famsymtag, doc.ActiveView.Id, tagref, false,
+                                            TagOrientation.Horizontal,
+                                            refline.Curve.Evaluate(0.5, true));
+                        }
+                        catch { TaskDialog.Show("error", elem.Id.ToString()); }
+                    }
+                    else if (elem.Location is LocationPoint)
+                    {
+                        LocationPoint refpoint = elem.Location as LocationPoint;
+                        tag = IndependentTag.Create(doc, doc.ActiveView.Id, tagref, false,
+                            TagMode.TM_ADDBY_CATEGORY, TagOrientation.Horizontal,
+                            refpoint.Point);
+                    }
+                    try
+                    { newSel.Add(tag.Id); }
+                    catch { TaskDialog.Show("Error", "Not applicable to selection"); }
+                }
+                uidoc.Selection.SetElementIds(newSel);
+                tx.Commit();
+            }
+            return Result.Succeeded;
+        }
+    }
 
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
