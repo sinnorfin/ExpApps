@@ -460,7 +460,7 @@ namespace AnnoTools
             if (activeview.GenLevel.Id != viewrange.GetLevelId(PlanViewPlane.TopClipPlane))
             { 
                 Level toplevel = doc.GetElement(viewrange.GetLevelId(PlanViewPlane.TopClipPlane)) as Level;
-                TopRange = baseelev + toplevel.Elevation + viewrange.GetOffset(PlanViewPlane.TopClipPlane) + vr_margin;
+                TopRange = toplevel.Elevation + viewrange.GetOffset(PlanViewPlane.TopClipPlane) + vr_margin;
             }
             var categories = new List<ElementFilter>
              {
