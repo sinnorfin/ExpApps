@@ -457,6 +457,11 @@ namespace AnnoTools
             PlanViewRange viewrange = actviewplan.GetViewRange();
             double BottomRange = baseelev + viewrange.GetOffset(PlanViewPlane.ViewDepthPlane)-vr_margin;
             double TopRange = baseelev + viewrange.GetOffset(PlanViewPlane.TopClipPlane)+vr_margin;
+            if (activeview.GenLevel.Id != viewrange.GetLevelId(PlanViewPlane.TopClipPlane))
+            { 
+                Level toplevel = doc.GetElement(viewrange.GetLevelId(PlanViewPlane.TopClipPlane)) as Level;
+                TopRange = baseelev + toplevel.Elevation + viewrange.GetOffset(PlanViewPlane.TopClipPlane) + vr_margin;
+            }
             var categories = new List<ElementFilter>
              {
                     new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory),
