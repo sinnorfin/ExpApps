@@ -33,6 +33,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 using System.Reflection;
+using Autodesk.Revit.DB.Mechanical;
+using System.Diagnostics;
 
 
 namespace AnnoTools
@@ -161,20 +163,17 @@ namespace AnnoTools
                 {
                     Element closestElem = hosts.OrderBy(p => p.Item2.DistanceTo(tag.TagHeadPosition)).First().Item1;
                     Reference newref = new Reference(closestElem);
-                    IndependentTag newtag = IndependentTag.Create(doc,tag.GetTypeId(), doc.ActiveView.Id, newref, false,
-                                TagOrientation.Horizontal,
-                                tag.TagHeadPosition);
+                    IndependentTag newtag = IndependentTag.Create(doc,tag.GetTypeId(), doc.ActiveView.Id, 
+                        newref, false, TagOrientation.Horizontal,tag.TagHeadPosition);
                     doc.Delete(tag.Id);
                     newsel.Add(newtag.Id);
                 }
                 trans.Commit();
-
             }
             uidoc.Selection.SetElementIds(newsel);
             return Result.Succeeded;
         }
     }
-
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class CheckTag : IExternalCommand
@@ -437,9 +436,58 @@ namespace AnnoTools
     [Regeneration(RegenerationOption.Manual)]
     public class ShaftTags : IExternalCommand
     {
-        public Element GetTaggedLocalElements(IndependentTag tag)
-        { return tag.GetTaggedLocalElements().First(); }
+        private bool SameXY(XYZ a, XYZ b, double tolerance)
+        {
+            double dx = a.X - b.X;
+            double dy = a.Y - b.Y;
 
+            return Math.Sqrt(dx * dx + dy * dy) <= tolerance;
+        }
+        public void MergeTags(Document doc, IEnumerable<IndependentTag> toadjustEnum, double dist_margin, Dictionary<ElementId, ElementId> ContinousTags)
+        {
+            ICollection<IndependentTag> toadjust = toadjustEnum.ToList<IndependentTag>();
+            var processed = new HashSet<ElementId>();
+            var delete = new HashSet<ElementId>();
+            foreach (IndependentTag tag in toadjust)
+            {
+                Element taggedElement = doc.GetElement(tag.GetTaggedLocalElementIds().First());
+                XYZ elementPosition = ((LocationCurve)taggedElement.Location).Curve.Evaluate(0.5,true);
+                // Find all tags within the tolerance
+                var group = toadjust
+                    .Where(x => !processed.Contains(x.Id))
+                    .Where(x => x.TagText == tag.TagText)
+                      .Where(x =>
+                      {       Element e = doc.GetElement(
+                              x.GetTaggedLocalElementIds().First() );
+                          XYZ p = ((LocationCurve)e.Location).Curve.Evaluate(0.5, true);
+                          return p != null && SameXY(p, elementPosition, dist_margin);
+                      })
+                    .ToList();
+                if (group.Count < 2)
+                    continue;
+                // Keep the first one
+                IndependentTag keep = group.First();
+                // Change its type if needed
+                if (ContinousTags.TryGetValue(keep.GetTypeId(), out ElementId newTypeId))
+                {
+                    keep.ChangeTypeId(newTypeId);
+                }
+                // Store other for deletion
+                foreach (var process in group)
+                {
+                    processed.Add(process.Id);
+                }
+                foreach (var duplicate in group.Skip(1))
+                {
+                    delete.Add(duplicate.Id);
+                }
+            }
+            foreach (ElementId eid in delete)
+            {
+                doc.Delete(eid);
+            }
+            return;
+        }
         public Result Execute(
                ExternalCommandData commandData,
                ref string message,
@@ -448,9 +496,114 @@ namespace AnnoTools
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
-            double vr_margin;
+
+            double vr_margin; double dist_margin;
             UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "1 cm", out vr_margin);
+            UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "1 cm", out dist_margin);
+            ElementId TB_D = new ElementId(6174444);
+            ElementId BT_D = new ElementId(6174442);
+            ElementId InB_D = new ElementId(6174446);
+            ElementId InT_D = new ElementId(6174440);
+            ElementId OutB_D = new ElementId(6174448);
+            ElementId OutT_D = new ElementId(6174438);
+            ElementId TB_P = new ElementId(6174063);
+            ElementId BT_P = new ElementId(6174065);
+            ElementId InB_P = new ElementId(6174061);
+            ElementId InT_P = new ElementId(6174067);
+            ElementId OutB_P = new ElementId(6174059);
+            ElementId OutT_P = new ElementId(6174069);
+
+            Dictionary<ElementId, ElementId> FlipTags = new Dictionary<ElementId, ElementId>
+            {
+                { TB_D,BT_D},
+                { BT_D,TB_D},
+                { InB_D,OutB_D},
+                { InT_D,OutT_D},
+                { OutB_D,InB_D},
+                { OutT_D,InT_D},
+                { TB_P,BT_P},
+                { BT_P,TB_P},
+                { InB_P,OutB_P},
+                { InT_P,OutT_P},
+                { OutB_P,InB_P},
+                { OutT_P,InT_P}
+            };
+            Dictionary<ElementId, ElementId> ContinousTags = new Dictionary<ElementId, ElementId>
+            {
+                { TB_D,TB_D},
+                { BT_D,BT_D},
+                { InB_D,BT_D},
+                { InT_D,TB_D},
+                { OutB_D,TB_D},
+                { OutT_D,BT_D},
+                { TB_P,TB_P},
+                { BT_P,BT_P},
+                { InB_P,BT_P},
+                { InT_P,TB_P},
+                { OutB_P,TB_P},
+                { OutT_P,BT_P}
+            };
+            Dictionary<string, bool> flowdowndict = new Dictionary<string, bool>
+            {
+                { "Ev.",false },
+                { "Ecs.",false},
+                { "Recs.",true},
+                { "R.Ch.",true},
+                { "R.Ch. (37°)",true},
+                { "D.Ch.",false},
+                { "D.Ch. (40°)",false},
+                { "Eu.",true},
+                { "Plv.",true},
+                { "E",false},
+                { "P",true},
+                { "PAF",true},
+                { "Rejet",false}
+             };
+            bool flip = StoreExp.GetSwitchStance(uiapp, "Red");
+            ICollection<ElementId> selection = uidoc.Selection.GetElementIds();
+            ICollection<ElementId> newsel = new List<ElementId>();
+            if (flip)
+            {
+                var selecttags = uidoc.Selection
+                     .GetElementIds()
+                     .Select(id => doc.GetElement(id))
+                     .OfType<IndependentTag>();
+                using (Transaction t = new Transaction(doc, "Flip Arrow Types"))
+                {
+                    t.Start();
+                    foreach (var tag in selecttags)
+                    {
+                        if (FlipTags.TryGetValue(tag.GetTypeId(), out ElementId newTypeId))
+                        {
+                            tag.ChangeTypeId(newTypeId);
+                        }
+                    }
+                    t.Commit();
+                }
+                return Result.Succeeded;
+            }
+            if (selection.Count != 0)
+            {
+                var selecttags = uidoc.Selection
+                     .GetElementIds()
+                     .Select(id => doc.GetElement(id))
+                     .OfType<IndependentTag>();
+                using (Transaction t = new Transaction(doc, "Fix Continuous Arrow Types"))
+                {
+                    t.Start();
+                    MergeTags(doc, selecttags, dist_margin, ContinousTags);
+                    t.Commit();
+                }
+                return Result.Succeeded;
+            }
+            ICollection<Element> tags = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(IndependentTag)).ToElements();
+            foreach (IndependentTag tag in tags)
+            {
+                continue;  
+            }
+         
             ICollection<ElementId> newSel = new List<ElementId>();
+            ICollection<IndependentTag> toadjust= new List<IndependentTag>();
             View activeview = doc.ActiveView;
             ViewPlan actviewplan = activeview as ViewPlan;
             double baseelev = activeview.GenLevel.Elevation;
@@ -469,22 +622,7 @@ namespace AnnoTools
                     new ElementCategoryFilter(BuiltInCategory.OST_PipeCurves),
                     new ElementCategoryFilter(BuiltInCategory.OST_DuctTerminal)
              };
-            Dictionary<string, bool> flowdowndict = new Dictionary<string, bool>
-            {
-                { "Ev.",false },
-                { "Ecs.",false},
-                { "Recs.",true},
-                { "R.Ch.",true},
-                { "R.Ch. (37°)",true},
-                { "D.Ch.",false},
-                { "D.Ch. (40°)",false},
-                { "Eu.",true},
-                { "Plv.",true},
-                { "E",false},
-                { "P",true},
-                { "PAF",true},
-                { "Rejet",false}
-             };
+            
             IList<Element> elementsinview = new FilteredElementCollector(doc, activeview.Id)
                 .WhereElementIsNotElementType()
                 .WherePasses(
@@ -517,24 +655,18 @@ namespace AnnoTools
                         if (!top && !bottom) continue;
                         if (top && bottom)
                         {
-                            famsymtag = flowdown ?
-                            new ElementId(6174063) : new ElementId(6174065);
-                            if (isDuct) famsymtag = flowdown ?
-                            new ElementId(6174444) : new ElementId(6174442);
+                            famsymtag = flowdown ? TB_P : BT_P;
+                            if (isDuct) famsymtag = flowdown ? TB_D : BT_D;
                         }
                         else if (top)
                         {
-                            famsymtag = flowdown ?
-                                new ElementId(6174067) : new ElementId(6174069);
-                            if (isDuct) famsymtag = flowdown ?
-                            new ElementId(6174440) : new ElementId(6174438);
+                            famsymtag = flowdown ? InT_P : OutT_P;
+                            if (isDuct) famsymtag = flowdown ? InT_D: OutT_D;
                         }
                         else if (bottom)
                         {
-                            famsymtag = flowdown ?
-                                new ElementId(6174059) : new ElementId(6174061);
-                            if (isDuct) famsymtag = flowdown ?
-                            new ElementId(6174448) : new ElementId(6174446);
+                            famsymtag = flowdown ? OutB_P : InB_P;
+                            if (isDuct) famsymtag = flowdown ? OutB_D : InB_D; 
                         }
                         try
                         {
@@ -552,9 +684,13 @@ namespace AnnoTools
                             refpoint.Point);
                     }
                     try
-                    { newSel.Add(tag.Id); }
+                    {
+                        newSel.Add(tag.Id);
+                        toadjust.Add(tag);
+                    }
                     catch { TaskDialog.Show("Error", "Not applicable to selection"); }
                 }
+                //MergeTags(doc, toadjust, dist_margin, ContinousTags);
                 uidoc.Selection.SetElementIds(newSel);
                 tx.Commit();
             }
