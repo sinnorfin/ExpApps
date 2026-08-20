@@ -37,6 +37,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using static StoreExp;
 using Application = Autodesk.Revit.ApplicationServices.Application;
 using ComboBox = Autodesk.Revit.UI.ComboBox;
@@ -471,6 +472,44 @@ namespace MultiDWG
                 TaskDialog.Show("Result", text);
             }
             return Result.Succeeded;
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ReportViewRanges : IExternalCommand
+    {
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            String Message = "Viewranges of views: " + Environment.NewLine;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            foreach (ElementId id in ids)
+            {
+                if (doc.GetElement(id) is ViewPlan viewPlan) 
+                {
+                    PlanViewRange viewRange = viewPlan.GetViewRange();
+                    string Top = UnitFormatUtils.Format(doc.GetUnits(),SpecTypeId.Length, viewRange.GetOffset(PlanViewPlane.TopClipPlane), false);
+                    string Cut = UnitFormatUtils.Format(doc.GetUnits(), SpecTypeId.Length, viewRange.GetOffset(PlanViewPlane.CutPlane), false);
+                    string Bot = UnitFormatUtils.Format(doc.GetUnits(), SpecTypeId.Length, viewRange.GetOffset(PlanViewPlane.BottomClipPlane), false);
+                    string Vd = UnitFormatUtils.Format(doc.GetUnits(), SpecTypeId.Length, viewRange.GetOffset(PlanViewPlane.ViewDepthPlane), false);
+                    message += viewPlan.Name + "| Top:" + Top + " Cut:" + Cut
+                        + " Bot:" + Bot + " VD:" + Vd + Environment.NewLine;
+                }
+            }
+            TaskDialog.Show("View Range Report", message);
+                //using (Transaction trans = new Transaction(doc))
+                //{
+                //    trans.Start("Report View ranges");
+                //    { }
+                //    trans.Commit();
+                //}
+                return Result.Succeeded;
         }
     }
     [Transaction(TransactionMode.Manual)]

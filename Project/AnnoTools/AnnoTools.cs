@@ -451,6 +451,7 @@ namespace AnnoTools
             foreach (IndependentTag tag in toadjust)
             {
                 Element taggedElement = doc.GetElement(tag.GetTaggedLocalElementIds().First());
+                if (!(taggedElement.Location is LocationCurve)) continue;
                 XYZ elementPosition = ((LocationCurve)taggedElement.Location).Curve.Evaluate(0.5,true);
                 // Find all tags within the tolerance
                 var group = toadjust
@@ -582,25 +583,13 @@ namespace AnnoTools
                 }
                 return Result.Succeeded;
             }
-            if (selection.Count != 0)
-            {
-                var selecttags = uidoc.Selection
-                     .GetElementIds()
-                     .Select(id => doc.GetElement(id))
-                     .OfType<IndependentTag>();
-                using (Transaction t = new Transaction(doc, "Fix Continuous Arrow Types"))
-                {
-                    t.Start();
-                    MergeTags(doc, selecttags, dist_margin, ContinousTags);
-                    t.Commit();
-                }
-                return Result.Succeeded;
-            }
-            ICollection<Element> tags = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(IndependentTag)).ToElements();
-            foreach (IndependentTag tag in tags)
-            {
-                continue;  
-            }
+           
+            //For avoiding tagging already tagged..
+            //ICollection<Element> tags = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(IndependentTag)).ToElements();
+            //foreach (IndependentTag tag in tags)
+            //{
+            //    continue;  
+            //}
          
             ICollection<ElementId> newSel = new List<ElementId>();
             ICollection<IndependentTag> toadjust= new List<IndependentTag>();
@@ -622,14 +611,35 @@ namespace AnnoTools
                     new ElementCategoryFilter(BuiltInCategory.OST_PipeCurves),
                     new ElementCategoryFilter(BuiltInCategory.OST_DuctTerminal)
              };
-            
-            IList<Element> elementsinview = new FilteredElementCollector(doc, activeview.Id)
+            IList <Element> elementsinview = new FilteredElementCollector(doc, activeview.Id)
                 .WhereElementIsNotElementType()
                 .WherePasses(
                     new LogicalOrFilter(categories)
                 )
                 .ToElements();
 
+            if (selection.Count != 0)
+            { elementsinview = new FilteredElementCollector(doc, selection)
+                .WhereElementIsNotElementType()
+                .WherePasses(
+                    new LogicalOrFilter(categories)
+                )
+                .ToElements();
+
+                //For just merging tags in selected to continuous arrows
+
+                //var selecttags = uidoc.Selection
+                //     .GetElementIds()
+                //     .Select(id => doc.GetElement(id))
+                //     .OfType<IndependentTag>();
+                //using (Transaction t = new Transaction(doc, "Fix Continuous Arrow Types"))
+                //{
+                //    t.Start();
+                //    MergeTags(doc, selecttags, dist_margin, ContinousTags);
+                //    t.Commit();
+                //}
+                //return Result.Succeeded;
+            }
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Create Shaft Tags");
@@ -690,7 +700,7 @@ namespace AnnoTools
                     }
                     catch { TaskDialog.Show("Error", "Not applicable to selection"); }
                 }
-                //MergeTags(doc, toadjust, dist_margin, ContinousTags);
+                MergeTags(doc, toadjust, dist_margin, ContinousTags);
                 uidoc.Selection.SetElementIds(newSel);
                 tx.Commit();
             }
