@@ -501,27 +501,40 @@ namespace AnnoTools
             double vr_margin; double dist_margin;
             UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "1 cm", out vr_margin);
             UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "1 cm", out dist_margin);
-            ElementId TB_D = new ElementId(6174444);
-            ElementId BT_D = new ElementId(6174442);
-            ElementId InB_D = new ElementId(6174446);
-            ElementId InT_D = new ElementId(6174440);
-            ElementId OutB_D = new ElementId(6174448);
-            ElementId OutT_D = new ElementId(6174438);
-            ElementId TB_P = new ElementId(6174063);
-            ElementId BT_P = new ElementId(6174065);
-            ElementId InB_P = new ElementId(6174061);
-            ElementId InT_P = new ElementId(6174067);
-            ElementId OutB_P = new ElementId(6174059);
-            ElementId OutT_P = new ElementId(6174069);
+            //ElementId TB_D = new ElementId(3161525); //Duct cont. down
+            //ElementId BT_D = new ElementId(3161525); //Duct cont. up
+            //ElementId InB_D = new ElementId(3161525); //Duct coming up
+            //ElementId InT_D = new ElementId(3161525); //Duct coming down
+            //ElementId OutB_D = new ElementId(3161525); //Duct going down
+            //ElementId OutT_D = new ElementId(3161525); //Duct going up
+            ElementId TB_P = new ElementId(3161521); //Pipe cont. down
+            ElementId BT_P = new ElementId(3161523); //Pipe cont. up
+            ElementId InB_P = new ElementId(3161519); //Pipe coming up
+            ElementId InT_P = new ElementId(3161525); //Pipe coming down
+            ElementId OutB_P = new ElementId(3161517); //Pipe going down
+            ElementId OutT_P = new ElementId(3161527); //Pipe going up
+            //ION ids
+            //ElementId TB_D = new ElementId(6174444);
+            //ElementId BT_D = new ElementId(6174442);
+            //ElementId InB_D = new ElementId(6174446);
+            //ElementId InT_D = new ElementId(6174440);
+            //ElementId OutB_D = new ElementId(6174448);
+            //ElementId OutT_D = new ElementId(6174438);
+            //ElementId TB_P = new ElementId(6174063);
+            //ElementId BT_P = new ElementId(6174065);
+            //ElementId InB_P = new ElementId(6174061);
+            //ElementId InT_P = new ElementId(6174067);
+            //ElementId OutB_P = new ElementId(6174059);
+            //ElementId OutT_P = new ElementId(6174069);
 
             Dictionary<ElementId, ElementId> FlipTags = new Dictionary<ElementId, ElementId>
             {
-                { TB_D,BT_D},
-                { BT_D,TB_D},
-                { InB_D,OutB_D},
-                { InT_D,OutT_D},
-                { OutB_D,InB_D},
-                { OutT_D,InT_D},
+                //{ TB_D,BT_D},
+                //{ BT_D,TB_D},
+                //{ InB_D,OutB_D},
+                //{ InT_D,OutT_D},
+                //{ OutB_D,InB_D},
+                //{ OutT_D,InT_D},
                 { TB_P,BT_P},
                 { BT_P,TB_P},
                 { InB_P,OutB_P},
@@ -531,12 +544,12 @@ namespace AnnoTools
             };
             Dictionary<ElementId, ElementId> ContinousTags = new Dictionary<ElementId, ElementId>
             {
-                { TB_D,TB_D},
-                { BT_D,BT_D},
-                { InB_D,BT_D},
-                { InT_D,TB_D},
-                { OutB_D,TB_D},
-                { OutT_D,BT_D},
+                //{ TB_D,TB_D},
+                //{ BT_D,BT_D},
+                //{ InB_D,BT_D},
+                //{ InT_D,TB_D},
+                //{ OutB_D,TB_D},
+                //{ OutT_D,BT_D},
                 { TB_P,TB_P},
                 { BT_P,BT_P},
                 { InB_P,BT_P},
@@ -546,15 +559,22 @@ namespace AnnoTools
             };
             Dictionary<string, bool> flowdowndict = new Dictionary<string, bool>
             {
-                { "Ev.",false },
-                { "Ecs.",false},
-                { "Recs.",true},
-                { "R.Ch.",true},
-                { "R.Ch. (37°)",true},
-                { "D.Ch.",false},
-                { "D.Ch. (40°)",false},
-                { "Eu.",true},
-                { "Plv.",true},
+                //{ "Ev.",false },
+                //{ "Ecs.",false},
+                { "ECS",false},
+                { "EFS",false},
+                { "EU",true},
+                { "ECD",false},
+                { "ECR",true},
+                { "EGD",false},
+                { "EGR",true},
+                //{ "Recs.",true},
+                //{ "R.Ch.",true},
+                //{ "R.Ch. (37°)",true},
+                //{ "D.Ch.",false},
+                //{ "D.Ch. (40°)",false},
+                //{ "Eu.",true},
+                //{ "Plv.",true},
                 { "E",false},
                 { "P",true},
                 { "PAF",true},
@@ -666,17 +686,17 @@ namespace AnnoTools
                         if (top && bottom)
                         {
                             famsymtag = flowdown ? TB_P : BT_P;
-                            if (isDuct) famsymtag = flowdown ? TB_D : BT_D;
+                            //if (isDuct) famsymtag = flowdown ? TB_D : BT_D;
                         }
                         else if (top)
                         {
                             famsymtag = flowdown ? InT_P : OutT_P;
-                            if (isDuct) famsymtag = flowdown ? InT_D: OutT_D;
+                            //if (isDuct) famsymtag = flowdown ? InT_D: OutT_D;
                         }
                         else if (bottom)
                         {
                             famsymtag = flowdown ? OutB_P : InB_P;
-                            if (isDuct) famsymtag = flowdown ? OutB_D : InB_D; 
+                            //if (isDuct) famsymtag = flowdown ? OutB_D : InB_D; 
                         }
                         try
                         {

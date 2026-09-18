@@ -654,6 +654,87 @@ namespace MultiDWG
             return Result.Succeeded;
         }
     }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SyncSymbol : IExternalCommand
+    {
+        //Inject parameter value to target parameter
+
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            StoreExp.GetMenuValue(uiapp);
+            using (Transaction trans = new Transaction(doc))
+            {
+                trans.Start("Sync. Symbols");
+                double c = 0;
+                double x = 0;
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid) as Element;
+                    Parameter targetPara;
+                    Parameter sourcePara;
+                    try
+                    {
+                        if (StoreExp.GetSwitchStance(uiapp, "Red"))
+                        {
+                            Guid paraguid = new Guid(StoreExp.Store.menu_1_Box.Value.ToString());
+                            sourcePara = elem.get_Parameter(paraguid);
+                        }
+                        else sourcePara = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
+                        if (StoreExp.GetSwitchStance(uiapp, "Green"))
+                        {
+                            Guid paraguid = new Guid(StoreExp.Store.menu_2_Box.Value.ToString());
+                            targetPara = elem.get_Parameter(paraguid);
+                        }
+                        else targetPara = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString()) as Parameter;
+
+                        if (StoreExp.Store.menu_C_Box.Value.ToString() == "S")
+                        {
+                            targetPara.Set(sourcePara.AsString());
+                        }
+                        else if (StoreExp.Store.menu_C_Box.Value.ToString() == "VS")
+                        {
+                            targetPara.Set(sourcePara.AsValueString());
+                        }
+                        else if (StoreExp.Store.menu_C_Box.Value.ToString() == "D")
+                        {
+                            targetPara.Set(sourcePara.AsDouble());
+                        }
+                        else if (StoreExp.Store.menu_C_Box.Value.ToString() == "Num")
+                        {
+                            Double.TryParse(sourcePara.AsValueString(), out double orig);
+                            orig = UnitUtils.Convert(orig, UnitTypeId.Millimeters, UnitTypeId.Feet);
+                            targetPara.Set(orig);
+                        }
+                        else if (StoreExp.Store.menu_C_Box.Value.ToString() != "")
+                        {
+                            Double.TryParse(sourcePara.AsString(), out double orig);
+                            Double.TryParse(StoreExp.Store.menu_C_Box.Value.ToString(), out double oper);
+                            double sum = orig + oper;
+                            targetPara.Set(sum.ToString());
+                        }
+                        c += 1;
+                    }
+                    catch { x += 1; }
+                }
+                trans.Commit();
+                string text = "Replaced '" + StoreExp.Store.menu_A_Box.Value.ToString()
+                              + "' to '" + StoreExp.Store.menu_B_Box.Value.ToString()
+                              + "' in " + c.ToString() + " elements";
+                if (c == 0) { text = "No replacement occurred"; }
+                if (x > 0) { text += Environment.NewLine + "No such parameter: " + x.ToString(); }
+                TaskDialog.Show("Result", text);
+            }
+            return Result.Succeeded;
+        }
+    }
     //[Transaction(TransactionMode.Manual)]
     //[Regeneration(RegenerationOption.Manual)]
     //public class InjectCircuitnumber : IExternalCommand
