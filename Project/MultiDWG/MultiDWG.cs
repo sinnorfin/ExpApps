@@ -36,6 +36,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using static StoreExp;
@@ -670,67 +671,125 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             StoreExp.GetMenuValue(uiapp);
-            using (Transaction trans = new Transaction(doc))
+            bool inDraftingView = uidoc.ActiveView.ViewType == ViewType.DraftingView;
+            List<ElementId> Highlighted = new List<ElementId>(); 
+            OverrideGraphicSettings redOverride = new OverrideGraphicSettings();
+            redOverride.SetProjectionLineColor(new Color(255, 0, 0));
+            OverrideGraphicSettings clearOverride = new OverrideGraphicSettings();
+            List<Tuple<Connector, Connector, bool>> Pairs = new List<Tuple<Connector, Connector, bool>>();
+            using (TransactionGroup tg = new TransactionGroup(doc, "Modify Elements"))
             {
-                trans.Start("Sync. Symbols");
+                tg.Start();
+                if (inDraftingView)
+            {
+                    View overriddenView = doc.ActiveView;
+                    using (Transaction trans = new Transaction(doc))
+                    {
+                        foreach (ElementId eid in ids)
+                { Element elem = doc.GetElement(eid) as Element;
+                        
+                        trans.Start("Highlight");
+                        overriddenView.SetElementOverrides(eid, redOverride);
+                        trans.Commit();
+                       Element attachto = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, "Select Element to attach to: " + elem.GetType().Name));
+                        trans.Start("Copy and Clear Highlight");
+                            elem.LookupParameter("ElementId").Set(attachto.Id.Value);
+                            try
+                            { elem.LookupParameter("BMC_Size").Set(attachto.LookupParameter("Size").AsValueString().Split('-')[0]); }
+                        catch { }
+                        try
+                        {
+                                if (attachto.LookupParameter("BMC_Flow") != null)
+                                    elem.LookupParameter("BMC_Flow").SetValueString(attachto.LookupParameter("BMC_Flow").AsValueString());
+                                else if (attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null) 
+                                    elem.LookupParameter("BMC_Flow").SetValueString(attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM).AsValueString());
+                        }
+                        catch { }
+                            try
+                            {
+                                if (attachto.LookupParameter("BMC_Velocity") != null) 
+                                    elem.LookupParameter("BMC_Velocity").SetValueString(attachto.LookupParameter("BMC_Velocity").AsValueString());
+                                else if (attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null) 
+                                    elem.LookupParameter("BMC_Velocity").SetValueString(attachto.get_Parameter(BuiltInParameter.RBS_VELOCITY).AsValueString());
+                            }
+                            catch { }
+                        try
+                        { elem.LookupParameter("BMC_ID").Set(attachto.LookupParameter("BMC_ID").AsValueString()); }
+                        catch { }
+                            overriddenView.SetElementOverrides(eid, clearOverride);
+                            doc.ActiveView.SetElementOverrides(attachto.Id, redOverride);
+                            Highlighted.Add(attachto.Id);
+                            trans.Commit();
+                        }
+                        trans.Start("Remove highlights");
+                        foreach (ElementId eid in Highlighted)
+                        {
+                            doc.ActiveView.SetElementOverrides(eid, clearOverride);
+                        }
+                        trans.Commit();
+                    }
+          
                 double c = 0;
                 double x = 0;
                 foreach (ElementId eid in ids)
                 {
-                    Element elem = doc.GetElement(eid) as Element;
-                    Parameter targetPara;
-                    Parameter sourcePara;
-                    try
-                    {
-                        if (StoreExp.GetSwitchStance(uiapp, "Red"))
-                        {
-                            Guid paraguid = new Guid(StoreExp.Store.menu_1_Box.Value.ToString());
-                            sourcePara = elem.get_Parameter(paraguid);
-                        }
-                        else sourcePara = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
-                        if (StoreExp.GetSwitchStance(uiapp, "Green"))
-                        {
-                            Guid paraguid = new Guid(StoreExp.Store.menu_2_Box.Value.ToString());
-                            targetPara = elem.get_Parameter(paraguid);
-                        }
-                        else targetPara = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString()) as Parameter;
+                    //Element elem = doc.GetElement(eid) as Element;
+                    //Parameter targetPara;
+                    //Parameter sourcePara;
+                    //try
+                    //{
+                    //    if (StoreExp.GetSwitchStance(uiapp, "Red"))
+                    //    {
+                    //        Guid paraguid = new Guid(StoreExp.Store.menu_1_Box.Value.ToString());
+                    //        sourcePara = elem.get_Parameter(paraguid);
+                    //    }
+                    //    else sourcePara = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
+                    //    if (StoreExp.GetSwitchStance(uiapp, "Green"))
+                    //    {
+                    //        Guid paraguid = new Guid(StoreExp.Store.menu_2_Box.Value.ToString());
+                    //        targetPara = elem.get_Parameter(paraguid);
+                    //    }
+                    //    else targetPara = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString()) as Parameter;
 
-                        if (StoreExp.Store.menu_C_Box.Value.ToString() == "S")
-                        {
-                            targetPara.Set(sourcePara.AsString());
-                        }
-                        else if (StoreExp.Store.menu_C_Box.Value.ToString() == "VS")
-                        {
-                            targetPara.Set(sourcePara.AsValueString());
-                        }
-                        else if (StoreExp.Store.menu_C_Box.Value.ToString() == "D")
-                        {
-                            targetPara.Set(sourcePara.AsDouble());
-                        }
-                        else if (StoreExp.Store.menu_C_Box.Value.ToString() == "Num")
-                        {
-                            Double.TryParse(sourcePara.AsValueString(), out double orig);
-                            orig = UnitUtils.Convert(orig, UnitTypeId.Millimeters, UnitTypeId.Feet);
-                            targetPara.Set(orig);
-                        }
-                        else if (StoreExp.Store.menu_C_Box.Value.ToString() != "")
-                        {
-                            Double.TryParse(sourcePara.AsString(), out double orig);
-                            Double.TryParse(StoreExp.Store.menu_C_Box.Value.ToString(), out double oper);
-                            double sum = orig + oper;
-                            targetPara.Set(sum.ToString());
-                        }
-                        c += 1;
-                    }
-                    catch { x += 1; }
+                    //    if (StoreExp.Store.menu_C_Box.Value.ToString() == "S")
+                    //    {
+                    //        targetPara.Set(sourcePara.AsString());
+                    //    }
+                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() == "VS")
+                    //    {
+                    //        targetPara.Set(sourcePara.AsValueString());
+                    //    }
+                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() == "D")
+                    //    {
+                    //        targetPara.Set(sourcePara.AsDouble());
+                    //    }
+                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() == "Num")
+                    //    {
+                    //        Double.TryParse(sourcePara.AsValueString(), out double orig);
+                    //        orig = UnitUtils.Convert(orig, UnitTypeId.Millimeters, UnitTypeId.Feet);
+                    //        targetPara.Set(orig);
+                    //    }
+                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() != "")
+                    //    {
+                    //        Double.TryParse(sourcePara.AsString(), out double orig);
+                    //        Double.TryParse(StoreExp.Store.menu_C_Box.Value.ToString(), out double oper);
+                    //        double sum = orig + oper;
+                    //        targetPara.Set(sum.ToString());
+                    //    }
+                    //    c += 1;
+                    //}
+                    //catch { x += 1; }
                 }
-                trans.Commit();
-                string text = "Replaced '" + StoreExp.Store.menu_A_Box.Value.ToString()
-                              + "' to '" + StoreExp.Store.menu_B_Box.Value.ToString()
-                              + "' in " + c.ToString() + " elements";
-                if (c == 0) { text = "No replacement occurred"; }
-                if (x > 0) { text += Environment.NewLine + "No such parameter: " + x.ToString(); }
-                TaskDialog.Show("Result", text);
+                
+                //string text = "Replaced '" + StoreExp.Store.menu_A_Box.Value.ToString()
+                //              + "' to '" + StoreExp.Store.menu_B_Box.Value.ToString()
+                //              + "' in " + c.ToString() + " elements";
+                //if (c == 0) { text = "No replacement occurred"; }
+                //if (x > 0) { text += Environment.NewLine + "No such parameter: " + x.ToString(); }
+                //TaskDialog.Show("Result", text);
+            }
+
+                tg.Assimilate();
             }
             return Result.Succeeded;
         }
