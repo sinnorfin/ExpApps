@@ -659,7 +659,7 @@ namespace MultiDWG
     [Regeneration(RegenerationOption.Manual)]
     public class SyncSymbol : IExternalCommand
     {
-        //Inject parameter value to target parameter
+        //Syncronize symbols with 3d elements
 
         public Result Execute(
             ExternalCommandData commandData,
@@ -671,46 +671,58 @@ namespace MultiDWG
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             StoreExp.GetMenuValue(uiapp);
+            bool lockValues = StoreExp.GetSwitchStance(uiapp, "Red");
             bool inDraftingView = uidoc.ActiveView.ViewType == ViewType.DraftingView;
             List<ElementId> Highlighted = new List<ElementId>(); 
             OverrideGraphicSettings redOverride = new OverrideGraphicSettings();
             redOverride.SetProjectionLineColor(new Color(255, 0, 0));
             OverrideGraphicSettings clearOverride = new OverrideGraphicSettings();
-            List<Tuple<Connector, Connector, bool>> Pairs = new List<Tuple<Connector, Connector, bool>>();
-            using (TransactionGroup tg = new TransactionGroup(doc, "Modify Elements"))
+            if (!inDraftingView) 
+            { TaskDialog.Show("Info", "Please Select Schema symbols in Drafting view"); 
+                return Result.Succeeded; }
+            using (TransactionGroup tg = new TransactionGroup(doc, "Sync Schema Symbols - Parameters"))
             {
+                if (lockValues) { tg.SetName("Sync Schema Symbols - Only Connections"); 
+                    TaskDialog.Show("Info", ":Red: ON - Only Connection - no parameter update!"); }
                 tg.Start();
-                if (inDraftingView)
-            {
-                    View overriddenView = doc.ActiveView;
-                    using (Transaction trans = new Transaction(doc))
-                    {
+                View overriddenView = doc.ActiveView;
+                using (Transaction trans = new Transaction(doc))
+                {
                         foreach (ElementId eid in ids)
-                { Element elem = doc.GetElement(eid) as Element;
-                        
+                    { Element elem = doc.GetElement(eid) as Element;
+
                         trans.Start("Highlight");
                         overriddenView.SetElementOverrides(eid, redOverride);
                         trans.Commit();
-                       Element attachto = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, "Select Element to attach to: " + elem.GetType().Name));
+
+                        Element attachto = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, "Select Element to attach to: " + elem.GetType().Name));
                         trans.Start("Copy and Clear Highlight");
-                            elem.LookupParameter("ElementId").Set(attachto.Id.Value);
-                            try
-                            { elem.LookupParameter("BMC_Size").Set(attachto.LookupParameter("Size").AsValueString().Split('-')[0]); }
+                        elem.LookupParameter("ElementId").Set(attachto.Id.Value);
+                        if (lockValues || (elem.LookupParameter("BMC_Locked Values")?.AsInteger() == 1)) 
+                        {
+                            overriddenView.SetElementOverrides(eid, clearOverride);
+                            doc.ActiveView.SetElementOverrides(attachto.Id, redOverride);
+                            Highlighted.Add(attachto.Id);
+                            trans.Commit();
+                            continue; 
+                        }
+                        try
+                        { elem.LookupParameter("BMC_Size").Set(attachto.LookupParameter("Size").AsValueString().Split('-')[0]); }
                         catch { }
                         try
                         {
-                                if (attachto.LookupParameter("BMC_Flow") != null)
-                                    elem.LookupParameter("BMC_Flow").SetValueString(attachto.LookupParameter("BMC_Flow").AsValueString());
-                                else if (attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null) 
-                                    elem.LookupParameter("BMC_Flow").SetValueString(attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM).AsValueString());
+                        if (attachto.LookupParameter("BMC_Flow") != null)
+                            elem.LookupParameter("BMC_Flow").SetValueString(attachto.LookupParameter("BMC_Flow").AsValueString());
+                        else if (attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null) 
+                            elem.LookupParameter("BMC_Flow").SetValueString(attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM).AsValueString());
                         }
                         catch { }
                             try
                             {
-                                if (attachto.LookupParameter("BMC_Velocity") != null) 
-                                    elem.LookupParameter("BMC_Velocity").SetValueString(attachto.LookupParameter("BMC_Velocity").AsValueString());
-                                else if (attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null) 
-                                    elem.LookupParameter("BMC_Velocity").SetValueString(attachto.get_Parameter(BuiltInParameter.RBS_VELOCITY).AsValueString());
+                            if (attachto.LookupParameter("BMC_Velocity") != null) 
+                                elem.LookupParameter("BMC_Velocity").SetValueString(attachto.LookupParameter("BMC_Velocity").AsValueString());
+                            else if (attachto.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null) 
+                                elem.LookupParameter("BMC_Velocity").SetValueString(attachto.get_Parameter(BuiltInParameter.RBS_VELOCITY).AsValueString());
                             }
                             catch { }
                         try
@@ -728,108 +740,51 @@ namespace MultiDWG
                         }
                         trans.Commit();
                     }
-          
-                double c = 0;
-                double x = 0;
-                foreach (ElementId eid in ids)
-                {
-                    //Element elem = doc.GetElement(eid) as Element;
-                    //Parameter targetPara;
-                    //Parameter sourcePara;
-                    //try
-                    //{
-                    //    if (StoreExp.GetSwitchStance(uiapp, "Red"))
-                    //    {
-                    //        Guid paraguid = new Guid(StoreExp.Store.menu_1_Box.Value.ToString());
-                    //        sourcePara = elem.get_Parameter(paraguid);
-                    //    }
-                    //    else sourcePara = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
-                    //    if (StoreExp.GetSwitchStance(uiapp, "Green"))
-                    //    {
-                    //        Guid paraguid = new Guid(StoreExp.Store.menu_2_Box.Value.ToString());
-                    //        targetPara = elem.get_Parameter(paraguid);
-                    //    }
-                    //    else targetPara = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString()) as Parameter;
-
-                    //    if (StoreExp.Store.menu_C_Box.Value.ToString() == "S")
-                    //    {
-                    //        targetPara.Set(sourcePara.AsString());
-                    //    }
-                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() == "VS")
-                    //    {
-                    //        targetPara.Set(sourcePara.AsValueString());
-                    //    }
-                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() == "D")
-                    //    {
-                    //        targetPara.Set(sourcePara.AsDouble());
-                    //    }
-                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() == "Num")
-                    //    {
-                    //        Double.TryParse(sourcePara.AsValueString(), out double orig);
-                    //        orig = UnitUtils.Convert(orig, UnitTypeId.Millimeters, UnitTypeId.Feet);
-                    //        targetPara.Set(orig);
-                    //    }
-                    //    else if (StoreExp.Store.menu_C_Box.Value.ToString() != "")
-                    //    {
-                    //        Double.TryParse(sourcePara.AsString(), out double orig);
-                    //        Double.TryParse(StoreExp.Store.menu_C_Box.Value.ToString(), out double oper);
-                    //        double sum = orig + oper;
-                    //        targetPara.Set(sum.ToString());
-                    //    }
-                    //    c += 1;
-                    //}
-                    //catch { x += 1; }
-                }
-                
-                //string text = "Replaced '" + StoreExp.Store.menu_A_Box.Value.ToString()
-                //              + "' to '" + StoreExp.Store.menu_B_Box.Value.ToString()
-                //              + "' in " + c.ToString() + " elements";
-                //if (c == 0) { text = "No replacement occurred"; }
-                //if (x > 0) { text += Environment.NewLine + "No such parameter: " + x.ToString(); }
-                //TaskDialog.Show("Result", text);
-            }
-
                 tg.Assimilate();
             }
             return Result.Succeeded;
         }
     }
-    //[Transaction(TransactionMode.Manual)]
-    //[Regeneration(RegenerationOption.Manual)]
-    //public class InjectCircuitnumber : IExternalCommand
-    //{
-    //    //Inject parameter value to target parameter
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class SelectSynced : IExternalCommand
+    {
+        //Inject parameter value to target parameter
 
-    //    public Result Execute(
-    //        ExternalCommandData commandData,
-    //        ref string message,
-    //        ElementSet elements)
-    //    {
-    //        UIApplication uiapp = commandData.Application;
-    //        UIDocument uidoc = uiapp.ActiveUIDocument;
-    //        Document doc = uidoc.Document;
-    //        ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
-    //        StoreExp.GetMenuValue(uiapp);
-    //        using (Transaction trans = new Transaction(doc))
-    //        {
-    //            trans.Start("Inject Built-in to Normal");
-    //            foreach (ElementId eid in ids)
-    //            {
-    //                Element elem = doc.GetElement(eid) as Element;
-    //                try
-    //                {
-    //                    Guid paraguid = new Guid("b17c58f0-9fa0-49cf-a5c0-4c13bc0a9a5b");
-    //                    Parameter targetPara = elem.get_Parameter(paraguid);
-    //                    Parameter sourcePara = elem.get_Parameter(BuiltInParameter.RBS_ELEC_CIRCUIT_NUMBER);
-    //                    targetPara.Set(sourcePara.AsValueString());
-    //                }
-    //                catch { }
-    //            }
-    //            trans.Commit();
-    //        }
-    //        return Result.Succeeded;
-    //    }
-    //}
+        public Result Execute(
+            ExternalCommandData commandData,
+            ref string message,
+            ElementSet elements)
+        {
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            List<ElementId> newsel = new List<ElementId>();
+            bool inDraftingView = uidoc.ActiveView.ViewType == ViewType.DraftingView;
+            if (inDraftingView) 
+            {
+                foreach (ElementId eid in ids)
+                {
+                    newsel.AddRange( new FilteredElementCollector(doc, doc.ActiveView.Id)
+                        .OfClass(typeof(FamilyInstance))
+                        .Where(x => x.LookupParameter("ElementId")?.AsValueString() == eid.ToString())
+                        .Select(x=> x.Id));             
+                } 
+            }
+            else
+            {
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid) as Element;
+                    ElementId select = new ElementId(Int64.Parse(elem.LookupParameter("ElementId").AsValueString()));
+                    newsel.Add(select);
+                }
+            }
+            uidoc.Selection.SetElementIds(newsel);
+            return Result.Succeeded;
+        }
+    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class RecessHeight : IExternalCommand
