@@ -672,14 +672,35 @@ namespace MultiDWG
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             StoreExp.GetMenuValue(uiapp);
             bool lockValues = StoreExp.GetSwitchStance(uiapp, "Red");
+            bool sumValues = StoreExp.GetSwitchStance(uiapp, "Green");
             bool inDraftingView = uidoc.ActiveView.ViewType == ViewType.DraftingView;
             List<ElementId> Highlighted = new List<ElementId>(); 
             OverrideGraphicSettings redOverride = new OverrideGraphicSettings();
             redOverride.SetProjectionLineColor(new Color(255, 0, 0));
             OverrideGraphicSettings clearOverride = new OverrideGraphicSettings();
+            
             if (!inDraftingView) 
             { TaskDialog.Show("Info", "Please Select Schema symbols in Drafting view"); 
                 return Result.Succeeded; }
+            if (sumValues)
+            {
+               
+                    double summedflow = 0;
+                foreach (ElementId eid in ids)
+                {
+                    Element elem = doc.GetElement(eid) as Element;
+                    summedflow += elem.LookupParameter("BMC_Flow")?.AsDouble() ?? 0.0;
+                }
+                Element attachto = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, "Select Element to inject flow summary!"));
+                if (ids.Contains(attachto.Id)) summedflow -= attachto.LookupParameter("BMC_Flow")?.AsDouble() ?? 0.0;
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Sum Flow values");
+                    attachto.LookupParameter("BMC_Flow").SetValueString(UnitFormatUtils.Format(doc.GetUnits(), SpecTypeId.AirFlow, summedflow, false));
+                    trans.Commit();
+                }
+                return Result.Succeeded;
+            }
             using (TransactionGroup tg = new TransactionGroup(doc, "Sync Schema Symbols - Parameters"))
             {
                 if (lockValues) { tg.SetName("Sync Schema Symbols - Only Connections"); 
@@ -695,7 +716,7 @@ namespace MultiDWG
                         overriddenView.SetElementOverrides(eid, redOverride);
                         trans.Commit();
 
-                        Element attachto = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, "Select Element to attach to: " + elem.GetType().Name));
+                        Element attachto = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, "Select Element to attach to: " + doc.GetElement(elem.GetTypeId()).Name));
                         trans.Start("Copy and Clear Highlight");
                         elem.LookupParameter("ElementId").Set(attachto.Id.Value);
                         if (lockValues || (elem.LookupParameter("BMC_Locked Values")?.AsInteger() == 1)) 
