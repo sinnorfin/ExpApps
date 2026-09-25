@@ -29,6 +29,8 @@ using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.ApplicationServices;
 using System.Collections.Generic;
 using System;
+using System.Linq;
+using System.Security.Cryptography;
 
 namespace RehostElements
 {
@@ -52,32 +54,40 @@ namespace RehostElements
             Double ElemLevelElev = 0;
             int FaceHosted = 0;
             StoreExp.GetMenuValue(uiapp);
+            bool levelbyselection = StoreExp.GetSwitchStance(uiapp, "Blue");
             ComboBox selectedlevel = StoreExp.GetComboBox(uiapp.GetRibbonPanels("Exp. Add-Ins"), "View Tools", "ExpLevel");
+            targetLevel = StoreExp.GetLevel(doc, selectedlevel.Current.ItemText);
+            if (StoreExp.GetSwitchStance(uiapp, "Red"))
+            {
+                targetLevel = StoreExp.GetLevel(doc, StoreExp.Store.menu_A_Box.Value.ToString());
+                TaskDialog.Show("Warning", "RED override active, Rehosted to level specified in 'A':" + StoreExp.Store.menu_A_Box.Value.ToString());
+            }
+            if (levelbyselection)
+            {
+                List<Level> levelsinselection = new FilteredElementCollector(doc, ids)
+                            .OfClass(typeof(Level)).Cast<Level>().ToList();
+                targetLevel = StoreExp.GetLevel(doc, levelsinselection[0].Name);
+                foreach (Level level in levelsinselection) { ids.Remove(level.Id); }
+            }
+                if (targetLevel != null)
+            {
+                targetLevelElev = targetLevel.Elevation;
+            }
+            if (targetLevel == null)
+            {
+                if (!(doc.ActiveView is ViewPlan viewPlan))
+                {
+                    TaskDialog.Show("Please select Plan View or set level in QuickViews", "Level not selected, or Active view must be a plan view.");
+                    return Result.Succeeded;
+                }
+                Parameter associated = doc.ActiveView.LookupParameter("Associated Level");
+                targetLevel = StoreExp.GetLevel(doc, "Associated");
+                targetLevelElev = targetLevel.Elevation;
+
+            }
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("Re-Host Elements");
-                targetLevel = StoreExp.GetLevel(doc, selectedlevel.Current.ItemText);
-                if (StoreExp.GetSwitchStance(uiapp, "Red")) 
-                { targetLevel = StoreExp.GetLevel(doc,StoreExp.Store.menu_A_Box.Value.ToString());
-                    TaskDialog.Show("Warning", "RED override active, Rehosted to level specified in 'A':" + StoreExp.Store.menu_A_Box.Value.ToString());
-                }
-                    if (targetLevel != null)
-                {
-                    targetLevelElev = targetLevel.Elevation;
-                }
-                if (targetLevel == null)
-                {
-                    if (!(doc.ActiveView is ViewPlan viewPlan ))
-                    {
-                        TaskDialog.Show("Please select Plan View or set level in QuickViews", "Level not selected, or Active view must be a plan view.");
-                        tx.Commit();
-                        return Result.Succeeded;
-                    }
-                    Parameter associated = doc.ActiveView.LookupParameter("Associated Level");
-                    targetLevel = StoreExp.GetLevel(doc, "Associated");
-                    targetLevelElev = targetLevel.Elevation;
-
-                }
                 if (SelectedObjs != null)
                 {
                     foreach (ElementId eid in ids)
