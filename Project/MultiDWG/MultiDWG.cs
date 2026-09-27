@@ -38,6 +38,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using static StoreExp;
 using Application = Autodesk.Revit.ApplicationServices.Application;
@@ -657,38 +658,10 @@ namespace MultiDWG
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-        public class SyncSymbol : IExternalCommand
+        public class AssociateSchema : IExternalCommand
     {
         //Syncronize symbols with 3d elements
-        public static void Syncvalues(bool lockValues,Element receivingelem, Element senderelem)
-        {     
-        if (!lockValues && !(receivingelem.LookupParameter("BMC_Locked Values")?.AsInteger() == 1)) 
-        {
-            try
-            {
-                if (senderelem.LookupParameter("BMC_Flow") != null)
-                    receivingelem.LookupParameter("BMC_Flow").SetValueString(senderelem.LookupParameter("BMC_Flow").AsValueString());
-                else if (senderelem.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null)
-                    receivingelem.LookupParameter("BMC_Flow").SetValueString(senderelem.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM).AsValueString());
-            }
-            catch { }
-            try
-            {
-                if (senderelem.LookupParameter("BMC_Velocity") != null)
-                    receivingelem.LookupParameter("BMC_Velocity").SetValueString(senderelem.LookupParameter("BMC_Velocity").AsValueString());
-                else if (senderelem.get_Parameter(BuiltInParameter.RBS_VELOCITY) != null)
-                    receivingelem.LookupParameter("BMC_Velocity").SetValueString(senderelem.get_Parameter(BuiltInParameter.RBS_VELOCITY).AsValueString());
-            }
-            catch { }
-        }
-        try
-        { receivingelem.LookupParameter("BMC_Size").Set(senderelem.LookupParameter("Size").AsValueString().Split('-')[0]); }
-        catch { }
-
-        try
-        { receivingelem.LookupParameter("BMC_ID").Set(senderelem.LookupParameter("BMC_ID").AsValueString()); }
-        catch { }
-        }
+       
 public Result Execute(
             ExternalCommandData commandData,
             ref string message,
@@ -699,12 +672,13 @@ public Result Execute(
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             StoreExp.GetMenuValue(uiapp);
-            bool lockValues = StoreExp.GetSwitchStance(uiapp, "Red");
             bool sumValues = StoreExp.GetSwitchStance(uiapp, "Green");
             bool inDraftingView = uidoc.ActiveView.ViewType == ViewType.DraftingView;
             List<ElementId> Highlighted = new List<ElementId>(); 
             OverrideGraphicSettings redOverride = new OverrideGraphicSettings();
+            OverrideGraphicSettings pinkOverride = new OverrideGraphicSettings();
             redOverride.SetProjectionLineColor(new Color(255, 0, 0));
+            pinkOverride.SetProjectionLineColor(new Color(255, 100, 255));
             OverrideGraphicSettings clearOverride = new OverrideGraphicSettings();
             
             if (sumValues)
@@ -727,15 +701,9 @@ public Result Execute(
             }
             using (TransactionGroup tg = new TransactionGroup(doc, "Sync Schema Symbols - Parameters"))
             {
-                string locked = "";
                 string info = "Switch to model view and pick associated element for the Symbol drawn RED";
-                if (lockValues)
-                {
-                    tg.SetName("Sync Schema Symbols - Only Connections");
-                    locked = Environment.NewLine + ":Red: ON - Only Connection - no parameter update!";
-                }
                 if (!inDraftingView) info = "Switch to Schema view and pick associated Symbol for the model element drawn RED";
-                TaskDialog.Show("Info", info + locked);
+                TaskDialog.Show("Info", info);
                 tg.Start();
                 View overriddenView = doc.ActiveView;
                 using (Transaction trans = new Transaction(doc))
@@ -750,9 +718,8 @@ public Result Execute(
                         trans.Start("Copy and Clear Highlight");
                         if (elem.LookupParameter("ElementId") is Parameter para) para.Set(attachto.Id.Value);
                         else if (attachto.LookupParameter("ElementId") is Parameter atpara) atpara.Set(elem.Id.Value);
-                        Syncvalues(lockValues, elem, attachto);
                         overriddenView.SetElementOverrides(eid, clearOverride);
-                        doc.ActiveView.SetElementOverrides(attachto.Id, redOverride);
+                        doc.ActiveView.SetElementOverrides(attachto.Id, pinkOverride);
                         Highlighted.Add(attachto.Id);
                         trans.Commit();
                         }
@@ -783,32 +750,106 @@ public Result Execute(
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
             int count = 0;
-            //ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            List<Element> schemaelems = new List<Element>();
+            List<Element> modelelems = new List<Element>();
             List<ElementId> newsel = new List<ElementId>();
-            ICollection<Element> ids = new FilteredElementCollector(doc, doc.ActiveView.Id)
-                            .OfCategory(BuiltInCategory.OST_DetailComponents).Where(x => x.LookupParameter("ElementId")?.AsValueString() != "0").ToList();
-            //bool lockValues = StoreExp.GetSwitchStance(uiapp, "Red");
-            //bool updateValues = StoreExp.GetSwitchStance(uiapp, "Blue");
-            bool inDraftingView = uidoc.ActiveView.ViewType == ViewType.DraftingView;
-            string info = "MODEL - element modified according to : SCHEMA";
-            string locked = "";
-            //if (lockValues) locked = Environment.NewLine + "locked - Flow and Velocity NOT changed !";
-            foreach (Element elem in ids)
+            List<ElementId> invalidelems = new List<ElementId>();
+            bool selectInvalids = StoreExp.GetSwitchStance(uiapp, "Red");
+            ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
+            UpdateSchema.Elementlists(doc, ids, out schemaelems, out modelelems);
+            if (modelelems.Count > 0)
             {
-                if (doc.GetElement(new ElementId(Int64.Parse(elem.LookupParameter("ElementId").AsValueString()))) == null)
-                newsel.Add(elem.Id);
-                count += 1;
+                Dictionary<string, Element> schemaByElementId =
+                        new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_DetailComponents)
+                            .Select(x => new
+                            { Element = x, Value = x.LookupParameter("ElementId")?.AsValueString() })
+                            .Where(x => x.Value != null)
+                            .GroupBy(x => x.Value)
+                            .ToDictionary(g => g.Key, g => g.First().Element);
+                foreach (Element modelelem in modelelems)
+                {
+                    Element associatedSchemaElem = null;
+                    if (!schemaByElementId.TryGetValue(modelelem.Id.ToString(), out associatedSchemaElem))
+                    {
+                        continue;
+                    }
+                    newsel.Add(associatedSchemaElem.Id);
+                }
             }
-            uidoc.Selection.SetElementIds(newsel);
-            TaskDialog.Show("Validate Schema", count + " Schema elements related to Non-Existing Model Elements! (review selection)");
+            foreach (Element schemaelem in schemaelems)
+            {
+
+                if (Int64.TryParse(
+                schemaelem.LookupParameter("ElementId")?.AsValueString(),
+                out long id) && doc.GetElement(new ElementId(id)) is Element associatedModelElem)
+                {
+                    newsel.Add(associatedModelElem.Id);
+                }
+                else { count += 1; invalidelems.Add(schemaelem.Id); }
+            }
+            if (selectInvalids) uidoc.Selection.SetElementIds(invalidelems);
+            else { uidoc.Selection.SetElementIds(newsel); }
+            if (invalidelems.Count > 0) TaskDialog.Show("Validate Schema", count + " Schema elements related to Non-Existing Model Elements!");
             return Result.Succeeded;
         }
     }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class SelectSynced : IExternalCommand
+    public class UpdateSchema : IExternalCommand
     {
-        //Inject parameter value to target parameter
+        public static void Elementlists(Document doc, ICollection<ElementId> ids, out List<Element> schemaelems, out List<Element> modelelems)
+        {
+            schemaelems = new List<Element>();
+            modelelems = new List<Element>();
+            foreach (ElementId eid in ids)
+            {
+                Element elem = doc.GetElement(eid);
+                var elementIdPara = elem.LookupParameter("ElementId");
+                if (elem.Category.BuiltInCategory == BuiltInCategory.OST_DetailComponents &&
+                    elementIdPara != null &&
+                    elementIdPara.AsValueString() != "0")
+                {
+                    //Selection is a schema element
+                    schemaelems.Add(elem);
+                }
+                else if (elem is FamilyInstance || elem is MEPCurve)
+                {
+                    //Selection is a Model element
+                    modelelems.Add(elem);
+                }
+
+            }
+        }
+        public static void Syncvalues(bool lockValues, Element receivingelem, Element senderelem)
+        {
+            if (!lockValues && !(receivingelem.LookupParameter("BMC_Locked Values")?.AsInteger() == 1))
+            {
+                try
+                {
+                    if (senderelem.LookupParameter("BMC_Flow") != null)
+                        receivingelem.LookupParameter("BMC_Flow").SetValueString(senderelem.LookupParameter("BMC_Flow").AsValueString());
+                    else if (senderelem.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null)
+                        receivingelem.LookupParameter("BMC_Flow").SetValueString(senderelem.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM).AsValueString());
+                }
+                catch { }
+                try
+                {
+                    if (senderelem.LookupParameter("BMC_Velocity") != null)
+                        receivingelem.LookupParameter("BMC_Velocity").SetValueString(senderelem.LookupParameter("BMC_Velocity").AsValueString());
+                    else if (senderelem.get_Parameter(BuiltInParameter.RBS_VELOCITY) != null)
+                        receivingelem.LookupParameter("BMC_Velocity").SetValueString(senderelem.get_Parameter(BuiltInParameter.RBS_VELOCITY).AsValueString());
+                }
+                catch { }
+                try
+                { receivingelem.LookupParameter("BMC_Size").Set(senderelem.LookupParameter("Size").AsValueString().Split('-')[0]); }
+                catch { }
+            }
+            try
+            { receivingelem.LookupParameter("BMC_ID").Set(senderelem.LookupParameter("BMC_ID").AsValueString()); }
+            catch { }
+        }
+        //Updates values of Schema elements, either /both model and diagram elements can be selected.
+        //by default the diagram symbols will update to the model, only reversing to model updates if forced by Green and Blue toggle
 
         public Result Execute(
             ExternalCommandData commandData,
@@ -820,51 +861,71 @@ public Result Execute(
             Document doc = uidoc.Document;
             ICollection<ElementId> ids = uidoc.Selection.GetElementIds();
             List<ElementId> newsel = new List<ElementId>();
+            List<Element> schemaelems = new List<Element>();
+            List<Element> modelelems = new List<Element>();
             bool lockValues = StoreExp.GetSwitchStance(uiapp, "Red");
-            bool updateValues = StoreExp.GetSwitchStance(uiapp, "Blue");
-            bool inDraftingView = uidoc.ActiveView.ViewType == ViewType.DraftingView;
-            string info = "MODEL - element modified according to : SCHEMA";
+            bool updateModel = StoreExp.GetSwitchStance(uiapp, "Green") && StoreExp.GetSwitchStance(uiapp, "Blue");
+            string info = "SCHEMA elements updated according to model";
+            if (updateModel) info = "MODEL elements updated according to schema - ONLY tag-ID";
             string locked = "";
             if (lockValues) locked = Environment.NewLine + "locked - Flow and Velocity NOT changed !";
             using (Transaction trans = new Transaction(doc))
             {
-
-                if (inDraftingView)
+                if (ids.Count == 0)
                 {
-                    trans.Start("Update");
-
-                    foreach (ElementId eid in ids)
-                    {
-                        List<ElementId> matchingDiagram = new FilteredElementCollector(doc, doc.ActiveView.Id)
-                            .OfClass(typeof(FamilyInstance))
-                            .Where(x => x.LookupParameter("ElementId")?.AsValueString() == eid.ToString())
-                            .Select(x => x.Id).ToList();
-                        newsel.AddRange(matchingDiagram);
-                        if (updateValues && matchingDiagram.Count != 0)
-                        {
-                            SyncSymbol.Syncvalues(lockValues, doc.GetElement(matchingDiagram[0]), doc.GetElement(eid));
-                        }
-                    }
-                    info = "SCHEMA - element modified according to : MODEL";
-                    trans.Commit();
+                    TaskDialog.Show("Info", "Select Schema or Model elements to update");
+                    return Result.Succeeded;
                 }
-                else
+                Elementlists(doc, ids, out schemaelems, out modelelems);
+                trans.Start("Update Schema");
+                if (modelelems.Count > 0)
                 {
-                    trans.Start("Update");
-                    foreach (ElementId eid in ids)
+                    Dictionary<string, Element> schemaByElementId =
+                        new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_DetailComponents)
+                            .Select(x => new
+                            { Element = x, Value = x.LookupParameter("ElementId")?.AsValueString() })
+                            .Where(x => x.Value != null)
+                            .GroupBy(x => x.Value)
+                            .ToDictionary(g => g.Key, g => g.First().Element);
+                    foreach (Element modelelem in modelelems)
                     {
-                        Element elem = doc.GetElement(eid) as Element;
-                        ElementId select = new ElementId(Int64.Parse(elem.LookupParameter("ElementId").AsValueString()));
-                        newsel.Add(select);
-                        if (updateValues && select != null)
+                        Element associatedSchemaElem = null; 
+                        if (!schemaByElementId.TryGetValue(modelelem.Id.ToString(), out associatedSchemaElem))
                         {
-                            SyncSymbol.Syncvalues(lockValues, doc.GetElement(select),elem );
+                            continue;
                         }
-                    }
-                    trans.Commit();
+                        newsel.Add(associatedSchemaElem.Id);
+                        if (updateModel)
+                        {
+                            trans.SetName("Update Model according to Schema");
+                            Syncvalues(true, modelelem,associatedSchemaElem);
+                        }
+                        else
+                        {
+                            Syncvalues(lockValues, associatedSchemaElem, modelelem);
+                        }
+                    } 
                 }
+
+                foreach (Element schemaelem in schemaelems)
+                {
+
+                    if (Int64.TryParse(
+                    schemaelem.LookupParameter("ElementId")?.AsValueString(),
+                    out long id) && doc.GetElement(new ElementId(id)) is Element associatedModelElem)
+                    {
+                        newsel.Add(associatedModelElem.Id);
+                        if (updateModel)
+                        {
+                            trans.SetName("Update Model according to Schema");
+                            Syncvalues(true, associatedModelElem, schemaelem);
+                        }
+                        else Syncvalues(lockValues, schemaelem, associatedModelElem);
+                    }
+                }
+                trans.Commit();
             }
-            if (updateValues) TaskDialog.Show("Information",newsel.Count + " " + info + locked);
+            TaskDialog.Show("Information", newsel.Count + " " + info + locked);
             uidoc.Selection.SetElementIds(newsel);
             return Result.Succeeded;
         }

@@ -84,6 +84,7 @@ namespace _ExpApps
             RibbonPanel panel_Managers = a.CreateRibbonPanel("Exp. Add-Ins", "Managers");
             RibbonPanel panel_Selections = a.CreateRibbonPanel("Exp. Add-Ins", "Selections");
             RibbonPanel panel_Modeling = a.CreateRibbonPanel("Exp. Add-Ins", "Modeling");
+            RibbonPanel panel_Schema = a.CreateRibbonPanel("Exp. Add-Ins", "Schema");
             RibbonPanel panel_Qt = a.CreateRibbonPanel("Exp. Add-Ins", "Quick Tools");
             ComboBoxData CBD_ShiftRange = new ComboBoxData("ShiftRange");
             ComboBoxData CBD_ExpLevel = new ComboBoxData("ExpLevel");
@@ -191,6 +192,22 @@ namespace _ExpApps
             PushButtonData PBD_swapMEP = CreateButton("Swap MEP", "MultiDWG.dll", "MultiDWG.SwapMEP");
             PBD_swapMEP.ToolTip = "Swap locations of selected MEP element with picked MEP element";
 
+            PushButtonData PBD_associateSchema = CreateButton("Associate", "MultiDWG.dll", "MultiDWG.AssociateSchema",
+            IconImageType.Noimage);
+            PBD_associateSchema.ToolTip = "Pick associated for Elements drawn with -red lines-." + Environment.NewLine 
+                + "ex: If you selected symbols -> switch to model view and pick models"
+                + Environment.NewLine + "elements assigned from the selection will be shown in -purple lines-";
+            
+            PushButtonData PBD_validateSchema = CreateButton("Validate", "MultiDWG.dll", "MultiDWG.ValidateSchema",
+             IconImageType.Noimage);
+            PBD_validateSchema.ToolTip = "Select/ Validate associated 2d-3d pairs"
+                + Environment.NewLine + "Select Associated elements for current selection" + Environment.NewLine + ":RED: Select Symbols with invalid revit ID-s associated";
+
+            PushButtonData PBD_updateSchema = CreateButton("Update", "MultiDWG.dll", "MultiDWG.UpdateSchema",
+             IconImageType.Noimage);
+            PBD_updateSchema.ToolTip = "Select Elements and their values will be updated in the Symbol" + Environment.NewLine
+                + ":BLUE: -AND- :GREEN: The model element will get updated - only Tag-Id";
+
             PushButtonData PBD_qv1 = CreateButton("1", "SetViewRange.dll", "QuickViews.QuickView1",
                 IconImageType.Noimage);
             PushButtonData PBD_qv2 = CreateButton("2", "SetViewRange.dll", "QuickViews.QuickView2",
@@ -241,10 +258,7 @@ namespace _ExpApps
    IconImageType.Noimage);
             PushButtonData qt15 = CreateButton("Surface Area for Duct fittings", "MultiDWG.dll", "MultiDWG.DuctSurfaceArea",
               IconImageType.Noimage);
-            PushButtonData qt16 = CreateButton("Sync Schema Symbols", "MultiDWG.dll", "MultiDWG.SyncSymbol",
-             IconImageType.Noimage);
-            PushButtonData qt17 = CreateButton("Select Schema-Synced", "MultiDWG.dll", "MultiDWG.SelectSynced",
-             IconImageType.Noimage);
+    
 
             qt1.ToolTip = "Filters Vertical elements from selection" + Environment.NewLine + ":1: controls vertical sensitivity";
             qt2.ToolTip = "Filter the selected tags that are hosted by Round duct" + Environment.NewLine + "'Red' - hosted by Rectangular";
@@ -281,10 +295,7 @@ namespace _ExpApps
                 + Environment.NewLine + ":2: - Optional - Min. Velocity";
             qt15.ToolTip = "Calculate Surface area of selected Duct fittings"
                 + Environment.NewLine + ":A: - Parameter to store Area" + Environment.NewLine + "should be of type 'Area' ";
-            qt16.ToolTip = "Sync Selected Schema elements to model elements"
-                + Environment.NewLine + ":RED: - Only Id-s, no parameter update" + Environment.NewLine + "Run in Drafting view!";
-            qt17.ToolTip = "Select Synced Schema/model elements"
-                + Environment.NewLine + "either: Select Schema Symbols and run in Model View" + Environment.NewLine + "or: Select Model elements and run in Drafting View";
+          
             panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);
             panel_ViewSetup.AddStackedItems(PBD_shifttu, PBD_shifttd);
             panel_ViewSetup.AddStackedItems(PBD_tl, PBD_tpc);
@@ -317,6 +328,7 @@ namespace _ExpApps
             panel_Selections.AddStackedItems(PBD_linkedId, PBD_allonlevel, PBD_selanno);
             panel_Modeling.AddStackedItems(PBD_rotMEP, PBD_swapMEP);
             panel_Annot.AddItem(PBD_mtag);
+            panel_Schema.AddStackedItems(PBD_associateSchema, PBD_validateSchema, PBD_updateSchema);
 
             PulldownButtonData QtData = new PulldownButtonData("Quicktools", "QuickTools");
             PulldownButtonData QvData = new PulldownButtonData("Quickviews", "Quickviews");
@@ -347,8 +359,6 @@ namespace _ExpApps
             QtButtonGroup.AddPushButton(qt12);
             QtButtonGroup.AddPushButton(qt13);
             QtButtonGroup.AddPushButton(qt14);
-            QtButtonGroup.AddPushButton(qt16);
-            QtButtonGroup.AddPushButton(qt17);
             //Remove stance name from button name//
             PushButtonData PBD_unitogglered = CreateButton("Universal Toggle Red OFF", "StoreExp.dll",
               "ToggleRed", off: true);
