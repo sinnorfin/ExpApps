@@ -4531,17 +4531,19 @@ public Result Execute(
                 FamilyInstance faminst = elem as FamilyInstance;
                 MEPModel mepmod = faminst.MEPModel;
                 Element connectedduct = null;
-                    
+                string Realflow = "0";
                 foreach ( Connector connector in mepmod.ConnectorManager.Connectors)
                 {
-                    foreach (Connector connected in connector.AllRefs)
-                    { connectedduct = connected.Owner; }
-                    if (connectedduct.LookupParameter("Flow") != null) { break; };
+                    //foreach (Connector connected in connector.AllRefs)
+                    //{ connectedduct = connected.Owner; }
+                    //if (connectedduct.LookupParameter("Flow") != null) { break; };
+                    if (connector.Flow != 0)
+                        {Realflow = UnitFormatUtils.Format(doc.GetUnits(),SpecTypeId.AirFlow, connector.Flow, false);break; }
                 }
                 try
                 {
                     string Typedflow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()).AsValueString();
-                    string Realflow = connectedduct.LookupParameter("Flow").AsValueString();
+                    //string Realflow = connectedduct.LookupParameter("Flow").AsValueString();
                         if (Typedflow != Realflow)
                         {
                             newsel.Add(eid);

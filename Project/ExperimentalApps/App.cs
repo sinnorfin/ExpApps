@@ -124,9 +124,10 @@ namespace _ExpApps
             { versioned = "Exp_apps_R17"; }
             PushButtonData PBD_rehostelements = CreateButton("RehostElements", versioned + ".dll", versioned + ".RehostElements",
                 IconImageType.Largeimage);
-            PBD_tpc.ToolTip = "Sets the Reference Level of selected elements to the selected level in the dropdown menu" 
-                + Environment.NewLine + "or if not selected, the active Plan View's Associated Level"
-                + Environment.NewLine + "or if :RED: is ON - the level specified in :A:";
+            PBD_rehostelements.ToolTip = "Sets the Reference Level of selected elements to the level set in the Dropdown Menu" 
+                + Environment.NewLine + "if not selected, the active Plan View's Associated Level will be used"
+                + Environment.NewLine + ":RED: - the level specified in :A:"
+                + Environment.NewLine + ":BLUE: - Associate to Selected Level";
 
             PushButtonData PBD_setupqv = CreateButton("Options", "SetViewRange.dll", "QuickViews.QuickViews",
                 IconImageType.Noimage);
@@ -205,7 +206,10 @@ namespace _ExpApps
 
             PushButtonData PBD_updateSchema = CreateButton("Update", "MultiDWG.dll", "MultiDWG.UpdateSchema",
              IconImageType.Noimage);
-            PBD_updateSchema.ToolTip = "Select Elements and their values will be updated in the Symbol" + Environment.NewLine
+            PBD_updateSchema.ToolTip = "Select Elements and their values will be updated in the Symbol"
+                + Environment.NewLine
+                + ":RED: - only Tag-Id gets updated"
+                + Environment.NewLine
                 + ":BLUE: -AND- :GREEN: The model element will get updated - only Tag-Id";
 
             PushButtonData PBD_qv1 = CreateButton("1", "SetViewRange.dll", "QuickViews.QuickView1",

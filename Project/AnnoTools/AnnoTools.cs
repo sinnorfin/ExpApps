@@ -501,73 +501,115 @@ namespace AnnoTools
             double vr_margin; double dist_margin;
             UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "1 cm", out vr_margin);
             UnitFormatUtils.TryParse(doc.GetUnits(), SpecTypeId.Length, "1 cm", out dist_margin);
-            //ElementId TB_D = new ElementId(3161525); //Duct cont. down
-            //ElementId BT_D = new ElementId(3161525); //Duct cont. up
-            //ElementId InB_D = new ElementId(3161525); //Duct coming up
-            //ElementId InT_D = new ElementId(3161525); //Duct coming down
-            //ElementId OutB_D = new ElementId(3161525); //Duct going down
-            //ElementId OutT_D = new ElementId(3161525); //Duct going up
-            ElementId TB_P = new ElementId(3161521); //Pipe cont. down
-            ElementId BT_P = new ElementId(3161523); //Pipe cont. up
-            ElementId InB_P = new ElementId(3161519); //Pipe coming up
-            ElementId InT_P = new ElementId(3161525); //Pipe coming down
-            ElementId OutB_P = new ElementId(3161517); //Pipe going down
-            ElementId OutT_P = new ElementId(3161527); //Pipe going up
-            //ION ids
-            //ElementId TB_D = new ElementId(6174444);
-            //ElementId BT_D = new ElementId(6174442);
-            //ElementId InB_D = new ElementId(6174446);
-            //ElementId InT_D = new ElementId(6174440);
-            //ElementId OutB_D = new ElementId(6174448);
-            //ElementId OutT_D = new ElementId(6174438);
-            //ElementId TB_P = new ElementId(6174063);
-            //ElementId BT_P = new ElementId(6174065);
-            //ElementId InB_P = new ElementId(6174061);
-            //ElementId InT_P = new ElementId(6174067);
-            //ElementId OutB_P = new ElementId(6174059);
-            //ElementId OutT_P = new ElementId(6174069);
+            ElementId TB_D = new ElementId(1158373); //Duct cont. down
+            ElementId BT_D = new ElementId(1158375); //Duct cont. up
+            ElementId InB_D = new ElementId(1158371); //Duct coming up
+            ElementId InT_D = new ElementId(1158377); //Duct coming down
+            ElementId OutB_D = new ElementId(1158369); //Duct going down
+            ElementId OutT_D = new ElementId(1158379); //Duct going up
+
+            ElementId TB_P = new ElementId(1157982); //Pipe cont. down
+            ElementId BT_P = new ElementId(1157984); //Pipe cont. up
+            ElementId InB_P = new ElementId(1157980); //Pipe coming up
+            ElementId InT_P = new ElementId(1157986); //Pipe coming down
+            ElementId OutB_P = new ElementId(1157978); //Pipe going down
+            ElementId OutT_P = new ElementId(1157988); //Pipe going up
+
+            ElementId TB_PDN = new ElementId(1158750); //Pipe DN cont. down
+            ElementId BT_PDN = new ElementId(1158752); //Pipe DN cont. up
+            ElementId InB_PDN = new ElementId(1158748); //Pipe DN coming up
+            ElementId InT_PDN = new ElementId(1158746); //Pipe DN coming down
+            ElementId OutB_PDN = new ElementId(1158754); //Pipe DN going down
+            ElementId OutT_PDN = new ElementId(1158756); //Pipe DN going up
+                                                         //ION ids
+                                                         //ElementId TB_D = new ElementId(6174444);
+                                                         //ElementId BT_D = new ElementId(6174442);
+                                                         //ElementId InB_D = new ElementId(6174446);
+                                                         //ElementId InT_D = new ElementId(6174440);
+                                                         //ElementId OutB_D = new ElementId(6174448);
+                                                         //ElementId OutT_D = new ElementId(6174438);
+                                                         //ElementId TB_P = new ElementId(6174063);
+                                                         //ElementId BT_P = new ElementId(6174065);
+                                                         //ElementId InB_P = new ElementId(6174061);
+                                                         //ElementId InT_P = new ElementId(6174067);
+                                                         //ElementId OutB_P = new ElementId(6174059);
+                                                         //ElementId OutT_P = new ElementId(6174069);
+
+
+            Dictionary<ElementId, ElementId> DNTags = new Dictionary<ElementId, ElementId>
+            {
+                { TB_P,TB_PDN},
+                { BT_P,BT_PDN},
+                { InB_P,InB_PDN},
+                { InT_P,InT_PDN},
+                { OutB_P,OutB_PDN},
+                { OutT_P,OutT_PDN},
+                { TB_PDN,TB_P},
+                { BT_PDN,BT_P},
+                { InB_PDN,InB_P},
+                { InT_PDN,InT_P},
+                { OutB_PDN,OutB_P},
+                { OutT_PDN,OutT_P}
+            };
 
             Dictionary<ElementId, ElementId> FlipTags = new Dictionary<ElementId, ElementId>
             {
-                //{ TB_D,BT_D},
-                //{ BT_D,TB_D},
-                //{ InB_D,OutB_D},
-                //{ InT_D,OutT_D},
-                //{ OutB_D,InB_D},
-                //{ OutT_D,InT_D},
+                { TB_D,BT_D},
+                { BT_D,TB_D},
+                { InB_D,OutB_D},
+                { InT_D,OutT_D},
+                { OutB_D,InB_D},
+                { OutT_D,InT_D},
                 { TB_P,BT_P},
                 { BT_P,TB_P},
                 { InB_P,OutB_P},
                 { InT_P,OutT_P},
                 { OutB_P,InB_P},
-                { OutT_P,InT_P}
+                { OutT_P,InT_P},
+                { TB_PDN,BT_PDN},
+                { BT_PDN,TB_PDN},
+                { InB_PDN,OutB_PDN},
+                { InT_PDN,OutT_PDN},
+                { OutB_PDN,InB_PDN},
+                { OutT_PDN,InT_PDN}
             };
             Dictionary<ElementId, ElementId> ContinousTags = new Dictionary<ElementId, ElementId>
             {
-                //{ TB_D,TB_D},
-                //{ BT_D,BT_D},
-                //{ InB_D,BT_D},
-                //{ InT_D,TB_D},
-                //{ OutB_D,TB_D},
-                //{ OutT_D,BT_D},
+                { TB_D,TB_D},
+                { BT_D,BT_D},
+                { InB_D,BT_D},
+                { InT_D,TB_D},
+                { OutB_D,TB_D},
+                { OutT_D,BT_D},
                 { TB_P,TB_P},
                 { BT_P,BT_P},
                 { InB_P,BT_P},
                 { InT_P,TB_P},
                 { OutB_P,TB_P},
-                { OutT_P,BT_P}
+                { OutT_P,BT_P},
+                { TB_PDN,TB_PDN},
+                { BT_PDN,BT_PDN},
+                { InB_PDN,BT_PDN},
+                { InT_PDN,TB_PDN},
+                { OutB_PDN,TB_PDN},
+                { OutT_PDN,BT_PDN}
             };
             Dictionary<string, bool> flowdowndict = new Dictionary<string, bool>
             {
                 //{ "Ev.",false },
                 //{ "Ecs.",false},
+                { "EV",false},
                 { "ECS",false},
+                { "RECS",true},
                 { "EFS",false},
                 { "EU",true},
+                { "EF",true},
+                { "SV",false},
                 { "ECD",false},
                 { "ECR",true},
                 { "EGD",false},
                 { "EGR",true},
+                { "RIA",false},
                 //{ "Recs.",true},
                 //{ "R.Ch.",true},
                 //{ "R.Ch. (37°)",true},
@@ -577,10 +619,11 @@ namespace AnnoTools
                 //{ "Plv.",true},
                 { "E",false},
                 { "P",true},
-                { "PAF",true},
-                { "Rejet",false}
+                { "AF",true},
+                { "RA",false}
              };
             bool flip = StoreExp.GetSwitchStance(uiapp, "Red");
+            bool DN = StoreExp.GetSwitchStance(uiapp, "Green");
             ICollection<ElementId> selection = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             if (flip)
@@ -603,14 +646,33 @@ namespace AnnoTools
                 }
                 return Result.Succeeded;
             }
-           
+            if (DN)
+            {
+                var selecttags = uidoc.Selection
+                     .GetElementIds()
+                     .Select(id => doc.GetElement(id))
+                     .OfType<IndependentTag>();
+                using (Transaction t = new Transaction(doc, "Switch DN/mm Arrow Types"))
+                {
+                    t.Start();
+                    foreach (var tag in selecttags)
+                    {
+                        if (DNTags.TryGetValue(tag.GetTypeId(), out ElementId newTypeId))
+                        {
+                            tag.ChangeTypeId(newTypeId);
+                        }
+                    }
+                    t.Commit();
+                }
+                return Result.Succeeded;
+            }
             //For avoiding tagging already tagged..
             //ICollection<Element> tags = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(IndependentTag)).ToElements();
             //foreach (IndependentTag tag in tags)
             //{
             //    continue;  
             //}
-         
+
             ICollection<ElementId> newSel = new List<ElementId>();
             ICollection<IndependentTag> toadjust= new List<IndependentTag>();
             View activeview = doc.ActiveView;
