@@ -4553,7 +4553,7 @@ public Result Execute(
                                 reportids += elem.Id + Environment.NewLine;
                                 // A sets the target parameter
                                 Parameter para_bmcflow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
-                                para_bmcflow.Set(connectedduct.LookupParameter("Flow").AsDouble());
+                                para_bmcflow.SetValueString(Realflow);
                             }
                             else { report += "Typed: " + Typedflow + " / " + "Real: " + Realflow + " ID:" + elem.Id;
                                 reportids += elem.Id + Environment.NewLine;

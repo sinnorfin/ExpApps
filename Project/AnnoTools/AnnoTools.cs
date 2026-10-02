@@ -342,7 +342,7 @@ namespace AnnoTools
             if (StoreExp.GetSwitchStance(uiapp, "Green"))
                 { ReadTag(doc, uidoc, uiapp);
                 return Result.Succeeded;}
-            bool mod_NoMerge = StoreExp.GetSwitchStance(uiapp, "Red");
+            bool mod_Merge = StoreExp.GetSwitchStance(uiapp, "Red");
             bool mod_SavedRelation = StoreExp.GetSwitchStance(uiapp, "Blue");
             using (Transaction tx = new Transaction(doc))
             {
@@ -354,7 +354,7 @@ namespace AnnoTools
                     Element elem = doc.GetElement(eid);
                     Reference tagref = new Reference(elem);
                     IndependentTag tag = null;
-                    if (elem.Category.Name.Contains("Tags") && !mod_NoMerge)
+                    if (elem.Category.Name.Contains("Tags") && mod_Merge)
                     {
                         tag = elem as IndependentTag;
                         if (start)
@@ -364,7 +364,7 @@ namespace AnnoTools
                         }
                         else { tag.TagHeadPosition = tagpos;}
                     }
-                    else if (elem.Category.Name.Contains("Tags") && mod_NoMerge)
+                    else if (elem.Category.Name.Contains("Tags") && !mod_Merge)
                     {
                         Element element;
                         XYZ refpoint = new XYZ(0,0,0);
@@ -409,14 +409,14 @@ namespace AnnoTools
                                 TagMode.TM_ADDBY_CATEGORY, TagOrientation.Horizontal,
                                 refpoint.Point);
                         }
-                            if (start && !mod_NoMerge)
+                            if (start && mod_Merge)
                         {
                             tagpos = tag.TagHeadPosition;
                             start = false;
                         }
-                        else if (!mod_NoMerge){ tag.TagHeadPosition = tagpos;}
+                        else if (mod_Merge){ tag.TagHeadPosition = tagpos;}
                         tag.HasLeader = StoreExp.tag_leader;
-                        if (mod_NoMerge && mod_SavedRelation)
+                        if (mod_SavedRelation)
                         {
                             tag.TagOrientation = StoreExp.tag_orientation;
                             tag.TagHeadPosition = tag.TagHeadPosition.Add(StoreExp.tag_shift);
