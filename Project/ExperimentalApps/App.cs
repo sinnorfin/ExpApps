@@ -262,7 +262,8 @@ namespace _ExpApps
    IconImageType.Noimage);
             PushButtonData qt15 = CreateButton("Surface Area for Duct fittings", "MultiDWG.dll", "MultiDWG.DuctSurfaceArea",
               IconImageType.Noimage);
-    
+            PushButtonData qt16 = CreateButton("Aligned Section Box", "MultiDWG.dll", "MultiDWG.AlignedSectionBox",
+              IconImageType.Noimage);
 
             qt1.ToolTip = "Filters Vertical elements from selection" + Environment.NewLine + ":1: controls vertical sensitivity";
             qt2.ToolTip = "Filter the selected tags that are hosted by Round duct" + Environment.NewLine + "'Red' - hosted by Rectangular";
@@ -299,7 +300,8 @@ namespace _ExpApps
                 + Environment.NewLine + ":2: - Optional - Min. Velocity";
             qt15.ToolTip = "Calculate Surface area of selected Duct fittings"
                 + Environment.NewLine + ":A: - Parameter to store Area" + Environment.NewLine + "should be of type 'Area' ";
-          
+            qt16.ToolTip = "Produces Section box that is aligned with direction of linear MEP elements.";
+
             panel_ViewSetup.AddStackedItems(PBD_shiftbu, PBD_shiftbd);
             panel_ViewSetup.AddStackedItems(PBD_shifttu, PBD_shifttd);
             panel_ViewSetup.AddStackedItems(PBD_tl, PBD_tpc);
@@ -363,6 +365,7 @@ namespace _ExpApps
             QtButtonGroup.AddPushButton(qt12);
             QtButtonGroup.AddPushButton(qt13);
             QtButtonGroup.AddPushButton(qt14);
+            QtButtonGroup.AddPushButton(qt16);
             //Remove stance name from button name//
             PushButtonData PBD_unitogglered = CreateButton("Universal Toggle Red OFF", "StoreExp.dll",
               "ToggleRed", off: true);
