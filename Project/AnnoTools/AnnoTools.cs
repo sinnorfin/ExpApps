@@ -624,6 +624,7 @@ namespace AnnoTools
              };
             bool flip = StoreExp.GetSwitchStance(uiapp, "Red");
             bool DN = StoreExp.GetSwitchStance(uiapp, "Green");
+            bool Autotag = StoreExp.GetSwitchStance(uiapp, "Blue");
             ICollection<ElementId> selection = uidoc.Selection.GetElementIds();
             ICollection<ElementId> newsel = new List<ElementId>();
             if (flip)
@@ -687,12 +688,15 @@ namespace AnnoTools
                 TopRange = toplevel.Elevation + viewrange.GetOffset(PlanViewPlane.TopClipPlane) + vr_margin;
             }
             var categories = new List<ElementFilter>
-             {
-                    new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory),
+             {         
                     new ElementCategoryFilter(BuiltInCategory.OST_DuctCurves),
-                    new ElementCategoryFilter(BuiltInCategory.OST_PipeCurves),
-                    new ElementCategoryFilter(BuiltInCategory.OST_DuctTerminal)
+                    new ElementCategoryFilter(BuiltInCategory.OST_PipeCurves)
              };
+            if (Autotag)
+            {
+                categories.Add(new ElementCategoryFilter(BuiltInCategory.OST_DuctAccessory));
+                categories.Add(new ElementCategoryFilter(BuiltInCategory.OST_DuctTerminal));
+            }
             IList <Element> elementsinview = new FilteredElementCollector(doc, activeview.Id)
                 .WhereElementIsNotElementType()
                 .WherePasses(
@@ -741,24 +745,25 @@ namespace AnnoTools
                         double lower = start.Z <= end.Z ? start.Z : end.Z;
                         double upper = start.Z > end.Z ? start.Z : end.Z;
                         
-                        bool flowdown = flowdowndict[elem.get_Parameter(BuiltInParameter.RBS_DUCT_PIPE_SYSTEM_ABBREVIATION_PARAM).AsString()];
+                        bool flowdown = flowdowndict.TryGetValue(elem.get_Parameter(BuiltInParameter.RBS_DUCT_PIPE_SYSTEM_ABBREVIATION_PARAM).AsString()
+                            , out bool value) ? value : true;
                         if (!(lower > BottomRange)) bottom = true;
                         if (!(upper < TopRange)) top = true;
                         if (!top && !bottom) continue;
                         if (top && bottom)
                         {
                             famsymtag = flowdown ? TB_P : BT_P;
-                            //if (isDuct) famsymtag = flowdown ? TB_D : BT_D;
+                            if (isDuct) famsymtag = flowdown ? TB_D : BT_D;
                         }
                         else if (top)
                         {
                             famsymtag = flowdown ? InT_P : OutT_P;
-                            //if (isDuct) famsymtag = flowdown ? InT_D: OutT_D;
+                            if (isDuct) famsymtag = flowdown ? InT_D: OutT_D;
                         }
                         else if (bottom)
                         {
                             famsymtag = flowdown ? OutB_P : InB_P;
-                            //if (isDuct) famsymtag = flowdown ? OutB_D : InB_D; 
+                            if (isDuct) famsymtag = flowdown ? OutB_D : InB_D; 
                         }
                         try
                         {

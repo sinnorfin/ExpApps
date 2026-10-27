@@ -820,18 +820,30 @@ public Result Execute(
 
             }
         }
-        public static void Syncvalues(bool lockValues, Element receivingelem, Element senderelem)
+        public static void Syncvalues(bool lockFlow, bool lockValues, Element receivingelem, Element senderelem)
         {
-            if (!lockValues && !(receivingelem.LookupParameter("BMC_Locked Values")?.AsInteger() == 1))
+            if (!lockFlow && !(receivingelem.LookupParameter("BMC_Locked Values")?.AsInteger() == 1))
             {
-                try
-                {
-                    if (senderelem.LookupParameter("BMC_Flow") != null)
-                        receivingelem.LookupParameter("BMC_Flow").SetValueString(senderelem.LookupParameter("BMC_Flow").AsValueString());
-                    else if (senderelem.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM) != null)
+                Parameter realflow = senderelem?.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM);
+                Parameter typedflow = senderelem?.LookupParameter("BMC_Flow");
+                Parameter receiverflow = receivingelem?.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM);
+                //try
+                //{
+                if (realflow != null && realflow.AsDouble() != 0)
                         receivingelem.LookupParameter("BMC_Flow").SetValueString(senderelem.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM).AsValueString());
-                }
-                catch { }
+                        //
+                //}
+                //catch { }
+                //try {
+                else if (typedflow != null && receiverflow != null)
+                    receivingelem.get_Parameter(BuiltInParameter.RBS_DUCT_FLOW_PARAM).SetValueString(senderelem.LookupParameter("BMC_Flow").AsValueString());
+                else if (typedflow != null)
+                    receivingelem.LookupParameter("BMC_Flow").SetValueString(senderelem.LookupParameter("BMC_Flow").AsValueString());
+                //}
+                //    catch { }
+            }
+                if (!lockValues && !(receivingelem.LookupParameter("BMC_Locked Values")?.AsInteger() == 1))
+            {
                 try
                 {
                     if (senderelem.LookupParameter("BMC_Velocity") != null)
@@ -866,7 +878,7 @@ public Result Execute(
             bool lockValues = StoreExp.GetSwitchStance(uiapp, "Red");
             bool updateModel = StoreExp.GetSwitchStance(uiapp, "Green") && StoreExp.GetSwitchStance(uiapp, "Blue");
             string info = "SCHEMA elements updated according to model";
-            if (updateModel) info = "MODEL elements updated according to schema - ONLY tag-ID";
+            if (updateModel) info = "MODEL elements updated according to schema - ONLY tag-ID + Flow";
             string locked = "";
             if (lockValues) locked = Environment.NewLine + "locked - Flow and Velocity NOT changed !";
             using (Transaction trans = new Transaction(doc))
@@ -898,11 +910,11 @@ public Result Execute(
                         if (updateModel)
                         {
                             trans.SetName("Update Model according to Schema");
-                            Syncvalues(true, modelelem,associatedSchemaElem);
+                            Syncvalues(false, true, modelelem,associatedSchemaElem);
                         }
                         else
                         {
-                            Syncvalues(lockValues, associatedSchemaElem, modelelem);
+                            Syncvalues(lockValues, lockValues, associatedSchemaElem, modelelem);
                         }
                     } 
                 }
@@ -918,9 +930,9 @@ public Result Execute(
                         if (updateModel)
                         {
                             trans.SetName("Update Model according to Schema");
-                            Syncvalues(true, associatedModelElem, schemaelem);
+                            Syncvalues(false, true, associatedModelElem, schemaelem);
                         }
-                        else Syncvalues(lockValues, schemaelem, associatedModelElem);
+                        else Syncvalues(lockValues, lockValues, schemaelem, associatedModelElem);
                     }
                 }
                 trans.Commit();
@@ -1427,9 +1439,10 @@ public Result Execute(
 
                         trans.Start("add view");
                         Viewport newvp = Viewport.Create(doc, targetsheet.Id, view.Id, vppos);
-                        if (StoreExp.GetSwitchStance(uiapp, "Red"))
+                        if (StoreExp.GetSwitchStance(uiapp, "Red") && !StoreExp.GetSwitchStance(uiapp, "Green"))
                         { X += (view.Outline.Max.U - view.Outline.Min.U); }
-                        else { Y += (view.Outline.Max.V - view.Outline.Min.V); }
+                        else if (!StoreExp.GetSwitchStance(uiapp, "Green")) { Y += (view.Outline.Max.V - view.Outline.Min.V); }
+
                         vppos.Add(new XYZ(0, 0, 0));
                         newvp.SetBoxCenter(new XYZ(X, Y, 0));
                         trans.Commit();
@@ -3093,6 +3106,8 @@ public Result Execute(
             Document doc = uiapp.ActiveUIDocument.Document;
             string def3dname = "{3D - " + doc.Application.Username + "}";
             View3D view3D = doc.ActiveView as View3D;
+            bool Red = true;
+            ICollection<Element> selectedElements = new List<Element>();
             if (view3D == null)
             {
                 view3D = new FilteredElementCollector(doc)
@@ -3100,11 +3115,21 @@ public Result Execute(
      .Cast<View3D>()
      .FirstOrDefault(v => !v.IsTemplate && v.Name == def3dname);
             }
-            var selectedElements = uidoc.Selection
+            if (!Red) selectedElements = uidoc.Selection
            .GetElementIds()
            .Select(id => doc.GetElement(id))
            .Where(e => e != null)
            .ToList();
+            
+            else if (Red) {
+                Selection SelectedObj = uidoc.Selection; 
+                Reference picked = SelectedObj.PickObject(ObjectType.LinkedElement);
+                RevitLinkInstance linkInstance =
+         doc.GetElement(picked.ElementId) as RevitLinkInstance;
+                Document linkDoc = linkInstance.GetLinkDocument();
+                selectedElements.Add(linkDoc.GetElement(picked.LinkedElementId));
+                //RevitLinkInstance.GetTotalTransform() - if link is not in original location
+            }
             var mepCurve = selectedElements
                 .OfType<MEPCurve>()
                 .FirstOrDefault();
@@ -4344,9 +4369,9 @@ public Result Execute(
                 foreach (ElementId eid in ids)
                 {
                     Element elem = doc.GetElement(eid);
-                    Parameter flow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString());
+                    Parameter flow = elem.LookupParameter(StoreExp.Para_Flow);
                     double.TryParse(flow.AsValueString().Split(' ')[0], out double flow_dec);
-                    velocity = elem.LookupParameter(StoreExp.Store.menu_B_Box.Value.ToString());
+                    velocity = elem.LookupParameter(StoreExp.Para_Velocity);
                     string size = elem.get_Parameter(BuiltInParameter.RBS_CALCULATED_SIZE).AsString().Split('-')[0];
                     bool round = false;
                     double bkVelocity = 0;
@@ -4546,19 +4571,15 @@ public Result Execute(
                 Element elem = doc.GetElement(eid);
                 FamilyInstance faminst = elem as FamilyInstance;
                 MEPModel mepmod = faminst.MEPModel;
-                Element connectedduct = null;
                 string Realflow = "0";
                 foreach ( Connector connector in mepmod.ConnectorManager.Connectors)
                 {
-                    //foreach (Connector connected in connector.AllRefs)
-                    //{ connectedduct = connected.Owner; }
-                    //if (connectedduct.LookupParameter("Flow") != null) { break; };
                     if (connector.Flow != 0)
                         {Realflow = UnitFormatUtils.Format(doc.GetUnits(),SpecTypeId.AirFlow, connector.Flow, false);break; }
                 }
                 try
                 {
-                    string Typedflow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()).AsValueString();
+                    string Typedflow = elem.LookupParameter(StoreExp.Para_Flow).AsValueString();
                     //string Realflow = connectedduct.LookupParameter("Flow").AsValueString();
                         if (Typedflow != Realflow)
                         {
@@ -4568,7 +4589,7 @@ public Result Execute(
                                 report += "Typed: " + Typedflow + " / " + "Real: " + Realflow + " ID:" + elem.Id;
                                 reportids += elem.Id + Environment.NewLine;
                                 // A sets the target parameter
-                                Parameter para_bmcflow = elem.LookupParameter(StoreExp.Store.menu_A_Box.Value.ToString()) as Parameter;
+                                Parameter para_bmcflow = elem.LookupParameter(StoreExp.Para_Flow) as Parameter;
                                 para_bmcflow.SetValueString(Realflow);
                             }
                             else { report += "Typed: " + Typedflow + " / " + "Real: " + Realflow + " ID:" + elem.Id;
