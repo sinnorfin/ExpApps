@@ -2631,7 +2631,165 @@ public Result Execute(
             return Result.Succeeded;
         }
     }
-    
+
+
+[Transaction(TransactionMode.Manual)]
+    public class SetLinkedViewsbyTable : IExternalCommand
+    {
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
+            UIDocument uidoc = commandData.Application.ActiveUIDocument;
+            Document doc = uidoc.Document;
+
+            string csvPath = GetCsvFile();
+            if (string.IsNullOrEmpty(csvPath))
+                return Result.Cancelled;
+
+            List<(string LinkName, string LevelName, string TargetViewName)> mappings;
+            try
+            {
+                mappings = ReadCsvMappings(csvPath);
+                if (mappings.Count == 0)
+                {
+                    message = "No data found in CSV file.";
+                    return Result.Failed;
+                }
+            }
+            catch (Exception ex)
+            {
+                message = $"Failed to read CSV file: {ex.Message}";
+                return Result.Failed;
+            }
+
+            var selectedIds = uidoc.Selection.GetElementIds();
+            var floorViews = new List<ViewPlan>();
+
+            foreach (var id in selectedIds)
+            {
+                var element = doc.GetElement(id);
+                if (element is ViewPlan viewPlan && viewPlan.ViewType == ViewType.FloorPlan)
+                {
+                    floorViews.Add(viewPlan);
+                }
+            }
+            if (floorViews.Count == 0)
+            {
+                message = "No floor views found in selection.";
+                return Result.Failed;
+            }
+            var allLinkInstances = new FilteredElementCollector(doc)
+                .OfClass(typeof(RevitLinkInstance))
+                .Cast<RevitLinkInstance>()
+                .ToList();
+            var levelViewSummary = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            using (var tx = new Transaction(doc, "Set Linked Views"))
+            {
+                tx.Start();
+
+                foreach (var view in floorViews)
+                {
+                    var level = view.GenLevel;
+                    if (level == null) continue;
+
+                    var levelName = level.Name;
+                    var visibleLinks = new FilteredElementCollector(doc, view.Id)
+                        .OfClass(typeof(RevitLinkInstance))
+                        .Cast<RevitLinkInstance>()
+                        .ToList();
+
+                    foreach (var link in visibleLinks)
+                    {
+                        string linkName = link.Name.Split(':')[0].Trim();
+                        var matchingMapping = mappings.FirstOrDefault(m =>
+                            string.Equals(m.LinkName, linkName, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(m.LevelName, levelName, StringComparison.OrdinalIgnoreCase));
+                        //TaskDialog.Show("x", linkName);
+                        if (matchingMapping.LinkName != null)
+                        {
+                            //TaskDialog.Show("x", linkName + " matched to :" + matchingMapping.LinkName);
+                            Document linkDoc = link.GetLinkDocument();
+                            if (linkDoc == null) continue;
+
+                            ViewPlan targetView = new FilteredElementCollector(linkDoc)
+                                .OfClass(typeof(ViewPlan))
+                                .Cast<ViewPlan>()
+                                .FirstOrDefault(v => string.Equals(v.Name, matchingMapping.TargetViewName, StringComparison.OrdinalIgnoreCase));
+
+                            if (targetView != null)
+                            {
+                                ElementId linkTypeId = link.GetTypeId();
+
+                                using (var linkSettings = view.GetLinkOverrides(linkTypeId))
+                                {
+                                    linkSettings.LinkedViewId = targetView.Id;
+
+                                    view.SetLinkOverrides(linkTypeId, linkSettings);
+                                    if (!levelViewSummary.TryGetValue(levelName, out var viewNames))
+                                    {
+                                        viewNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                        levelViewSummary[levelName] = viewNames;
+                                    }
+
+                                    viewNames.Add(targetView.Name);
+                                }
+                            }
+                        }
+                    }
+                }
+                tx.Commit();
+            }
+            var summary = new System.Text.StringBuilder();
+            summary.AppendLine("Associated Levels of views and matched views in Link:");
+
+            foreach (var level in levelViewSummary.OrderBy(x => x.Key))
+            {
+                summary.AppendLine($"- {level.Key}");
+
+                foreach (var viewName in level.Value.OrderBy(x => x))
+                {
+                    summary.AppendLine($"    • {viewName}");
+                }
+            }
+            TaskDialog.Show("Matched - Linked Views Summary", summary.ToString());
+            return Result.Succeeded;
+        }
+
+        private static string GetCsvFile()
+        {
+            using (var dialog = new OpenFileDialog())
+            {
+                dialog.Title = "Select CSV File";
+                dialog.Filter = "CSV Files|*.csv|Text Files|*.txt|All Files|*.*";
+                dialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    return dialog.FileName;
+                }
+                return null;
+            }
+        }
+
+        private static List<(string LinkName, string LevelName, string TargetViewName)> ReadCsvMappings(string filePath)
+        {
+            var mappings = new List<(string LinkName, string LevelName, string TargetViewName)>();
+
+            foreach (var line in File.ReadAllLines(filePath))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#"))
+                    continue;
+
+                var parts = trimmed.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 3)
+                {
+                    mappings.Add((parts[0].Trim(), parts[1].Trim(), parts[2].Trim()));
+                }
+            }
+
+            return mappings;
+        }
+    }
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class ApplyInsulations : IExternalCommand
