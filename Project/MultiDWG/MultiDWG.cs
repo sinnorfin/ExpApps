@@ -36,6 +36,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Windows.Controls;
@@ -2640,7 +2641,7 @@ public Result Execute(
         {
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
             Document doc = uidoc.Document;
-
+            string notApplied = "Links - Hidden:" + Environment.NewLine;
             string csvPath = GetCsvFile();
             if (string.IsNullOrEmpty(csvPath))
                 return Result.Cancelled;
@@ -2704,8 +2705,15 @@ public Result Execute(
                             string.Equals(m.LinkName, linkName, StringComparison.OrdinalIgnoreCase) &&
                             string.Equals(m.LevelName, levelName, StringComparison.OrdinalIgnoreCase));
                         //TaskDialog.Show("x", linkName);
+                        if (mappings.Any(m => m.LinkName == linkName && m.LevelName == "HIDDEN"))
+                        {                                              
+                                view.HideElements(new List<ElementId> { link.GetTypeId() });
+                                notApplied += (linkName + Environment.NewLine);
+                                continue;
+                            }
                         if (matchingMapping.LinkName != null)
                         {
+                           
                             //TaskDialog.Show("x", linkName + " matched to :" + matchingMapping.LinkName);
                             Document linkDoc = link.GetLinkDocument();
                             if (linkDoc == null) continue;
@@ -2719,7 +2727,7 @@ public Result Execute(
                             {
                                 ElementId linkTypeId = link.GetTypeId();
 
-                                using (var linkSettings = view.GetLinkOverrides(linkTypeId))
+                                using (RevitLinkGraphicsSettings linkSettings = view.GetLinkOverrides(linkTypeId))
                                 {
                                     linkSettings.LinkedViewId = targetView.Id;
 
@@ -2733,7 +2741,9 @@ public Result Execute(
                                     viewNames.Add(targetView.Name);
                                 }
                             }
+                           
                         }
+                        
                     }
                 }
                 tx.Commit();
@@ -2750,7 +2760,7 @@ public Result Execute(
                     summary.AppendLine($"    • {viewName}");
                 }
             }
-            TaskDialog.Show("Matched - Linked Views Summary", summary.ToString());
+            TaskDialog.Show("Matched - Linked Views Summary", summary.ToString() + Environment.NewLine + notApplied);
             return Result.Succeeded;
         }
 
