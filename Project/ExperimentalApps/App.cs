@@ -27,6 +27,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
@@ -471,7 +472,7 @@ namespace _ExpApps
             {
                 member.Visible = false;
             }
-            FilteredElementCollector allLevels = new FilteredElementCollector(e.Application.ActiveUIDocument.Document).OfClass(typeof(Level));
+            var allLevels = new FilteredElementCollector(e.Application.ActiveUIDocument.Document).OfClass(typeof(Level)).Cast<Level>().OrderBy(l => l.Elevation).ToList();
             foreach (Level level in allLevels)
             {
                 members[c].Visible = true;

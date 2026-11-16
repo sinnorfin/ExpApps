@@ -3274,7 +3274,7 @@ public Result Execute(
             Document doc = uiapp.ActiveUIDocument.Document;
             string def3dname = "{3D - " + doc.Application.Username + "}";
             View3D view3D = doc.ActiveView as View3D;
-            bool Red = true;
+            bool Red = StoreExp.GetSwitchStance(uiapp, "Red");
             ICollection<Element> selectedElements = new List<Element>();
             if (view3D == null)
             {
